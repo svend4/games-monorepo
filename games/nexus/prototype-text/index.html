@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NEXUS · срез «Койне» — текстовый прототип</title>
+
+  <!--
+    Терминал прототипа «Койне» (текстовый/1D MUD-срез).
+    Ответственность этого файла: DOM терминала (#log, #input) + CSS + подключение ES-модуля.
+    Вся логика — в ./src/main.js и модулях ядра (современный vanilla JS, ES-модули).
+    ES-модули требуют http: открывать через http://localhost/01/games/nexus/prototype-text/
+    (не file://). PHP — опциональный адаптер за интерфейсом, по умолчанию ВЫКЛ.
+  -->
+
+  <style>
+    /* --- Тёмная тема терминала, моноширинный шрифт --- */
+    :root {
+      --bg:        #0b0e12;
+      --panel:     #0f141b;
+      --fg:        #cfd8e3;
+      --muted:     #6b7787;
+      --accent:    #58c1ff;  /* служебные строки, акценты */
+      --echo:      #b08bff;   /* вести/эхо других странников */
+      --rune:      #ffcf6b;  /* руны и дешифровка */
+      --err:       #ff6b6b;
+      --ok:        #6bdc8a;
+      --border:    #1c242f;
+      --shadow:    rgba(0,0,0,.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background:
+        radial-gradient(1200px 600px at 50% -10%, #121925 0%, var(--bg) 60%) fixed;
+      color: var(--fg);
+      font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", Consolas,
+                   "Liberation Mono", "Courier New", monospace;
+      font-size: 15px;
+      line-height: 1.5;
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .terminal {
+      width: 100%;
+      max-width: 860px;
+      height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 18px 50px var(--shadow);
+      overflow: hidden;
+    }
+
+    /* Шапка — «титульная планка» окна */
+    .term-bar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, #131a23, #0f141b);
+      border-bottom: 1px solid var(--border);
+      user-select: none;
+    }
+    .term-bar .dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: #2a3340;
+    }
+    .term-bar .dot.r { background: #e0564f; }
+    .term-bar .dot.y { background: #e0b24f; }
+    .term-bar .dot.g { background: #4fae5a; }
+    .term-bar .title {
+      margin-left: 8px;
+      color: var(--muted);
+      font-size: 12.5px;
+      letter-spacing: .04em;
+    }
+    .term-bar .title b { color: var(--accent); font-weight: 600; }
+
+    /* Лента вывода */
+    #log {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 16px 18px;
+      white-space: pre-wrap;       /* сохраняем переносы текста комнат/вестей */
+      word-break: break-word;
+      scrollbar-width: thin;
+      scrollbar-color: #263141 transparent;
+    }
+    #log::-webkit-scrollbar { width: 10px; }
+    #log::-webkit-scrollbar-thumb {
+      background: #263141; border-radius: 6px;
+      border: 2px solid var(--panel);
+    }
+
+    /* Строки вывода. textui.print(str, cls) подмешивает cls как имя класса. */
+    #log .line { margin: 0; padding: 1px 0; }
+    #log .line.sys   { color: var(--muted); }
+    #log .line.info  { color: var(--fg); }
+    #log .line.accent{ color: var(--accent); }
+    #log .line.room  { color: var(--fg); }
+    #log .line.title { color: var(--accent); font-weight: 600; }
+    #log .line.exit  { color: var(--muted); }
+    #log .line.rune  { color: var(--rune); }
+    #log .line.echo  { color: var(--echo); }
+    #log .line.learn,
+    #log .line.ok    { color: var(--ok); }
+    #log .line.err,
+    #log .line.error { color: var(--err); }
+    #log .line.cmd   { color: var(--accent); opacity: .85; }  /* эхо введённой команды */
+
+    /* Строка ввода */
+    .term-input {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: #0c1016;
+    }
+    .term-input .prompt {
+      color: var(--accent);
+      font-weight: 600;
+      user-select: none;
+    }
+    #input {
+      flex: 1 1 auto;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--fg);
+      font: inherit;
+      caret-color: var(--accent);
+    }
+    #input::placeholder { color: var(--muted); opacity: .8; }
+
+    /* Доступность: видимый фокус на всём окне ввода при tab-навигации */
+    #input:focus-visible { outline: none; }
+    .term-input:focus-within {
+      box-shadow: inset 0 0 0 1px rgba(88,193,255,.35);
+    }
+
+    @media (max-width: 560px) {
+      body { padding: 0; }
+      .terminal { height: 100vh; border-radius: 0; border: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="terminal" role="application" aria-label="Текстовый терминал NEXUS">
+    <div class="term-bar">
+      <span class="dot r"></span>
+      <span class="dot y"></span>
+      <span class="dot g"></span>
+      <span class="title">NEXUS · срез <b>«Койне»</b> — текстовый/1D MUD</span>
+    </div>
+
+    <!-- Лента вывода: сюда textui.print() добавляет строки -->
+    <div id="log" role="log" aria-live="polite" aria-label="Вывод игры" tabindex="0"></div>
+
+    <!-- Строка ввода: textui.start() вешает Enter -> handle(line) -->
+    <div class="term-input">
+      <span class="prompt" aria-hidden="true">&gt;</span>
+      <input
+        id="input"
+        type="text"
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        aria-label="Команда"
+        placeholder="осмотреться · идти <напр> · читать <руна> · помощь">
+    </div>
+  </main>
+
+  <!-- Современное-первым: единственная точка входа — ES-модуль.
+       Сам ввод и подписки навешивает textui.start() из main.js. -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
