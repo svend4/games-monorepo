@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>htdocs/01 — лобби монорепозитория</title>
+<style>
+  :root{
+    --bg:#0e1320; --bg2:#151c2e; --card:#1b2438; --card-h:#222e49;
+    --line:#2a3552; --txt:#e6ebf5; --muted:#9aa7c2; --accent:#5b8cff;
+    --green:#2a7f62; --gold:#e0a93b; --violet:#8b6cf0;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font:16px/1.5 system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--txt); background:radial-gradient(1200px 700px at 70% -10%,#1a2950,transparent),var(--bg);
+    min-height:100vh; padding:48px 20px;
+  }
+  .wrap{max-width:1040px; margin:0 auto}
+  header{margin-bottom:40px}
+  h1{font-size:30px; margin:0 0 6px; letter-spacing:.3px}
+  .sub{color:var(--muted); margin:0}
+  .sub code{background:#0c1322; padding:2px 7px; border-radius:6px; color:#c7d4f0}
+  section{margin:34px 0}
+  .h2{display:flex; align-items:center; gap:10px; font-size:13px; text-transform:uppercase;
+    letter-spacing:1.5px; color:var(--muted); margin:0 0 14px}
+  .h2::after{content:""; flex:1; height:1px; background:var(--line)}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px}
+  a.card{
+    display:block; text-decoration:none; color:inherit; background:var(--card);
+    border:1px solid var(--line); border-radius:14px; padding:18px 18px 16px;
+    transition:.16s transform,.16s background,.16s border-color; position:relative; overflow:hidden;
+  }
+  a.card:hover{transform:translateY(-3px); background:var(--card-h); border-color:var(--accent)}
+  a.card .tag{display:inline-block; font-size:11px; font-weight:600; letter-spacing:.5px;
+    padding:3px 9px; border-radius:20px; margin-bottom:10px}
+  .t-game{background:rgba(91,140,255,.16); color:#9db9ff}
+  .t-site{background:rgba(42,127,98,.2); color:#6fd3ab}
+  .t-tool{background:rgba(139,108,240,.18); color:#bbaaff}
+  a.card h3{margin:0 0 5px; font-size:17px}
+  a.card p{margin:0; color:var(--muted); font-size:13.5px}
+  a.card .ver{position:absolute; top:14px; right:16px; font-size:12px; color:var(--muted);
+    font-variant-numeric:tabular-nums}
+  footer{margin-top:46px; color:var(--muted); font-size:13px; border-top:1px solid var(--line); padding-top:18px}
+  footer code{color:#c7d4f0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>htdocs / 01 — монорепозиторий</h1>
+    <p class="sub">Стартовая страница. Точки входа всех проектов. Подробности — в <code>README.md</code> каждой папки.</p>
+  </header>
+
+  <section>
+    <p class="h2">🎮 NEXUS — экшен-RPG, 3 версии рендера</p>
+    <div class="grid">
+      <a class="card" href="games/nexus/v1-2d-mmo/game.html">
+        <span class="ver">v1</span><span class="tag t-game">2D · MMO</span>
+        <h3>Вид сверху</h3>
+        <p>Canvas 2D, мультиплеер через PHP + MySQL. Нужен импорт <code>nexus_setup.sql</code>.</p>
+      </a>
+      <a class="card" href="games/nexus/v2-isometric/game.html">
+        <span class="ver">v2</span><span class="tag t-game">2.5D · ISO</span>
+        <h3>Изометрия</h3>
+        <p>Canvas 2D, изометрическая проекция. Одиночная, самодостаточная.</p>
+      </a>
+      <a class="card" href="games/nexus/v3-3d/game.html">
+        <span class="ver">v3</span><span class="tag t-game">3D · WebGL</span>
+        <h3>Three.js</h3>
+        <p>Полноценный 3D на Three.js. Подключает общий движок <code>shared/</code>.</p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <p class="h2">💎 Crystal Collector — прототипы рендера</p>
+    <div class="grid">
+      <a class="card" href="games/crystal-collector/v2-isometric-2.5d/game.html">
+        <span class="tag t-game">2.5D</span>
+        <h3>Изометрический тест</h3>
+        <p>Собери кристаллы → портал. Canvas 2D с самопроверкой рендера.</p>
+      </a>
+      <a class="card" href="games/crystal-collector/v3-3d/game.html">
+        <span class="tag t-game">3D</span>
+        <h3>Three.js тест</h3>
+        <p>Те же кристаллы в 3D. Уровни в <code>data/level*.js</code> (нужен интернет — CDN).</p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <p class="h2">🏠 Помощь по дому — лендинг бытовых услуг</p>
+    <div class="grid">
+      <a class="card" href="sites/pomosch-po-domu/obyavlenie.html">
+        <span class="tag t-site">Сайт</span>
+        <h3>Объявление</h3>
+        <p>Рекламная страница услуг.</p>
+      </a>
+      <a class="card" href="sites/pomosch-po-domu/uslugi-i-ceny.html">
+        <span class="tag t-site">Сайт</span>
+        <h3>Услуги и цены</h3>
+        <p>Полный перечень с таблицами цен.</p>
+      </a>
+      <a class="card" href="sites/pomosch-po-domu/prais.php">
+        <span class="tag t-site">PHP</span>
+        <h3>Витрина прайса</h3>
+        <p>Поиск и фильтр по цене (требует PHP/XAMPP).</p>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <p class="h2">🧰 Прочее</p>
+    <div class="grid">
+      <a class="card" href="vendor/tiddlywiki/empty.html">
+        <span class="tag t-tool">Vendor</span>
+        <h3>TiddlyWiki</h3>
+        <p>Сторонний вики-движок (пустой экспорт). Не часть проектов.</p>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    Подаётся XAMPP по адресу <code>http://localhost/01/</code>. Ссылки относительные — работают и при переносе папки.
+  </footer>
+</div>
+</body>
+</html>

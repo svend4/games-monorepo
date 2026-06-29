@@ -1,0 +1,13 @@
+# Генерируемые артефакты этого проекта (источник истины — *.md).
+# Текущие копии намеренно оставлены в git как рабочий пример.
+# Чтобы хранить ТОЛЬКО исходники (.md) и не коммитить вывод генераторов —
+# раскомментируйте строки ниже и один раз выполните:
+#   git rm --cached database.json prais.json ceny_svodka.csv ceny_svodka_php.csv
+# database.json
+# prais.json
+# ceny_svodka.csv
+# ceny_svodka_php.csv
+
+# Локальные временные выгрузки
+*.tmp
+__pycache__/
