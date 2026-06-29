@@ -1,0 +1,10 @@
+# Единообразная нормализация переводов строк
+* text=auto
+
+# Бинарные/медиа — без преобразований
+*.mp3 binary
+*.wav binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary

@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Variant 2 - 2.5D Test</title>
+<style>
+  :root { color-scheme: dark; --panel: rgba(12, 18, 28, .82); --line: rgba(255,255,255,.16); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #10161d; font-family: Arial, sans-serif; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+  .hud { position: fixed; left: 14px; top: 14px; min-width: 250px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); backdrop-filter: blur(8px); color: #eef5f2; box-shadow: 0 16px 40px rgba(0,0,0,.28); }
+  .title { font-size: 15px; font-weight: 700; letter-spacing: .2px; margin-bottom: 8px; }
+  .row { display: flex; justify-content: space-between; gap: 18px; font-size: 13px; line-height: 1.7; color: #cbd8d6; }
+  .value { color: #ffffff; font-weight: 700; }
+  .hint { position: fixed; right: 14px; bottom: 14px; max-width: min(360px, calc(100vw - 28px)); color: #d9e9e5; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.45; }
+  .tag { display: inline-block; margin-right: 6px; padding: 2px 7px; border-radius: 999px; background: rgba(104, 204, 156, .18); color: #9ff0c7; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="hud">
+  <div class="title">Variant 2: 2.5D</div>
+  <div class="row"><span>Canvas</span><span class="value">2D context</span></div>
+  <div class="row"><span>View</span><span class="value">Isometric</span></div>
+  <div class="row"><span>Crystals</span><span class="value" id="score">0 / 6</span></div>
+  <div class="row"><span>Status</span><span class="value" id="status">Explore</span></div>
+</div>
+<div class="hint"><span class="tag">2.5D</span>World logic stays on a flat map, but projection, shadows, height and draw order create depth.</div>
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const statusEl = document.getElementById('status');
+
+  const tileW = 72;
+  const tileH = 38;
+  const mapW = 18;
+  const mapH = 18;
+  const keys = new Set();
+  const mouse = { x: 0, y: 0, down: false, target: null };
+  const player = { x: 8.5, y: 9.5, r: 0.23, bob: 0 };
+  let crystals = 0;
+  let time = 0;
+  let frame = 0;
+
+  const objects = [
+    { type: 'tree', x: 3, y: 4, h: 76 }, { type: 'tree', x: 5, y: 6, h: 84 },
+    { type: 'tree', x: 14, y: 5, h: 78 }, { type: 'tree', x: 12, y: 13, h: 92 },
+    { type: 'tree', x: 7, y: 14, h: 72 }, { type: 'tree', x: 2, y: 12, h: 80 },
+    { type: 'stone', x: 10, y: 3, h: 22 }, { type: 'stone', x: 15, y: 11, h: 28 },
+    { type: 'portal', x: 9, y: 8, h: 70 },
+    { type: 'crystal', x: 4, y: 9, h: 36, got: false }, { type: 'crystal', x: 6, y: 3, h: 36, got: false },
+    { type: 'crystal', x: 13, y: 4, h: 36, got: false }, { type: 'crystal', x: 15, y: 14, h: 36, got: false },
+    { type: 'crystal', x: 8, y: 15, h: 36, got: false }, { type: 'crystal', x: 2, y: 6, h: 36, got: false }
+  ];
+
+  function resize() {
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function iso(x, y) {
+    return { x: (x - y) * tileW / 2, y: (x + y) * tileH / 2 };
+  }
+
+  function screenToIso(sx, sy) {
+    const ox = window.innerWidth / 2;
+    const oy = window.innerHeight / 2 - 210;
+    const x = ((sy - oy) / (tileH / 2) + (sx - ox) / (tileW / 2)) / 2;
+    const y = ((sy - oy) / (tileH / 2) - (sx - ox) / (tileW / 2)) / 2;
+    return { x, y };
+  }
+
+  function drawDiamond(x, y, color, edge) {
+    const p = iso(x, y);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x + tileW / 2, p.y + tileH / 2);
+    ctx.lineTo(p.x, p.y + tileH);
+    ctx.lineTo(p.x - tileW / 2, p.y + tileH / 2);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function drawShadow(x, y, w, h, alpha) {
+    const p = iso(x, y);
+    ctx.save();
+    ctx.translate(p.x, p.y + tileH * .55);
+    ctx.scale(w, h);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,' + alpha + ')';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTree(o) {
+    const p = iso(o.x, o.y);
+    drawShadow(o.x, o.y, 25, 8, .25);
+    ctx.fillStyle = '#6d4f34';
+    ctx.fillRect(p.x - 5, p.y - 26, 10, 34);
+    const g = ctx.createLinearGradient(p.x - 30, p.y - o.h, p.x + 30, p.y);
+    g.addColorStop(0, '#7ad28f');
+    g.addColorStop(1, '#1d7d55');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y - o.h);
+    ctx.lineTo(p.x + 34, p.y - 16);
+    ctx.lineTo(p.x - 34, p.y - 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.16)';
+    ctx.beginPath();
+    ctx.moveTo(p.x - 7, p.y - o.h + 12);
+    ctx.lineTo(p.x + 16, p.y - 24);
+    ctx.lineTo(p.x - 22, p.y - 24);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawStone(o) {
+    const p = iso(o.x, o.y);
+    drawShadow(o.x, o.y, 18, 7, .22);
+    ctx.fillStyle = '#70808b';
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y - 10, 18, 13, -.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#9aabb4';
+    ctx.beginPath();
+    ctx.ellipse(p.x - 5, p.y - 16, 8, 4, -.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawCrystal(o) {
+    if (o.got) return;
+    const p = iso(o.x, o.y);
+    const pulse = Math.sin(time * .006 + o.x) * 3;
+    drawShadow(o.x, o.y, 14, 5, .25);
+    ctx.fillStyle = 'rgba(114, 226, 255, .22)';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y - 17, 24 + pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#72e2ff';
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y - 45 - pulse);
+    ctx.lineTo(p.x + 12, p.y - 22);
+    ctx.lineTo(p.x, p.y - 4);
+    ctx.lineTo(p.x - 12, p.y - 22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#e8fbff';
+    ctx.beginPath();
+    ctx.moveTo(p.x - 2, p.y - 40 - pulse);
+    ctx.lineTo(p.x + 5, p.y - 23);
+    ctx.lineTo(p.x - 2, p.y - 8);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawPortal(o) {
+    const p = iso(o.x, o.y);
+    const active = crystals >= 6;
+    drawShadow(o.x, o.y, 30, 8, .28);
+    ctx.strokeStyle = active ? '#ffe082' : '#7a87a6';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y - 38, 27, 43, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = active ? 'rgba(255, 224, 130, .22)' : 'rgba(128, 148, 190, .14)';
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y - 38, 20, 34, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawPlayer() {
+    const p = iso(player.x, player.y);
+    const bob = Math.sin(player.bob) * 3;
+    drawShadow(player.x, player.y, 17, 6, .3);
+    ctx.fillStyle = '#293f55';
+    ctx.fillRect(p.x - 8, p.y - 34 + bob, 16, 28);
+    ctx.fillStyle = '#f0c7a2';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y - 43 + bob, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#cbe8ff';
+    ctx.beginPath();
+    ctx.arc(p.x + 4, p.y - 46 + bob, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function update(dt) {
+    time += dt;
+    let dx = 0, dy = 0;
+    if (keys.has('KeyW') || keys.has('ArrowUp')) dy -= 1;
+    if (keys.has('KeyS') || keys.has('ArrowDown')) dy += 1;
+    if (keys.has('KeyA') || keys.has('ArrowLeft')) dx -= 1;
+    if (keys.has('KeyD') || keys.has('ArrowRight')) dx += 1;
+
+    if (mouse.target && Math.hypot(mouse.target.x - player.x, mouse.target.y - player.y) > .06) {
+      dx += mouse.target.x - player.x;
+      dy += mouse.target.y - player.y;
+    }
+    const len = Math.hypot(dx, dy);
+    if (len > 0) {
+      const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight')) ? 3.8 : 2.2;
+      player.x += dx / len * speed * dt / 1000;
+      player.y += dy / len * speed * dt / 1000;
+      player.x = Math.max(.7, Math.min(mapW - .7, player.x));
+      player.y = Math.max(.7, Math.min(mapH - .7, player.y));
+      player.bob += dt * .012;
+    }
+
+    for (const o of objects) {
+      if (o.type === 'crystal' && !o.got && Math.hypot(o.x - player.x, o.y - player.y) < .7) {
+        o.got = true;
+        crystals += 1;
+        scoreEl.textContent = crystals + ' / 6';
+        statusEl.textContent = crystals >= 6 ? 'Portal active' : 'Collected';
+      }
+      if (o.type === 'portal' && crystals >= 6 && Math.hypot(o.x - player.x, o.y - player.y) < .75) {
+        statusEl.textContent = 'Area complete';
+      }
+    }
+  }
+
+  function render() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    ctx.clearRect(0, 0, w, h);
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, '#192333');
+    bg.addColorStop(1, '#243028');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    const playerIso = iso(player.x, player.y);
+    ctx.translate(w / 2 - playerIso.x, h / 2 - playerIso.y + 80);
+
+    for (let y = 0; y < mapH; y++) {
+      for (let x = 0; x < mapW; x++) {
+        const checker = (x + y) % 2;
+        const edge = 'rgba(255,255,255,.08)';
+        let color = checker ? '#345f44' : '#3f6b4c';
+        if (x < 2 || y < 2 || x > mapW - 3 || y > mapH - 3) color = checker ? '#2b533e' : '#315c42';
+        drawDiamond(x, y, color, edge);
+      }
+    }
+
+    const drawables = objects.filter(o => !(o.type === 'crystal' && o.got)).concat([{ type: 'player', x: player.x, y: player.y }]);
+    drawables.sort((a, b) => (a.x + a.y) - (b.x + b.y));
+    for (const o of drawables) {
+      if (o.type === 'tree') drawTree(o);
+      if (o.type === 'stone') drawStone(o);
+      if (o.type === 'crystal') drawCrystal(o);
+      if (o.type === 'portal') drawPortal(o);
+      if (o.type === 'player') drawPlayer();
+    }
+
+    ctx.restore();
+
+    frame += 1;
+    if (frame % 12 === 0) {
+      const pts = [
+        [Math.floor(canvas.width * .5), Math.floor(canvas.height * .5)],
+        [Math.floor(canvas.width * .33), Math.floor(canvas.height * .56)],
+        [Math.floor(canvas.width * .66), Math.floor(canvas.height * .42)],
+        [Math.floor(canvas.width * .5), Math.floor(canvas.height * .76)]
+      ];
+      const colors = new Set();
+      let pixelError = '';
+      try {
+        for (const [sx, sy] of pts) {
+          const d = ctx.getImageData(sx, sy, 1, 1).data;
+          colors.add(d[0] + ',' + d[1] + ',' + d[2] + ',' + d[3]);
+        }
+      } catch (err) {
+        pixelError = err && err.message ? err.message : String(err);
+      }
+      const check = { kind: '2.5d-canvas', frame, uniquePixels: colors.size, pixelError, canvasWidth: canvas.width, canvasHeight: canvas.height, crystals };
+      window.__renderCheck = check;
+      document.body.dataset.renderCheck = JSON.stringify(check);
+    }
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(40, now - last);
+    last = now;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('keydown', e => keys.add(e.code));
+  window.addEventListener('keyup', e => keys.delete(e.code));
+  canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  canvas.addEventListener('click', e => {
+    const target = screenToIso(e.clientX, e.clientY);
+    mouse.target = { x: Math.max(.7, Math.min(mapW - .7, target.x)), y: Math.max(.7, Math.min(mapH - .7, target.y)) };
+  });
+
+  resize();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

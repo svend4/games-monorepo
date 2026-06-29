@@ -1,0 +1,33 @@
+# ── Операционная система ──
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# ── Редакторы / IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Логи и временные файлы ──
+*.log
+*.tmp
+
+# ── Python ──
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ── Локальные секреты (реальные пароли БД сюда) ──
+.env
+**/database.local.php
+**/config.local.php
+
+# ── Ручные бэкапы (git ведёт историю сам) ──
+# Раскомментируйте/закомментируйте по желанию:
+*.BACKUP_*.html

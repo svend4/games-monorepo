@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Variant 3 - 3D Prototype</title>
+<style>
+  :root { color-scheme: dark; --panel: rgba(10, 14, 22, .84); --line: rgba(255,255,255,.15); --soft: rgba(148, 163, 184, .16); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #0e121a; font-family: Arial, sans-serif; }
+  #stage { position: fixed; inset: 0; }
+  canvas { display: block; }
+  .hud { position: fixed; left: 14px; top: 14px; width: min(286px, calc(100vw - 28px)); padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: #eef4ff; backdrop-filter: blur(8px); box-shadow: 0 16px 40px rgba(0,0,0,.3); }
+  .title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 18px; font-size: 13px; line-height: 1.7; color: #cbd5e1; }
+  .row span:first-child { flex: 0 0 auto; }
+  .value { color: white; font-weight: 700; text-align: right; }
+  .value.long { max-width: 160px; line-height: 1.25; }
+  .meter { height: 6px; margin-top: 9px; border-radius: 999px; background: var(--soft); overflow: hidden; }
+  .meter span { display: block; height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, #62d9ff, #ffde73); transition: width .25s ease; }
+  .level-switch { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 7px; margin-top: 10px; }
+  .level-switch a { display: block; border: 1px solid rgba(255,255,255,.18); border-radius: 7px; padding: 7px 8px; color: #dbeafe; background: rgba(148, 163, 184, .12); text-decoration: none; text-align: center; font-size: 12px; font-weight: 700; }
+  .level-switch a.active { color: #0f172a; background: #e9f3ff; border-color: rgba(255,255,255,.38); }
+  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(8px); min-width: min(380px, calc(100vw - 28px)); padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: #e5f2ff; text-align: center; font-size: 13px; line-height: 1.35; opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .complete { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(4, 8, 15, .38); }
+  .complete[hidden] { display: none; }
+  .complete-card { width: min(360px, 100%); padding: 18px; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; background: rgba(12, 18, 28, .92); color: #f8fbff; box-shadow: 0 24px 70px rgba(0,0,0,.45); }
+  .complete-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .complete-text { color: #cbd5e1; font-size: 14px; line-height: 1.45; margin-bottom: 14px; }
+  .complete-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { border: 1px solid rgba(255,255,255,.22); border-radius: 7px; background: #e9f3ff; color: #0f172a; font-weight: 700; padding: 9px 12px; cursor: pointer; flex: 1 1 130px; }
+  button:hover { background: #ffffff; }
+  button[hidden] { display: none; }
+  .error { position: fixed; inset: 0; display: grid; place-items: center; padding: 30px; color: #f8fafc; background: #111827; text-align: center; font-size: 16px; line-height: 1.5; }
+  @media (max-width: 520px) {
+    .hud { left: 10px; top: 10px; padding: 10px 12px; }
+    .toast { bottom: 12px; }
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.165.0/build/three.module.js"
+  }
+}
+</script>
+<script src="./data/level1.js"></script>
+<script src="./data/level2.js"></script>
+<script src="./data/level3.js"></script>
+</head>
+<body>
+<div id="stage"></div>
+<div class="hud">
+  <div class="title">Variant 3: 3D</div>
+  <div class="row"><span>Renderer</span><span class="value">Three.js</span></div>
+  <div class="row"><span>Crystals</span><span class="value" id="score">0 / 5</span></div>
+  <div class="row"><span>Objective</span><span class="value long" id="objective">Gather crystals</span></div>
+  <div class="row"><span>Status</span><span class="value" id="status">Explore</span></div>
+  <div class="row"><span>Guide</span><span class="value long" id="guide">Nearest crystal</span></div>
+  <div class="meter" aria-hidden="true"><span id="progress"></span></div>
+  <div class="level-switch" id="level-switch"></div>
+</div>
+<div class="toast" id="toast">Area opened</div>
+<div class="complete" id="complete-panel" hidden>
+  <div class="complete-card">
+    <div class="complete-title" id="complete-title">Portal stabilized</div>
+    <div class="complete-text" id="complete-text">The test area is complete. The next step can be a larger location, peaceful NPC tasks, or inventory for collected objects.</div>
+    <div class="complete-actions">
+      <button id="next-level-btn" type="button" hidden>Next level</button>
+      <button id="restart-btn" type="button">Restart area</button>
+    </div>
+  </div>
+</div>
+<script type="module">
+import * as THREE from 'three';
+
+const LEVELS = window.GAME_LEVELS || {};
+const AVAILABLE_LEVELS = Array.from(new Map(
+  Object.values(LEVELS)
+    .filter(level => level && level.id)
+    .map(level => [level.id, level])
+).values()).sort((a, b) => (a.number ?? 999) - (b.number ?? 999));
+const requestedLevel = new URLSearchParams(window.location.search).get('level') || '1';
+const LEVEL = LEVELS[requestedLevel] || LEVELS['level' + requestedLevel] || AVAILABLE_LEVELS[0];
+if (!LEVEL) throw new Error('No level data loaded');
+const currentLevelIndex = AVAILABLE_LEVELS.findIndex(level => level.id === LEVEL.id);
+const NEXT_LEVEL = currentLevelIndex >= 0 ? AVAILABLE_LEVELS[currentLevelIndex + 1] : null;
+
+const stage = document.getElementById('stage');
+const hudTitleEl = document.querySelector('.title');
+const scoreEl = document.getElementById('score');
+const statusEl = document.getElementById('status');
+const guideEl = document.getElementById('guide');
+const objectiveEl = document.getElementById('objective');
+const progressEl = document.getElementById('progress');
+const levelSwitchEl = document.getElementById('level-switch');
+const toastEl = document.getElementById('toast');
+const completePanel = document.getElementById('complete-panel');
+const completeTitleEl = document.getElementById('complete-title');
+const completeTextEl = document.getElementById('complete-text');
+const nextLevelBtn = document.getElementById('next-level-btn');
+const restartBtn = document.getElementById('restart-btn');
+const TEXT = LEVEL.text;
+const TOTAL_CRYSTALS = Math.min(LEVEL.crystalsRequired ?? LEVEL.crystals.length, LEVEL.crystals.length);
+const WORLD_SIZE = LEVEL.world.size;
+const WORLD_BOUNDS = LEVEL.world.bounds;
+const CAMERA_OFFSET = new THREE.Vector3(...LEVEL.world.cameraOffset);
+const PORTAL_ENTER_RADIUS = LEVEL.portal.enterRadius;
+
+document.title = LEVEL.title;
+document.body.dataset.level = LEVEL.id;
+document.body.dataset.nextLevel = NEXT_LEVEL ? NEXT_LEVEL.id : '';
+hudTitleEl.textContent = LEVEL.hudTitle;
+objectiveEl.textContent = TEXT.initialObjective;
+statusEl.textContent = TEXT.explore;
+guideEl.textContent = 'Nearest crystal';
+
+function makeLevelUrl(levelNumber) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('level', String(levelNumber));
+  return url.href;
+}
+
+levelSwitchEl.innerHTML = AVAILABLE_LEVELS.map(level => {
+  const active = level.id === LEVEL.id ? ' active' : '';
+  return '<a class="level-link' + active + '" href="' + makeLevelUrl(level.number) + '">Level ' + level.number + '</a>';
+}).join('');
+nextLevelBtn.hidden = !NEXT_LEVEL;
+if (NEXT_LEVEL) nextLevelBtn.textContent = 'Next: Level ' + NEXT_LEVEL.number;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111827);
+scene.fog = new THREE.Fog(...LEVEL.world.fog);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 120);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const hemi = new THREE.HemisphereLight(0xc7e8ff, 0x26351f, 1.45);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+sun.position.set(-8, 14, 9);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.camera.left = -19;
+sun.shadow.camera.right = 19;
+sun.shadow.camera.top = 19;
+sun.shadow.camera.bottom = -19;
+scene.add(sun);
+
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x2f6b49, roughness: .92, metalness: 0 });
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE), groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const pathMat = new THREE.MeshStandardMaterial({ color: 0x6b7a68, roughness: .88 });
+for (const pathDef of LEVEL.world.paths) {
+  const [x, z] = pathDef.position;
+  const [width, depth] = pathDef.size;
+  const path = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), pathMat);
+  path.rotation.set(-Math.PI / 2, 0, pathDef.rotation ?? 0);
+  path.position.set(x, pathDef.y ?? .018, z);
+  path.receiveShadow = true;
+  scene.add(path);
+}
+
+const grid = new THREE.GridHelper(WORLD_SIZE, 24, 0x8ed8a8, 0x416d55);
+grid.position.y = .03;
+scene.add(grid);
+
+function makeAvatar() {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(.34, .72, 5, 12), new THREE.MeshStandardMaterial({ color: 0x4f83cc, roughness: .55 }));
+  body.position.y = .76;
+  body.castShadow = true;
+  group.add(body);
+  const scarf = new THREE.Mesh(new THREE.BoxGeometry(.56, .12, .18), new THREE.MeshStandardMaterial({ color: 0xffde73, roughness: .5 }));
+  scarf.position.set(0, 1.1, .08);
+  scarf.castShadow = true;
+  group.add(scarf);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.24, 20, 14), new THREE.MeshStandardMaterial({ color: 0xf0c7a2, roughness: .65 }));
+  head.position.y = 1.38;
+  head.castShadow = true;
+  group.add(head);
+  return group;
+}
+
+function makeTree(x, z, scale) {
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(.14, .18, 1.2, 10), new THREE.MeshStandardMaterial({ color: 0x6d4f34 }));
+  trunk.position.y = .6;
+  trunk.castShadow = true;
+  group.add(trunk);
+  const crown = new THREE.Mesh(new THREE.ConeGeometry(.75 * scale, 1.75 * scale, 9), new THREE.MeshStandardMaterial({ color: 0x2f9d67, roughness: .8 }));
+  crown.position.y = 1.75 * scale;
+  crown.castShadow = true;
+  group.add(crown);
+  scene.add(group);
+}
+
+function makeStone(x, z) {
+  const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(.46, 0), new THREE.MeshStandardMaterial({ color: 0x8493a1, roughness: .9 }));
+  stone.position.set(x, .34, z);
+  stone.scale.set(1.25, .62, .82);
+  stone.castShadow = true;
+  stone.receiveShadow = true;
+  scene.add(stone);
+}
+
+function makeBeacon(x, z) {
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(.35, .42, .32, 18), new THREE.MeshStandardMaterial({ color: 0x4b5e67, roughness: .75 }));
+  base.position.y = .16;
+  base.castShadow = true;
+  base.receiveShadow = true;
+  group.add(base);
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(.22, 18, 12), new THREE.MeshStandardMaterial({ color: 0x93c5fd, emissive: 0x2a5d99, emissiveIntensity: .8 }));
+  orb.position.y = .72;
+  orb.castShadow = true;
+  group.add(orb);
+  scene.add(group);
+  return { group, orb };
+}
+
+const player = makeAvatar();
+player.position.set(LEVEL.world.playerStart[0], 0, LEVEL.world.playerStart[1]);
+scene.add(player);
+
+const targetMarker = new THREE.Mesh(
+  new THREE.TorusGeometry(.45, .035, 10, 48),
+  new THREE.MeshStandardMaterial({ color: 0xffde73, emissive: 0x6d4800, emissiveIntensity: .8, transparent: true, opacity: .9 })
+);
+targetMarker.rotation.x = Math.PI / 2;
+targetMarker.position.y = .06;
+targetMarker.visible = false;
+scene.add(targetMarker);
+
+const guideMarker = new THREE.Mesh(
+  new THREE.ConeGeometry(.34, .78, 24),
+  new THREE.MeshBasicMaterial({ color: 0xffde73, transparent: true, opacity: .92 })
+);
+guideMarker.rotation.x = Math.PI;
+guideMarker.visible = false;
+scene.add(guideMarker);
+
+const guideHalo = new THREE.Mesh(
+  new THREE.TorusGeometry(.92, .035, 10, 56),
+  new THREE.MeshBasicMaterial({ color: 0xffde73, transparent: true, opacity: .42 })
+);
+guideHalo.rotation.x = Math.PI / 2;
+guideHalo.position.y = .075;
+guideHalo.visible = false;
+scene.add(guideHalo);
+
+const guideLinePositions = new Float32Array(6);
+const guideLineGeometry = new THREE.BufferGeometry();
+guideLineGeometry.setAttribute('position', new THREE.BufferAttribute(guideLinePositions, 3));
+const guideLine = new THREE.Line(
+  guideLineGeometry,
+  new THREE.LineBasicMaterial({ color: 0xffde73, transparent: true, opacity: .42 })
+);
+guideLine.visible = false;
+scene.add(guideLine);
+
+const crystalMat = new THREE.MeshStandardMaterial({ color: 0x62d9ff, emissive: 0x0b5a74, emissiveIntensity: .8, roughness: .3 });
+const crystals = LEVEL.crystals.map(({ position: [x, z] }, index) => {
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+  const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(.45, 0), crystalMat.clone());
+  mesh.position.y = .7;
+  mesh.castShadow = true;
+  group.add(mesh);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.78, .025, 8, 42), new THREE.MeshBasicMaterial({ color: 0x62d9ff, transparent: true, opacity: .32 }));
+  ring.rotation.x = Math.PI / 2;
+  ring.position.y = .08;
+  group.add(ring);
+  scene.add(group);
+  return { group, mesh, ring, got: false, index };
+});
+
+const portal = new THREE.Group();
+portal.position.set(LEVEL.portal.position[0], 0, LEVEL.portal.position[1]);
+const portalRing = new THREE.Mesh(new THREE.TorusGeometry(1.25, .11, 18, 64), new THREE.MeshStandardMaterial({ color: 0x7483a3, emissive: 0x17213a, emissiveIntensity: .4 }));
+portalRing.position.y = 1.45;
+portalRing.rotation.x = Math.PI / 2;
+portalRing.castShadow = true;
+portal.add(portalRing);
+const portalBase = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, .28, 28), new THREE.MeshStandardMaterial({ color: 0x45536b, roughness: .75 }));
+portalBase.position.y = .14;
+portalBase.castShadow = true;
+portalBase.receiveShadow = true;
+portal.add(portalBase);
+const portalBeam = new THREE.Mesh(new THREE.CylinderGeometry(.62, .86, 3.2, 32, 1, true), new THREE.MeshBasicMaterial({ color: 0xffde73, transparent: true, opacity: 0, side: THREE.DoubleSide }));
+portalBeam.position.y = 1.7;
+portal.add(portalBeam);
+const portalLight = new THREE.PointLight(0xffde73, 0, 9);
+portalLight.position.set(0, 1.6, 0);
+portal.add(portalLight);
+scene.add(portal);
+
+const beacons = LEVEL.crystals.map(({ position: [x, z] }) => makeBeacon(x, z));
+for (const { position: [x, z], scale } of LEVEL.trees) makeTree(x, z, scale);
+for (const { position: [x, z] } of LEVEL.stones) makeStone(x, z);
+
+const keys = new Set();
+const clock = new THREE.Clock();
+const velocity = new THREE.Vector3();
+const direction = new THREE.Vector3();
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let targetPoint = null;
+let collected = 0;
+let active = false;
+let completed = false;
+let frame = 0;
+let toastTimer = 0;
+let guideText = '';
+
+function showToast(text) {
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => toastEl.classList.remove('show'), 1600);
+}
+
+function setStatus(text) {
+  if (!completed) statusEl.textContent = text;
+}
+
+function updateProgress() {
+  scoreEl.textContent = collected + ' / ' + TOTAL_CRYSTALS;
+  progressEl.style.width = Math.round(collected / TOTAL_CRYSTALS * 100) + '%';
+  objectiveEl.textContent = collected >= TOTAL_CRYSTALS ? TEXT.activeObjective : TEXT.initialObjective;
+}
+
+function setTarget(point) {
+  if (completed) return;
+  targetPoint = new THREE.Vector3(
+    THREE.MathUtils.clamp(point.x, -WORLD_BOUNDS, WORLD_BOUNDS),
+    0,
+    THREE.MathUtils.clamp(point.z, -WORLD_BOUNDS, WORLD_BOUNDS)
+  );
+  targetMarker.position.set(targetPoint.x, .06, targetPoint.z);
+  targetMarker.visible = true;
+  setStatus(TEXT.moving);
+}
+
+function clearTarget() {
+  targetPoint = null;
+  targetMarker.visible = false;
+}
+
+function completeArea() {
+  if (completed) return;
+  completed = true;
+  clearTarget();
+  statusEl.textContent = TEXT.complete;
+  objectiveEl.textContent = TEXT.completeObjective;
+  completeTitleEl.textContent = TEXT.completeObjective;
+  completeTextEl.textContent = NEXT_LEVEL
+    ? 'This area is complete. Continue to Level ' + NEXT_LEVEL.number + ' when you are ready.'
+    : 'This area is complete. More levels can be added in the data folder.';
+  completePanel.hidden = false;
+  showToast(TEXT.completeObjective);
+}
+
+function horizontalDistance(a, b) {
+  return Math.hypot(a.x - b.x, a.z - b.z);
+}
+
+function compassDirection(dx, dz) {
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const angle = Math.atan2(dx, -dz);
+  const index = Math.round((angle + Math.PI * 2) / (Math.PI / 4)) % dirs.length;
+  return dirs[index];
+}
+
+function findGuideTarget() {
+  if (completed) return null;
+  let best = null;
+  for (const item of crystals) {
+    if (item.got) continue;
+    const distance = horizontalDistance(item.group.position, player.position);
+    if (!best || distance < best.distance) {
+      best = { kind: 'crystal', label: 'Crystal ' + (item.index + 1), position: item.group.position, distance };
+    }
+  }
+  if (best) return best;
+  return { kind: 'portal', label: 'Portal', position: portal.position, distance: horizontalDistance(portal.position, player.position) };
+}
+
+function updateGuide(t) {
+  const target = findGuideTarget();
+  if (!target) {
+    guideText = TEXT.completeObjective;
+    guideEl.textContent = guideText;
+    guideMarker.visible = false;
+    guideHalo.visible = false;
+    guideLine.visible = false;
+    document.body.dataset.guide = guideText;
+    return;
+  }
+
+  const dx = target.position.x - player.position.x;
+  const dz = target.position.z - player.position.z;
+  const distance = Math.max(1, Math.round(Math.hypot(dx, dz)));
+  guideText = target.label + ' - ' + distance + 'm ' + compassDirection(dx, dz);
+  guideEl.textContent = guideText;
+  document.body.dataset.guide = guideText;
+
+  const markerScale = target.kind === 'portal' ? 1.35 : 1;
+  guideMarker.visible = true;
+  guideMarker.scale.setScalar(markerScale);
+  guideMarker.position.set(target.position.x, 2.65 + Math.sin(t * 3.2) * .18, target.position.z);
+  guideMarker.rotation.y += .045;
+
+  guideHalo.visible = true;
+  guideHalo.scale.setScalar(target.kind === 'portal' ? 1.55 : 1);
+  guideHalo.position.set(target.position.x, .075, target.position.z);
+  guideHalo.material.opacity = .34 + Math.sin(t * 4) * .1;
+
+  guideLine.visible = target.distance > 1.4;
+  guideLinePositions[0] = player.position.x;
+  guideLinePositions[1] = .08;
+  guideLinePositions[2] = player.position.z;
+  guideLinePositions[3] = target.position.x;
+  guideLinePositions[4] = .08;
+  guideLinePositions[5] = target.position.z;
+  guideLine.geometry.attributes.position.needsUpdate = true;
+  guideLine.geometry.computeBoundingSphere();
+}
+
+function updatePlayer(dt) {
+  direction.set(0, 0, 0);
+  const manual = keys.has('KeyW') || keys.has('ArrowUp') || keys.has('KeyS') || keys.has('ArrowDown') || keys.has('KeyA') || keys.has('ArrowLeft') || keys.has('KeyD') || keys.has('ArrowRight');
+  if (keys.has('KeyW') || keys.has('ArrowUp')) direction.z -= 1;
+  if (keys.has('KeyS') || keys.has('ArrowDown')) direction.z += 1;
+  if (keys.has('KeyA') || keys.has('ArrowLeft')) direction.x -= 1;
+  if (keys.has('KeyD') || keys.has('ArrowRight')) direction.x += 1;
+
+  if (manual && targetPoint) clearTarget();
+  if (!manual && targetPoint) {
+    const dx = targetPoint.x - player.position.x;
+    const dz = targetPoint.z - player.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > .14) direction.set(dx, 0, dz).normalize();
+    else {
+      clearTarget();
+      setStatus(active ? TEXT.portalActive : TEXT.explore);
+    }
+  }
+
+  if (direction.lengthSq() > 0) {
+    direction.normalize();
+    const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight')) ? 6.2 : 3.8;
+    velocity.copy(direction).multiplyScalar(speed * dt);
+    player.position.add(velocity);
+    player.position.x = THREE.MathUtils.clamp(player.position.x, -WORLD_BOUNDS, WORLD_BOUNDS);
+    player.position.z = THREE.MathUtils.clamp(player.position.z, -WORLD_BOUNDS, WORLD_BOUNDS);
+    player.rotation.y = Math.atan2(direction.x, direction.z);
+  }
+}
+
+function updateCollectibles(t) {
+  for (const item of crystals) {
+    if (item.got) continue;
+    item.group.rotation.y += .006;
+    item.mesh.rotation.y += .018;
+    item.ring.rotation.z += .012;
+    item.mesh.position.y = .7 + Math.sin(t * 2.6 + item.group.position.x) * .12;
+    item.ring.material.opacity = .22 + Math.sin(t * 2.2 + item.index) * .08;
+    if (horizontalDistance(item.group.position, player.position) < 1.05) {
+      item.got = true;
+      item.group.visible = false;
+      beacons[item.index].group.visible = false;
+      collected += 1;
+      updateProgress();
+      showToast(collected >= TOTAL_CRYSTALS ? TEXT.portalAwake : TEXT.found);
+      setStatus(collected >= TOTAL_CRYSTALS ? TEXT.portalActive : TEXT.collected);
+    }
+  }
+
+  active = collected >= TOTAL_CRYSTALS;
+  portalRing.material.color.setHex(active ? 0xffde73 : 0x7483a3);
+  portalRing.material.emissive.setHex(active ? 0x8a5d00 : 0x17213a);
+  portalRing.material.emissiveIntensity = active ? 1.5 : .4;
+  portalRing.rotation.z += active ? .018 : .006;
+  portalBeam.rotation.y -= active ? .012 : .004;
+  portalBeam.material.opacity = active ? .18 + Math.sin(t * 2) * .04 : 0;
+  portalLight.intensity = active ? 2.6 + Math.sin(t * 2.4) * .4 : 0;
+  if (active && horizontalDistance(portal.position, player.position) < PORTAL_ENTER_RADIUS) completeArea();
+}
+
+function updateCamera(dt) {
+  const desired = new THREE.Vector3(player.position.x + CAMERA_OFFSET.x, CAMERA_OFFSET.y, player.position.z + CAMERA_OFFSET.z);
+  camera.position.lerp(desired, 1 - Math.pow(.001, dt));
+  camera.lookAt(player.position.x, .78, player.position.z);
+}
+
+function updateMarker(dt) {
+  if (!targetMarker.visible) return;
+  targetMarker.rotation.z += dt * 3;
+  targetMarker.material.opacity = .62 + Math.sin(clock.elapsedTime * 6) * .2;
+}
+
+function animate() {
+  const dt = Math.min(.04, clock.getDelta());
+  const t = clock.elapsedTime;
+  updatePlayer(dt);
+  updateCollectibles(t);
+  updateGuide(t);
+  updateMarker(dt);
+  updateCamera(dt);
+  renderer.render(scene, camera);
+  frame += 1;
+  if (frame % 12 === 0) {
+    const gl = renderer.getContext();
+    const canvas = renderer.domElement;
+    const pts = [
+      [Math.floor(canvas.width * .5), Math.floor(canvas.height * .5)],
+      [Math.floor(canvas.width * .35), Math.floor(canvas.height * .55)],
+      [Math.floor(canvas.width * .65), Math.floor(canvas.height * .45)],
+      [Math.floor(canvas.width * .5), Math.floor(canvas.height * .75)]
+    ];
+    const colors = new Set();
+    let pixelError = '';
+    try {
+      for (const [sx, sy] of pts) {
+        const p = new Uint8Array(4);
+        gl.readPixels(sx, sy, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, p);
+        colors.add(p[0] + ',' + p[1] + ',' + p[2] + ',' + p[3]);
+      }
+    } catch (err) {
+      pixelError = err && err.message ? err.message : String(err);
+    }
+    const check = { kind: 'three-webgl', level: LEVEL.id, nextLevel: NEXT_LEVEL ? NEXT_LEVEL.id : null, levelCount: AVAILABLE_LEVELS.length, frame, uniquePixels: colors.size, pixelError, canvasWidth: canvas.width, canvasHeight: canvas.height, sceneChildren: scene.children.length, collected, active, completed, hasTarget: !!targetPoint, guide: guideText };
+    window.__renderCheck = check;
+    document.body.dataset.renderCheck = JSON.stringify(check);
+  }
+  requestAnimationFrame(animate);
+}
+
+renderer.domElement.addEventListener('pointerdown', event => {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hit = raycaster.intersectObject(ground, false)[0];
+  if (hit) setTarget(hit.point);
+});
+
+window.addEventListener('keydown', e => keys.add(e.code));
+window.addEventListener('keyup', e => keys.delete(e.code));
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+nextLevelBtn.addEventListener('click', () => {
+  if (NEXT_LEVEL) window.location.href = makeLevelUrl(NEXT_LEVEL.number);
+});
+restartBtn.addEventListener('click', () => window.location.reload());
+
+updateProgress();
+showToast(TEXT.opened);
+animate();
+</script>
+<script>
+setTimeout(() => {
+  const hasCanvas = document.querySelector('#stage canvas');
+  if (!hasCanvas) {
+    const box = document.createElement('div');
+    box.className = 'error';
+    box.textContent = 'Three.js did not load. Check internet access for unpkg.com or put a local three.module.js file near this test.';
+    document.body.appendChild(box);
+  }
+}, 4500);
+</script>
+</body>
+</html>

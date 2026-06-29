@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Анкета клиента и памятка</title>
+<style>
+  :root { --accent:#2a7f62; --bg:#f7f9f8; --line:#e0e6e3; --text:#22302b; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--text);
+         background:var(--bg); margin:0; padding:32px 16px; line-height:1.7; }
+  .wrap { max-width:780px; margin:0 auto; background:#fff; padding:40px;
+          border-radius:14px; box-shadow:0 2px 14px rgba(0,0,0,.06); }
+  h1 { color:var(--accent); margin-top:0; }
+  h2 { color:#fff; background:var(--accent); padding:10px 16px; border-radius:8px; margin-top:34px; }
+  h3 { color:var(--accent); margin-bottom:6px; }
+  .note { color:#7a8b84; font-style:italic; font-size:.92em; }
+  .field { border-bottom:1px solid var(--line); padding:7px 0; }
+  .fill { color:#9aa8a2; }
+  ul { padding-left:20px; }
+  ol { padding-left:20px; }
+  .card { background:var(--bg); border-radius:10px; padding:16px 20px; margin:14px 0; }
+  blockquote { border-left:4px solid var(--accent); margin:22px 0 0; padding:10px 16px;
+               background:var(--bg); border-radius:0 8px 8px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Анкета клиента и памятка</h1>
+  <p class="note">Учебный пример документа. Данные условные.</p>
+
+  <h2>Часть 1. Анкета клиента</h2>
+  <p>Заполните, пожалуйста, анкету — это поможет нам подобрать услуги под ваши потребности.</p>
+
+  <h3>Контактные данные</h3>
+  <div class="card">
+    <div class="field">ФИО: <span class="fill">_______________________________</span></div>
+    <div class="field">Телефон: <span class="fill">_______________________________</span></div>
+    <div class="field">Адрес: <span class="fill">_______________________________</span></div>
+    <div class="field">Удобное время для связи: <span class="fill">____________________</span></div>
+  </div>
+
+  <h3>О жилье</h3>
+  <div class="card">
+    <div class="field">Тип жилья: ☐ квартира ☐ дом ☐ офис</div>
+    <div class="field">Площадь (кв. м): <span class="fill">____________</span></div>
+    <div class="field">Количество комнат: <span class="fill">____________</span></div>
+    <div class="field">Есть ли животные: ☐ нет ☐ да (какие): <span class="fill">____________</span></div>
+  </div>
+
+  <h3>Какие услуги нужны</h3>
+  <ul>
+    <li>☐ Поддерживающая уборка</li>
+    <li>☐ Генеральная уборка</li>
+    <li>☐ Приготовление еды</li>
+    <li>☐ Стирка и глажка</li>
+    <li>☐ Помощь с покупками</li>
+    <li>☐ Уход за растениями</li>
+    <li>☐ Другое: <span class="fill">_______________________</span></li>
+  </ul>
+
+  <h3>Желаемый график</h3>
+  <div class="card">
+    <div class="field">Периодичность: ☐ разово ☐ раз в неделю ☐ 2–3 раза в неделю ☐ ежедневно</div>
+    <div class="field">Предпочтительные дни/время: <span class="fill">________________________</span></div>
+  </div>
+
+  <h3>Особые пожелания</h3>
+  <div class="card">
+    <div class="field"><span class="fill">_______________________________________________</span></div>
+    <div class="field"><span class="fill">_______________________________________________</span></div>
+  </div>
+
+  <h2>Часть 2. Памятка клиенту</h2>
+  <p>Чтобы услуга прошла удобно и быстро, просим учесть несколько моментов.</p>
+
+  <h3>Перед визитом</h3>
+  <ol>
+    <li>Обеспечьте доступ в помещение к назначенному времени.</li>
+    <li>Уберите ценные и хрупкие вещи в безопасное место.</li>
+    <li>Подготовьте чистящие средства и инвентарь (или закажите наши заранее).</li>
+    <li>Сообщите о поверхностях и вещах, требующих особого ухода.</li>
+  </ol>
+
+  <h3>Во время работы</h3>
+  <ul>
+    <li>Помощник работает по согласованному списку задач.</li>
+    <li>Дополнительные задачи оплачиваются отдельно по тарифу.</li>
+    <li>При вопросах вы всегда можете связаться с нами по телефону.</li>
+  </ul>
+
+  <h3>Отмена и перенос</h3>
+  <ul>
+    <li>Отмену или перенос сообщайте <strong>не менее чем за 12 часов</strong>.</li>
+    <li>При отмене менее чем за 12 часов возможна плата за выезд.</li>
+  </ul>
+
+  <h3>Оплата</h3>
+  <ul>
+    <li>Оплата производится <strong>после</strong> выполнения работы.</li>
+    <li>Способы: наличные или перевод.</li>
+    <li>Постоянным клиентам — скидка 10%.</li>
+  </ul>
+
+  <blockquote>
+    <strong>Спасибо, что выбрали нас!</strong><br>
+    По любым вопросам: +7 (000) 000-00-00, info@example.com
+  </blockquote>
+</div>
+</body>
+</html>

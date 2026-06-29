@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>NEXUS 3D v3 — Three.js</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { overflow:hidden; background:#000; font-family:'Courier New',monospace; }
+canvas { display:block; }
+#badge { position:fixed; top:12px; left:50%; transform:translateX(-50%);
+  color:#8fd3ff; font-size:12px; letter-spacing:2px;
+  background:rgba(0,0,0,0.65); padding:4px 18px; border-radius:8px;
+  border:1px solid #2a4a8a; pointer-events:none; z-index:8; }
+#controls { position:fixed; top:12px; right:12px; color:#556; font-size:10px;
+  background:rgba(0,0,0,0.55); padding:8px 12px; border-radius:6px; line-height:1.9; z-index:8; }
+#hud { position:fixed; bottom:0; left:0; right:0; height:60px;
+  background:rgba(0,0,0,0.82); border-top:1px solid #1a2a4a;
+  display:flex; align-items:center; gap:22px; padding:0 18px; z-index:8; }
+.bar-lbl { font-size:10px; color:#e74c3c; margin-bottom:3px; }
+.bar-bg  { background:#222; border-radius:3px; height:9px; width:175px; }
+#hp-fill  { height:9px; background:#e74c3c; border-radius:3px; width:100%; transition:width .2s; }
+#xp-fill  { height:9px; background:#3498db; border-radius:3px; width:0%;  transition:width .3s; }
+#dash-bar { height:9px; background:#9b59b6; border-radius:3px; width:100%; transition:width .12s; }
+#stat-area { color:#aaa; font-size:11px; line-height:1.9; }
+#crosshair { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  color:rgba(255,255,255,0.45); font-size:20px; pointer-events:none; z-index:7; }
+#lock-msg { position:fixed; top:45%; left:50%; transform:translate(-50%,-50%);
+  color:#8fd3ff; font-size:13px; text-align:center; letter-spacing:1px;
+  background:rgba(0,0,10,0.78); padding:14px 28px; border-radius:10px;
+  border:1px solid #2a4a8a; cursor:pointer; z-index:10; }
+#overlay { position:fixed; top:0; left:0; pointer-events:none; z-index:6; }
+#minimap { position:fixed; bottom:68px; right:12px; border:1px solid #2a4a8a;
+  border-radius:6px; z-index:7; }
+#msg { position:fixed; top:62px; left:50%; transform:translateX(-50%);
+  color:#ffd700; font-size:12px; letter-spacing:1px;
+  text-shadow:0 0 8px #ffd700; opacity:0; transition:opacity .3s; pointer-events:none; z-index:9; }
+#npc-hint { position:fixed; bottom:72px; left:50%; transform:translateX(-50%);
+  color:#2ecc71; font-size:11px; background:rgba(0,0,0,0.75); padding:5px 16px;
+  border-radius:6px; border:1px solid #2ecc71; display:none; z-index:9; pointer-events:none; }
+#time-ind { position:fixed; top:12px; left:12px; font-size:10px; color:#7a9abc;
+  background:rgba(0,0,0,0.55); padding:4px 10px; border-radius:6px; z-index:8; pointer-events:none; }
+#event-banner { position:fixed; top:90px; left:50%; transform:translateX(-50%);
+  color:#fff; font-size:13px; font-weight:bold; letter-spacing:2px;
+  background:rgba(100,20,20,0.92); padding:8px 28px; border-radius:8px;
+  border:1px solid #e74c3c; opacity:0; transition:opacity .5s;
+  pointer-events:none; z-index:9; text-shadow:0 0 10px #ff4444; }
+/* SHOP */
+#shop { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:rgba(5,10,25,0.97); border:1px solid #3a6aaa; border-radius:12px;
+  width:340px; padding:20px; z-index:20; display:none; color:#aaa;
+  box-shadow:0 0 30px rgba(50,100,200,0.3); }
+#shop h2 { color:#8fd3ff; font-size:14px; margin-bottom:12px; text-align:center;
+  border-bottom:1px solid #2a4a6a; padding-bottom:8px; }
+.shop-item { display:flex; justify-content:space-between; align-items:center;
+  padding:9px 0; border-bottom:1px solid #1a2a3a; }
+.shop-item-name { font-size:11px; color:#ddd; }
+.shop-item-desc { font-size:9px; color:#557; margin-top:2px; }
+.shop-btn { background:#2a4a8a; color:#8fd3ff; border:1px solid #3a6aaa;
+  padding:5px 13px; border-radius:4px; cursor:pointer; font-size:10px;
+  font-family:'Courier New',monospace; transition:background .15s; }
+.shop-btn:hover { background:#3a6aaa; }
+#shop-gold { color:#ffd700; font-size:11px; margin-bottom:10px; }
+#shop-close { background:#3a1a1a; color:#ff8888; border:1px solid #5a2a2a;
+  padding:7px 0; border-radius:4px; cursor:pointer; font-size:11px;
+  font-family:'Courier New',monospace; margin-top:14px; width:100%; }
+/* JOURNAL */
+#journal { position:fixed; top:50%; right:14px; transform:translateY(-50%);
+  background:rgba(5,10,25,0.97); border:1px solid #2a5a2a; border-radius:10px;
+  width:230px; padding:16px; z-index:20; display:none; color:#aaa;
+  box-shadow:0 0 20px rgba(30,100,30,0.25); }
+#journal h2 { color:#2ecc71; font-size:13px; margin-bottom:10px; text-align:center;
+  border-bottom:1px solid #1a3a1a; padding-bottom:7px; }
+.quest { margin-bottom:9px; padding:8px 10px; background:rgba(0,25,0,0.45);
+  border-radius:6px; border:1px solid #1a3a1a; }
+.quest-name { font-size:10px; color:#7ec8e3; margin-bottom:3px; }
+.quest-prog { font-size:9px; color:#889; }
+.quest-done .quest-name { color:#2ecc71; }
+.quest-bar-bg  { background:#111; border-radius:2px; height:4px; margin-top:5px; }
+.quest-bar-fill { background:#2ecc71; border-radius:2px; height:4px; transition:width .3s; }
+#journal-close { background:#1a3a1a; color:#2ecc71; border:1px solid #2a5a2a;
+  padding:6px 0; border-radius:4px; cursor:pointer; font-size:10px;
+  font-family:'Courier New',monospace; margin-top:10px; width:100%; }
+</style>
+</head>
+<body>
+<canvas id="overlay"></canvas>
+<canvas id="minimap" width="152" height="152"></canvas>
+<div id="badge">⚡ NEXUS 3D v3 — THREE.JS</div>
+<div id="time-ind">☀️ День</div>
+<div id="controls">WASD · движение<br>Мышь · поворот<br>Shift · рывок<br>E / Клик · атака<br>H · зелье<br>F · торговец<br>J · квесты</div>
+<div id="crosshair">✛</div>
+<div id="lock-msg">Нажмите для захвата мыши<br><small style="color:#556">Мышь управляет камерой</small></div>
+<div id="npc-hint">[ F ] Поговорить с Ароном</div>
+<div id="event-banner"></div>
+<div id="hud">
+  <div style="flex:0 0 165px">
+    <div class="bar-lbl">HP <span id="hp-val">100/100</span></div>
+    <div class="bar-bg"><div id="hp-fill"></div></div>
+    <div class="bar-lbl" style="margin-top:4px;color:#3498db">XP <span id="xp-val">0/100</span></div>
+    <div class="bar-bg"><div id="xp-fill"></div></div>
+  </div>
+  <div style="flex:0 0 115px">
+    <div class="bar-lbl" style="color:#9b59b6">Рывок</div>
+    <div class="bar-bg"><div id="dash-bar"></div></div>
+    <div class="bar-lbl" style="margin-top:4px;color:#e91e8c">🧪 <span id="pot-val">0</span></div>
+  </div>
+  <div id="stat-area">
+    Ур: <span id="lvl-val">1</span> &nbsp;|&nbsp;
+    ATK: <span id="atk-val">22</span> &nbsp;|&nbsp;
+    Зол: <span id="gold-val">0</span> &nbsp;|&nbsp;
+    Убито: <span id="kill-val">0</span>
+  </div>
+</div>
+<div id="msg"></div>
+<!-- SHOP -->
+<div id="shop">
+  <h2>🏪 Торговец Арон</h2>
+  <div id="shop-gold">Золото: <span id="sg">0</span> 💰</div>
+  <div class="shop-item">
+    <div><div class="shop-item-name">🧪 Зелье здоровья ×2</div><div class="shop-item-desc">Восстанавливает 45% HP</div></div>
+    <button class="shop-btn" onclick="buyItem('potion')">25 💰</button>
+  </div>
+  <div class="shop-item">
+    <div><div class="shop-item-name">⚔️ Заточка клинка</div><div class="shop-item-desc">ATK +10 навсегда</div></div>
+    <button class="shop-btn" onclick="buyItem('atk')">60 💰</button>
+  </div>
+  <div class="shop-item">
+    <div><div class="shop-item-name">🛡️ Укрепление брони</div><div class="shop-item-desc">Макс. HP +50</div></div>
+    <button class="shop-btn" onclick="buyItem('hp')">80 💰</button>
+  </div>
+  <div class="shop-item">
+    <div><div class="shop-item-name">✨ Руна скорости</div><div class="shop-item-desc">Рывок заряжается на 25% быстрее</div></div>
+    <button class="shop-btn" onclick="buyItem('dash')">120 💰</button>
+  </div>
+  <button id="shop-close" onclick="closeShop()">✕ Закрыть магазин</button>
+</div>
+<!-- JOURNAL -->
+<div id="journal">
+  <h2>📜 Журнал квестов</h2>
+  <div id="quest-list"></div>
+  <button id="journal-close" onclick="toggleJournal()">✕ Закрыть</button>
+</div>
+
+<!-- ENGINE -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="../engine/AudioSystem.js"></script>
+<script src="../engine/DayNight.js"></script>
+<script src="../engine/ParticleSystem.js"></script>
+<!-- WORLD -->
+<script src="../world/Arena.js"></script>
+<script src="../world/NPC.js"></script>
+<!-- SYSTEMS -->
+<script src="../systems/EnemySystem.js"></script>
+<script src="../systems/LootSystem.js"></script>
+<!-- UI -->
+<script src="../ui/HUD.js"></script>
+<script src="../ui/Overlay.js"></script>
+<script src="../ui/Minimap.js"></script>
+<!-- GAME SYSTEMS (зависят от ui/HUD) -->
+<script src="../systems/CombatSystem.js"></script>
+<script src="../systems/QuestSystem.js"></script>
+<script src="../systems/WorldEvents.js"></script>
+<script src="../ui/Shop.js"></script>
+
+<script>
+'use strict';
+
+// ── SCENE ───────────────────────────────────────────────────
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a3050);
+scene.fog = new THREE.FogExp2(0x1a3050, 0.028);
+
+var camera = new THREE.PerspectiveCamera(68, innerWidth / (innerHeight - 60), 0.1, 200);
+
+var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight - 60);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+document.body.insertBefore(renderer.domElement, document.getElementById('overlay'));
+
+// ── LIGHTS ──────────────────────────────────────────────────
+var ambLight = new THREE.AmbientLight(0x334466, 1.05); scene.add(ambLight);
+var sun = new THREE.DirectionalLight(0xffeedd, 1.1);
+sun.position.set(8, 18, 8); sun.castShadow = true;
+sun.shadow.mapSize.width = sun.shadow.mapSize.height = 2048;
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 60;
+sun.shadow.camera.left = sun.shadow.camera.bottom = -20;
+sun.shadow.camera.right = sun.shadow.camera.top = 20;
+scene.add(sun);
+var fillL = new THREE.DirectionalLight(0x4466cc, 0.38);
+fillL.position.set(-6, 4, -8); scene.add(fillL);
+
+// ── MATERIALS ───────────────────────────────────────────────
+var MAT = {
+  grass:  new THREE.MeshLambertMaterial({ color: 0x2a6a2a }),
+  stone:  new THREE.MeshLambertMaterial({ color: 0x5a5a6a }),
+  water:  new THREE.MeshLambertMaterial({ color: 0x1a5a9a, transparent: true, opacity: 0.82 }),
+  wall:   new THREE.MeshLambertMaterial({ color: 0x4a4a6a }),
+  trunk:  new THREE.MeshLambertMaterial({ color: 0x5a3a1a }),
+  leaf1:  new THREE.MeshLambertMaterial({ color: 0x1a5a1a }),
+  leaf2:  new THREE.MeshLambertMaterial({ color: 0x2a8a2a }),
+  path:   new THREE.MeshLambertMaterial({ color: 0x606070 }),
+  gold:   new THREE.MeshLambertMaterial({ color: 0xffd700, emissive: 0x443300 }),
+  potion: new THREE.MeshLambertMaterial({ color: 0xe91e8c, emissive: 0x330010, transparent: true, opacity: 0.9 }),
+  sword:  new THREE.MeshLambertMaterial({ color: 0xd0d0e8, emissive: 0x101020 }),
+  legMat: new THREE.MeshLambertMaterial({ color: 0x6c3483 }),
+  skin:   new THREE.MeshLambertMaterial({ color: 0xffddb8 }),
+  body:   new THREE.MeshLambertMaterial({ color: 0x9b59b6 }),
+  npcRobe:new THREE.MeshLambertMaterial({ color: 0x2471a3 }),
+  npcSkin:new THREE.MeshLambertMaterial({ color: 0xfce0b8 }),
+  npcHat: new THREE.MeshLambertMaterial({ color: 0x884ea0 }),
+};
+
+// ── ИНИЦИАЛИЗАЦИЯ СИСТЕМ ─────────────────────────────────────
+initOverlay();
+initArena();
+initNPC();
+initParticles();
+initEnemies();
+initMinimap();
+
+window.addEventListener('resize', function () {
+  var w = innerWidth, h = innerHeight - 60;
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h); oc.width = w; oc.height = h;
+});
+
+// ── ИГРОК ───────────────────────────────────────────────────
+var pg = new THREE.Group(); scene.add(pg);
+var bodyM = new THREE.Mesh(new THREE.BoxGeometry(0.52, 1.0, 0.46), MAT.body);
+bodyM.position.y = 0.5; bodyM.castShadow = true; pg.add(bodyM);
+var headM = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.44, 0.44), MAT.skin);
+headM.position.y = 1.22; headM.castShadow = true; pg.add(headM);
+var legG = new THREE.BoxGeometry(0.22, 0.52, 0.22);
+var legL  = new THREE.Mesh(legG, MAT.legMat); legL.position.set(-0.14, -0.26, 0); legL.castShadow = true; pg.add(legL);
+var legRm = new THREE.Mesh(legG, MAT.legMat); legRm.position.set(0.14, -0.26, 0); legRm.castShadow = true; pg.add(legRm);
+var swMesh = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.78, 0.04), MAT.sword);
+swMesh.position.set(0.38, 0.44, 0.15); swMesh.rotation.z = -0.18; pg.add(swMesh);
+var ringM = new THREE.Mesh(
+  new THREE.TorusGeometry(0.40, 0.045, 8, 24),
+  new THREE.MeshBasicMaterial({ color: 0xc8a0ff })
+);
+ringM.rotation.x = Math.PI / 2; ringM.position.y = 0.01; pg.add(ringM);
+var swingTimer = 0;
+
+// ── СОСТОЯНИЕ ИГРОКА ────────────────────────────────────────
+var PS = {
+  hp: 100, maxHp: 100, atk: 22, level: 1, xp: 0, xpNext: 100,
+  gold: 0, kills: 0, potions: 0, yaw: 0,
+  atkCd: 0, dashCd: 0, dVx: 0, dVz: 0, dashMult: 1.0
+};
+
+// ── ВВОД ────────────────────────────────────────────────────
+var keys = {};
+window.addEventListener('keydown', function (e) {
+  keys[e.code] = true;
+  if (e.code === 'Escape') {
+    closeShop();
+    if (journalOpen) { journalOpen = false; document.getElementById('journal').style.display = 'none'; }
+    return;
+  }
+  if (shopOpen || journalOpen) return;
+  if (e.code === 'KeyE')   { initAud(); attack(); }
+  if (e.code === 'KeyH')   { initAud(); drinkPot(); }
+  if (e.code === 'KeyF')   { initAud(); openShop(); }
+  if (e.code === 'KeyJ')   { initAud(); toggleJournal(); }
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { initAud(); dash(); }
+});
+window.addEventListener('keyup', function (e) { keys[e.code] = false; });
+
+var locked = false;
+document.getElementById('lock-msg').addEventListener('click', function () { initAud(); renderer.domElement.requestPointerLock(); });
+document.addEventListener('pointerlockchange', function () {
+  locked = !!document.pointerLockElement;
+  document.getElementById('lock-msg').style.display = locked ? 'none' : 'block';
+});
+document.addEventListener('mousemove', function (e) {
+  if (locked && !shopOpen && !journalOpen) { PS.yaw -= e.movementX * .0028; pg.rotation.y = PS.yaw; }
+});
+renderer.domElement.addEventListener('click', function () {
+  if (!locked && !shopOpen && !journalOpen) { initAud(); renderer.domElement.requestPointerLock(); }
+  else if (locked && !shopOpen) { initAud(); attack(); }
+});
+
+// ── ГЛАВНЫЙ ЦИКЛ ────────────────────────────────────────────
+var clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  var dt = Math.min(clock.getDelta(), .05), t = clock.getElapsedTime();
+
+  // День/ночь
+  dayTime = (dayTime + dt / DAY_DUR) % 1;
+  applyDayNight(dayTime);
+  sun.position.x = Math.sin(dayTime * Math.PI * 2) * 15;
+  sun.position.z = Math.cos(dayTime * Math.PI * 2) * 8;
+  sun.position.y = Math.abs(Math.sin(dayTime * Math.PI * 2)) * 16 + 2;
+
+  // NPC
+  tickNPC(t);
+
+  // Кулдауны
+  if (PS.atkCd > 0) PS.atkCd -= dt;
+  if (PS.dashCd > 0) {
+    PS.dashCd -= dt;
+    document.getElementById('dash-bar').style.width = (1 - PS.dashCd / (3 * PS.dashMult)) * 100 + '%';
+  } else { document.getElementById('dash-bar').style.width = '100%'; }
+
+  // Меч
+  if (swingTimer > 0) { swingTimer -= dt; swMesh.rotation.x = -Math.PI * .68 * (1 - swingTimer / .35); }
+  else { swMesh.rotation.x += (0 - swMesh.rotation.x) * .18; }
+
+  // Ноги
+  var moving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] ||
+               keys['ArrowUp'] || keys['ArrowDown'] || keys['ArrowLeft'] || keys['ArrowRight'];
+  if (moving) { legL.rotation.x = Math.sin(t * 9) * .48; legRm.rotation.x = Math.sin(t * 9 + Math.PI) * .48; }
+  else        { legL.rotation.x *= .82; legRm.rotation.x *= .82; }
+
+  // Движение
+  if (!shopOpen && !journalOpen) {
+    var spd = (worldEvent && worldEvent.type === 'bless') ? 7.5 : 5.5;
+    var dv = new THREE.Vector3();
+    if (keys['KeyW']    || keys['ArrowUp'])    dv.z -= 1;
+    if (keys['KeyS']    || keys['ArrowDown'])  dv.z += 1;
+    if (keys['KeyA']    || keys['ArrowLeft'])  dv.x -= 1;
+    if (keys['KeyD']    || keys['ArrowRight']) dv.x += 1;
+    if (dv.length() > 0) dv.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), PS.yaw);
+    PS.dVx *= Math.max(0, 1 - dt * 8.5); PS.dVz *= Math.max(0, 1 - dt * 8.5);
+    var nx = pg.position.x + (dv.x * spd + PS.dVx) * dt;
+    var nz = pg.position.z + (dv.z * spd + PS.dVz) * dt;
+    pg.position.x = Math.max(-HALF + .6, Math.min(HALF - .6, nx));
+    pg.position.z = Math.max(-HALF + .6, Math.min(HALF - .6, nz));
+  }
+
+  // Аура
+  ringM.material.color.setHSL(.75, .85, .5 + Math.sin(t * 3.5) * .2);
+  ringM.scale.setScalar(.92 + Math.sin(t * 5) * .06);
+
+  // Факелы + камера
+  tickTorches(t);
+  var bx = Math.sin(PS.yaw) * 9, bz = Math.cos(PS.yaw) * 9;
+  var tgt = pg.position.clone().add(new THREE.Vector3(bx, 5.5, bz));
+  camera.position.lerp(tgt, 1 - Math.pow(.005, dt));
+  camera.lookAt(pg.position.clone().add(new THREE.Vector3(0, .7, 0)));
+
+  // Системы
+  tickEnemies(dt, t);
+  tickParts(dt);
+  tickLoot(dt);
+  tickEvent(dt);
+
+  // Плавающий текст (жизненный цикл)
+  for (var i = flts.length - 1; i >= 0; i--) {
+    flts[i].pos.y += .88 * dt; flts[i].life -= dt;
+    if (flts[i].life <= 0) flts.splice(i, 1);
+  }
+
+  renderer.render(scene, camera);
+  updateOverlay();
+  drawMinimap();
+}
+
+updHUD();
+renderJournal();
+animate();
+</script>
+</body>
+</html>
