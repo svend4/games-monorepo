@@ -19,7 +19,7 @@ import os, re, glob
 META = os.path.dirname(os.path.abspath(__file__))
 DESIGN = os.path.dirname(META)                       # .../design
 
-SKIP = {'INDEX.md', 'LINKCHECK.md'}                  # сгенерированные — не исходные документы
+SKIP = {'INDEX.md', 'LINKCHECK.md', 'DECISIONS.md'}  # сгенерированные/журналы — не исходные документы
 WORKCOPY = re.compile(r'копия|\bcopy\b|\.bak', re.I) # рабочие копии («— копия.md») — не документы вики
 PSEUDO = {'NX-ARCH', 'NX-REVIEW', 'NX-META-003'}     # внешние/сгенерированные id (NX-META-003 = INDEX.md)
 ID_RE = re.compile(r'^NX-([A-Z]+)-(\d+)')

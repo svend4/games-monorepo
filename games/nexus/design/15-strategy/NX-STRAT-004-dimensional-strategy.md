@@ -15,6 +15,8 @@ depends_on: [NX-STRAT-001]
 comments_on: [NX-STRAT-001#открытые-решения]
 superseded_by: null
 language: ru
+approved_by: Stefan
+approved_date: 2026-07-01
 ---
 
 # Многомерная стратегия реализации

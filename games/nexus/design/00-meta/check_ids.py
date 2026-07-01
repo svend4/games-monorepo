@@ -35,17 +35,20 @@ for d in docs:
             if b and b.startswith('NX-') and b not in ids and b not in C.PSEUDO:
                 badref.append((d['_rel'], fld, r))
 badenum = [(d['_rel'], d['status']) for d in docs if isinstance(d.get('status'), str) and d['status'] not in STATUS_OK]
+# Проход В: accepted (кроме type=meta) обязан иметь approved_by — авторизация человеком, а не самоштамп агента
+noappr = [d['_rel'] for d in docs if d.get('status') == 'accepted' and d.get('type') != 'meta' and not d.get('approved_by')]
 
 print(f'Доков: {len(docs)} | дубль-id: {len(dup)} | id≠файл: {len(mism)} | нет обяз.полей: {len(missreq)} | '
-      f'битые id-ссылки: {len(badref)} | status-enum: {len(badenum)}')
+      f'битые id-ссылки: {len(badref)} | status-enum: {len(badenum)} | accepted без approved_by: {len(noappr)}')
 for i, ps in dup: print('  DUP-ID  ', i, ps)
 for r in mism[:20]: print('  ID≠FILE ', r)
 for r, k in missreq[:20]: print('  MISS    ', r, k)
 for r, f, x in badref[:40]: print('  BADREF  ', r, f, '->', x)
 for r, v in badenum[:20]: print('  ENUM    ', r, 'status=', v)
+for r in noappr[:20]: print('  NOAPPR  ', r, '(accepted без approved_by — требуется авторизация: approve.py)')
 
 # --- гейт: код возврата для pre-commit (жёсткие ошибки блокируют коммит) ---
-hard = len(dup) + len(mism) + len(missreq) + len(badref) + len(badenum)
+hard = len(dup) + len(mism) + len(missreq) + len(badref) + len(badenum) + len(noappr)
 if hard:
     print(f'\nИТОГ: {hard} жёстких ошибок схемы/идентичности — коммит должен быть остановлен.')
     sys.exit(1)

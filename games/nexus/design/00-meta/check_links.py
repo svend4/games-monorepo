@@ -30,7 +30,7 @@ def gh_slug(text):
 slugs = {}   # abs_path -> set(slug)
 for p in glob.glob(os.path.join(DESIGN, '**', '*.md'), recursive=True):
     ap = os.path.normpath(p)
-    if os.path.basename(ap) == 'LINKCHECK.md':
+    if os.path.basename(ap) in ('LINKCHECK.md', 'DECISIONS.md'):
         continue
     if re.search(r'копия|\bcopy\b|\.bak', os.path.basename(ap), re.I):   # рабочие копии — не документы вики
         continue
