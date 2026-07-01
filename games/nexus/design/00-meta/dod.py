@@ -52,6 +52,7 @@ def main():
                  if (d.get('type') == 'spec' or d.get('maturity') == 'prototyped')
                  and not has_code_block(d['_path'])]
     open_subq = [d['id'] for d in docs if as_list(d.get('open_subquestions'))]
+    drifted = [d['id'] for d in docs if str(d.get('needs_review', '')).strip().lower() == 'true']  # Проход Е
     dangling = set()
     for d in docs:
         for fld in ('relates_to', 'depends_on', 'comments_on'):
@@ -59,7 +60,7 @@ def main():
                 b = r.split('#')[0].strip()
                 if b and b.startswith('NX-') and b not in ids and b not in C.PSEUDO:
                     dangling.add(b)
-    hard = len(no_pseudo) + len(open_subq) + len(dangling)
+    hard = len(no_pseudo) + len(open_subq) + len(drifted) + len(dangling)
 
     # --- авторизация (Проход В) ---
     specs = [d for d in docs if d.get('type') == 'spec']
@@ -75,6 +76,7 @@ def main():
     print('\n-- Структурные блокеры --')
     print(f'  спеки без псевдокода: {len(no_pseudo)}' + (f' -> {no_pseudo}' if no_pseudo else ''))
     print(f'  непустые open_subquestions: {len(open_subq)}' + (f' -> {open_subq}' if open_subq else ''))
+    print(f'  открытый code-drift (needs_review): {len(drifted)}' + (f' -> {drifted}' if drifted else ''))
     print(f'  висячие id-ссылки: {len(dangling)}' + (f' -> {sorted(dangling)}' if dangling else ''))
     print('\n-- Авторизация (Проход В) --')
     print(f'  спек не accepted: {len(unapproved)}/{len(specs)}' + (f' -> {unapproved}' if unapproved else ''))
