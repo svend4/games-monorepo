@@ -1,0 +1,42 @@
+#!/bin/sh
+# NEXUS design-wiki gate — Проход А: «замкнуть верификатор в цикл».
+# Останавливает коммит ТОЛЬКО когда в индексе есть дизайн-документы NEXUS
+# (games/nexus/design/**/*.md). Коммиты в другие проекты монорепо не блокируются.
+#
+# Проверяет:
+#   check_ids.py                — жёсткие ошибки схемы/идентичности  → блок
+#   check_links.py --max-broken — рост числа битых ссылок над базой  → блок (ratchet)
+# База битых ссылок: games/nexus/design/00-meta/.linkcheck-baseline
+
+root=$(git rev-parse --show-toplevel)
+meta="$root/games/nexus/design/00-meta"
+
+staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^games/nexus/design/.*\.md$')
+[ -z "$staged" ] && exit 0
+
+PY=$(command -v python || command -v python3 || command -v py)
+if [ -z "$PY" ]; then
+  echo "⚠️  NEXUS-гейт: python не найден в PATH — проверки пропущены (коммит разрешён)."
+  exit 0
+fi
+
+echo "🔒 NEXUS-гейт: проверяю ID-схему и ссылки…"
+
+ids_out=$("$PY" "$meta/check_ids.py" 2>&1); ids_rc=$?
+if [ $ids_rc -ne 0 ]; then
+  echo "$ids_out" | grep -E 'DUP-ID|ID≠FILE|MISS|BADREF|ENUM|ИТОГ' | tail -12
+  echo "❌ check_ids: жёсткие ошибки схемы/идентичности. Коммит остановлен."
+  exit 1
+fi
+
+base=$(tr -dc '0-9' < "$meta/.linkcheck-baseline" 2>/dev/null); [ -z "$base" ] && base=0
+lnk_out=$("$PY" "$meta/check_links.py" --max-broken "$base" 2>&1); lnk_rc=$?
+if [ $lnk_rc -ne 0 ]; then
+  echo "$lnk_out" | grep -E 'ГЕЙТ|->' | tail -10
+  echo "❌ check_links: битых файловых ссылок больше базовой линии ($base). Коммит остановлен."
+  echo "   Почини новые ссылки — или, осознанно, обнови $meta/.linkcheck-baseline."
+  exit 1
+fi
+
+echo "✅ NEXUS-гейт пройден."
+exit 0

@@ -8,38 +8,16 @@ build_index.py — собирает INDEX.md дизайн-вики NEXUS из YA
 Без сторонних зависимостей (минимальный парсер frontmatter).
 """
 import os, re, glob, datetime
+from nx_common import parse_frontmatter, doc_paths, PSEUDO   # Проход Б: единый парсер/скан/псевдо-id
 
 META_DIR = os.path.dirname(os.path.abspath(__file__))
 DESIGN = os.path.dirname(META_DIR)               # .../design
-PSEUDO = {"NX-ARCH", "NX-REVIEW"}                 # внешние псевдо-id (не файлы вики)
 
 AREA_TITLES = {
     "00-meta": "Мета", "10-vision": "Видение", "15-strategy": "Стратегия",
     "20-innovation": "Инновации", "30-systems": "Системы", "40-specs": "Спеки/псевдокод",
     "50-polyglot": "Полиглот", "60-research": "Исследования", "90-comments": "Комментарии",
 }
-
-def parse_frontmatter(text):
-    if not text.startswith("---"):
-        return None
-    end = text.find("\n---", 3)
-    if end == -1:
-        return None
-    block = text[3:end]
-    fm = {}
-    for line in block.splitlines():
-        if not line.strip() or line.lstrip().startswith("#"):
-            continue
-        m = re.match(r"^([A-Za-z_]+):\s*(.*)$", line)
-        if not m:
-            continue
-        key, val = m.group(1), m.group(2).strip()
-        if val.startswith("[") and val.endswith("]"):
-            items = [x.strip() for x in val[1:-1].split(",") if x.strip()]
-            fm[key] = items
-        else:
-            fm[key] = val
-    return fm
 
 def area_of(path):
     rel = os.path.relpath(path, DESIGN).replace("\\", "/")
@@ -49,7 +27,7 @@ def base_id(ref):
     return ref.split("#")[0].strip()
 
 docs = []
-for path in glob.glob(os.path.join(DESIGN, "**", "*.md"), recursive=True):
+for path in doc_paths():                          # Проход Б: единый список документов (nx_common)
     with open(path, "r", encoding="utf-8") as f:
         text = f.read()
     fm = parse_frontmatter(text)
