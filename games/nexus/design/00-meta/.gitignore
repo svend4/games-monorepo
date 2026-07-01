@@ -1,0 +1,3 @@
+# Runtime-состояние аллокатора id (эфемерная координация роя) и файловый лок
+.id-reservations.json
+.id-reservations.json.lock
