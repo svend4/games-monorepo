@@ -606,7 +606,7 @@ export const ENVELOPE_MIGRATIONS = {        // ось formatVersion
 - [NX-SYS-006 Сохранения, версии, миграции, моддинг](../30-systems/NX-SYS-006-save-versioning-modding.md) — родительский системный дизайн (depends_on): конверт, `schemaVersion`, цепочка миграторов, восстановление
 - [NX-SPEC-006 Койне-субстрат — контракт API записей](./NX-SPEC-006-koine-substrate-api.md) — форма `SubstrateRecord`, `Sig.schemaVersion`, `PersistAdapter`, идемпотентность по `id` (depends_on)
 - [NX-SPEC-003 Эхо-протокол](./NX-SPEC-003-echo-protocol.md) — серверный адаптер, анти-чит, переписывание `sig.authorId`/`t`
-- [NX-SYS-003 Контент-пайплайн и data-driven](./NX-SYS-003-content-pipeline.md) — вороты валидации (JSON Schema + ссылочная целостность), ось версии контента
+- [NX-SYS-003 Контент-пайплайн и data-driven](../30-systems/NX-SYS-003-content-pipeline.md) — вороты валидации (JSON Schema + ссылочная целостность), ось версии контента
 - [NX-SPEC-002 ECS с архетипами](./NX-SPEC-002-ecs-archetypes.md) — слой 2 (состояние); источник `state` для snapshot-сейва
 - [NX-SPEC-001 EventBus 2.0](./NX-SPEC-001-eventbus-2.md) — события `save:loaded`/`save:migrated`/`save:recovered`
 - [NX-POLY-009 Скриптовый слой моддинга](../50-polyglot/NX-POLY-009-scripting-modding-layer.md) — миграции данных модов по той же библиотеке

@@ -320,6 +320,6 @@ function blackMarketTrade(actor, node, goodId, qty):
 - [NX-INN-003 Эхо-мультиплеер](NX-INN-003-echo-multiplayer.md) — спрос как агрегат эхо, законы-таблички, общественные постройки.
 - [NX-INN-004 Прогрессия знанием](NX-INN-004-knowledge-progression.md) — понимание рынка/политики как власть.
 - [NX-INN-007 Переосмысленные средневековые механики](NX-INN-007-reimagined-medieval.md) — гильдии/ярмарка/молва как носители управления и права.
-- [NX-SYS-001 Ядро движка](../30-systems/NX-SYS-001.md) — EventBus/ECS/каталог событий.
+- [NX-SYS-001 Ядро движка](../30-systems/NX-SYS-001-core-architecture-v2.md) — EventBus/ECS/каталог событий.
 - [NX-SYS-002 Сеть и эхо-агрегация] (планируется) — server-authoritative личность/казна/цены (блокирующая зависимость).
 - [NX-REVIEW Ревью архитектуры](../../ARCHITECTURE_REVIEW.md) — масштаб без ручного контента (3.2), доверие клиенту/анти-чит (3.4).

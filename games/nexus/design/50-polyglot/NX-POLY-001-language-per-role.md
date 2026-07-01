@@ -44,8 +44,8 @@ language: ru
 **обзорная карта верхнего уровня**: для каждой роли в системе называет язык, объясняет
 *почему именно он*, даёт минимальные примеры кода/команд и фиксирует, *как* слои общаются
 (HTTP/JSON, stdin/stdout-пайпы, FFI, WASM, codegen, общие data-файлы, очереди). Детальные
-механизмы interop вынесены в [NX-POLY-004](NX-POLY-004-interop-mechanisms.md), границы
-проекта-в-проекте и деплой — в [NX-SYS-003](../30-systems/NX-SYS-003-build-and-deploy.md).
+механизмы interop вынесены в [NX-POLY-004](NX-POLY-004-filetype-language-matrix.md), границы
+проекта-в-проекте и деплой — в [NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md).
 
 Главный принцип: **язык выбирается по тому, что в нём выразительно и безопасно**, а не по
 вкусу. Каждый стык между языками — это контракт (схема JSON, сигнатура CLI, таблица БД,
@@ -194,7 +194,7 @@ void main() {
 ### Граничные случаи и анти-паттерны
 - **Не тащить Python/Perl в runtime.** Они — оффлайн-конвейер. Соблазн «дернуть Python из PHP
   через `exec()` на каждый запрос» — анти-паттерн (latency, безопасность). Допустимо только
-  через очередь/воркер (см. [NX-POLY-004](NX-POLY-004-interop-mechanisms.md#queues)).
+  через очередь/воркер (см. [NX-POLY-004](NX-POLY-004-filetype-language-matrix.md#queues)).
 - **WASM ради WASM — нет.** Включаем горячий путь в Rust/AS только когда профайлер показал
   узкое место. Преждевременный WASM = сложность сборки без выгоды.
 - **TS — постепенно, не «большой взрыв».** Текущий код — JS. TS вводится через `// @ts-check`
@@ -278,7 +278,7 @@ JS            --uniforms--> GLSL                     (GPU)
 ## Риски, открытые вопросы
 - **Стоимость стыков.** Каждый дополнительный язык добавляет границу, где теряется
   типобезопасность. Митигируем: контракты-схемы (JSON Schema / `.d.ts` / DDL) — открытый
-  вопрос, какой формат канонизировать (см. [NX-POLY-004](NX-POLY-004-interop-mechanisms.md)).
+  вопрос, какой формат канонизировать (см. [NX-POLY-004](NX-POLY-004-filetype-language-matrix.md)).
 - **Сборка WASM.** Toolchain Rust/asc усложняет CI и онбординг. Открыто: брать Rust (быстрее,
   но тяжелее) или AssemblyScript (ближе к TS, легче, но менее зрел).
 - **Дубль клиент/сервер логики.** Где именно граница «общего» кода? Кандидат — WASM,
@@ -297,8 +297,8 @@ JS            --uniforms--> GLSL                     (GPU)
 таблицу этого документа, затем пишет спеку interop.
 
 ## Связанные документы
-- [NX-POLY-004 Механизмы interop (HTTP/JSON, пайпы, FFI, WASM, codegen, очереди)](NX-POLY-004-interop-mechanisms.md)
-- [NX-SYS-003 Сборка и деплой полиглот-монорепо](../30-systems/NX-SYS-003-build-and-deploy.md)
+- [NX-POLY-004 Механизмы interop (HTTP/JSON, пайпы, FFI, WASM, codegen, очереди)](NX-POLY-004-filetype-language-matrix.md)
+- [NX-SYS-003 Сборка и деплой полиглот-монорепо](../30-systems/NX-SYS-003-content-pipeline.md)
 - [NX-VIS-001 Видение и столпы](../10-vision/NX-VIS-001-vision-and-pillars.md)
-- [NX-INN-001 Инновационная повестка (велосипед с крылышками)](../20-innovation/NX-INN-001.md)
+- [NX-INN-001 Инновационная повестка (велосипед с крылышками)](../20-innovation/NX-INN-001-systemic-emergent-world.md)
 - [NX-META-001 Конституция дизайн-вики](../00-meta/CONSTITUTION.md)

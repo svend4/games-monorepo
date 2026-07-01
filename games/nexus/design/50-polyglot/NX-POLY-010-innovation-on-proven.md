@@ -155,7 +155,7 @@ C2=зелёной — допустимо с явной записью риска
   `game.html`).
 - **Два измерения реально неразделимы.** Редко, но бывает. Тогда честно помечай
   `risk: high` и заводи research-документ NX-RND с деревом подвопросов
-  ([NX-RND-002](../60-research/NX-RND-002-innovation-axes.md)).
+  ([NX-RND-002](../60-research/NX-RND-002-detailing-methodology.md)).
 
 ## Предложения и варианты реализации
 
@@ -298,14 +298,14 @@ python tools/gen_levels.py --seed 42 \
 Документ задуман как **корневой методологический контракт** для обоих роёв: первый
 рой (видение/механики, NX-VIS/NX-INN) применяет его к концепциям, второй (полиглот,
 NX-POLY) — к технологическим решениям. Развёрнутое дерево подвопросов об осях
-инновации и реестре базисов — в research-документе [NX-RND-002](../60-research/NX-RND-002-innovation-axes.md)
+инновации и реестре базисов — в research-документе [NX-RND-002](../60-research/NX-RND-002-detailing-methodology.md)
 (пишется параллельно). Возможные ветки обсуждения — через NX-CMT.
 
 ## Связанные документы
 - [NX-VIS-001 Видение NEXUS — «Живой мифологический фронтир»](../10-vision/NX-VIS-001-vision-and-pillars.md)
-- [NX-RND-002 Оси инновации и реестр проверенных базисов](../60-research/NX-RND-002-innovation-axes.md)
+- [NX-RND-002 Оси инновации и реестр проверенных базисов](../60-research/NX-RND-002-detailing-methodology.md)
 - [NX-POLY-001 Полиглот-архитектура — язык под роль (обзор)](NX-POLY-001-language-per-role.md)
 - [NX-POLY-003 Механизмы interop](NX-POLY-003-interop.md)
-- [NX-INN-001 Концептуальные инновации (хаб)](../20-innovation/NX-INN-001-overview.md)
+- [NX-INN-001 Концептуальные инновации (хаб)](../20-innovation/NX-INN-001-systemic-emergent-world.md)
 - [NX-META-001 Конституция дизайн-вики](../00-meta/CONSTITUTION.md)
 - [NX-META-002 Шаблон документа](../00-meta/TEMPLATE.md)

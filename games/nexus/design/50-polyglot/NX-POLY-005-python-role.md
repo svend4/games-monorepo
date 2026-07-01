@@ -35,7 +35,7 @@ Python в NEXUS уже есть как генератор прайса/уров�
 его в **единую «фабрику данных»** — один CLI (`nxgen` на `click`), который умеет
 **валидировать** (JSON Schema), **симулировать** баланс (numpy), **процедурно генерировать**
 контент и **кодогенерировать** артефакты (`*.js`/`*.json`/`*.sql`) для data-driven пайплайна
-[NX-SYS-003](../30-systems/NX-SYS-003-build-and-deploy.md). «Велосипед с крылышками»: колесо —
+[NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md). «Велосипед с крылышками»: колесо —
 проверенные `stdlib`+`click`+`jsonschema`+`numpy`; крылышко — правило «весь контент рождается
 только через фабрику и проходит schema-gate».
 
@@ -74,7 +74,7 @@ Python в NEXUS уже есть как генератор прайса/уров�
 
 **Роль 1. Валидатор (schema-gate).** Каждый data-файл (лут, враги, уровни, экономика)
 описывается **JSON Schema**. Python-валидатор — единственные ворота: невалидный файл не
-коммитится (pre-commit hook) и не деплоится (CI-шаг в [NX-SYS-003](../30-systems/NX-SYS-003-build-and-deploy.md)).
+коммитится (pre-commit hook) и не деплоится (CI-шаг в [NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md)).
 Это «один источник правды о форме данных», который читают и Python, и JS (через ту же схему),
 и документация.
 
@@ -98,7 +98,7 @@ TTK (time-to-kill), кривую сложности по уровням. Бал�
 экономики. Опционально и позже — самый «дальний» лепесток.
 
 ### Принцип «фабрики данных»
-Контент в data-driven архитектуре ([NX-SYS-003](../30-systems/NX-SYS-003-build-and-deploy.md))
+Контент в data-driven архитектуре ([NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md))
 не должен быть **рукописным**. Рукописный JSON — это: опечатки, рассинхрон со схемой,
 невоспроизводимость, баланс «на глаз». Фабрика заменяет это конвейером
 **`источник истины (MD/числа) → Python → валидный артефакт (JS/JSON/SQL)`**, где каждая
@@ -298,7 +298,7 @@ def build_all(seed: int, out_dir: str):
 
 ### Вариант B. «Фабрика с балансом» (целевой)
 Поверх A — команда `balance` на numpy и метаданные воспроизводимости (`_seed`/`_gen`) во всех
-артефактах. Подключить schema-gate в pre-commit и в CI ([NX-SYS-003](../30-systems/NX-SYS-003-build-and-deploy.md)).
+артефактах. Подключить schema-gate в pre-commit и в CI ([NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md)).
 Risk: med, effort: M.
 
 ### Вариант C. «Фабрика с ML» (не сейчас)
@@ -360,12 +360,12 @@ def emit_loot_seed(loot: list[dict]) -> str:
 - **ML — переусложнение?** Роль 5 рискует стать «ML ради ML» без достаточных данных. Митигируем
   тем, что она опциональна и последняя (вариант C).
 - **Связь со сборкой.** Точная интеграция schema-gate в CI/pre-commit зависит от ещё не
-  написанного [NX-SYS-003](../30-systems/NX-SYS-003-build-and-deploy.md) — ссылка на будущий док.
+  написанного [NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md) — ссылка на будущий док.
 
 ## Комментарии
 Документ конкретизирует роль Python из главной карты
 [NX-POLY-001#map](NX-POLY-001-language-per-role.md) и снабжает data-driven пайплайн
-[NX-SYS-003](../30-systems/NX-SYS-003-build-and-deploy.md) исполнителем. Если рой добавляет
+[NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md) исполнителем. Если рой добавляет
 новый тип контента, он сначала пишет `*.schema.json`, затем команду в `nxgen`, и только потом
 data-файл — никогда не наоборот.
 
@@ -373,6 +373,6 @@ data-файл — никогда не наоборот.
 - [NX-POLY-001 Полиглот-архитектура: язык под роль (обзор)](NX-POLY-001-language-per-role.md)
 - [NX-POLY-003 Механизмы interop](NX-POLY-003-interop.md)
 - [NX-POLY-002 Проект-в-проекте](NX-POLY-002-project-in-project.md)
-- [NX-SYS-003 Сборка и деплой / data-driven пайплайн](../30-systems/NX-SYS-003-build-and-deploy.md)
+- [NX-SYS-003 Сборка и деплой / data-driven пайплайн](../30-systems/NX-SYS-003-content-pipeline.md)
 - [NX-VIS-001 Видение и столпы](../10-vision/NX-VIS-001-vision-and-pillars.md)
 - [NX-META-001 Конституция дизайн-вики](../00-meta/CONSTITUTION.md)

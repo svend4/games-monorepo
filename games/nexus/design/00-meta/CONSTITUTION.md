@@ -25,8 +25,8 @@ language: ru
 
 ## 1. Зачем это
 
-Два исходных документа — [`../ARCHITECTURE.md`](../ARCHITECTURE.md) и
-[`../ARCHITECTURE_REVIEW.md`](../ARCHITECTURE_REVIEW.md) — это **черновики/прототипы**, а не
+Два исходных документа — [`../ARCHITECTURE.md`](../../ARCHITECTURE.md) и
+[`../ARCHITECTURE_REVIEW.md`](../../ARCHITECTURE_REVIEW.md) — это **черновики/прототипы**, а не
 истина. Мы используем их как стройматериал. Задача вики:
 
 1. **Доработать концепцию** игры — технически И концептуально (инновационно).

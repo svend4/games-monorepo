@@ -324,7 +324,7 @@ seedFor(zoneId, worldDay) = hash(worldSeed, zoneId, worldDay)
 - [NX-INN-001 Эмерджентный системный мир](NX-INN-001-systemic-emergent-world.md) — химия тегов ВНУТРИ генерируемых зон
 - [NX-INN-002 Живая экология и фракции](NX-INN-002-living-world-ecology.md) — потребитель зон; сверка оверлеев с экологией
 - [NX-INN-004 Прогрессия знанием](NX-INN-004-knowledge-progression.md) — «чтение генератора» как мастерство; режиссёр по знанию
-- [NX-SYS-003 Сборка и деплой / data-driven пайплайн](../30-systems/NX-SYS-003-build-and-deploy.md) — где живут артефакты генерации (планируется)
+- [NX-SYS-003 Сборка и деплой / data-driven пайплайн](../30-systems/NX-SYS-003-content-pipeline.md) — где живут артефакты генерации (планируется)
 - [ARCHITECTURE_REVIEW.md](../../ARCHITECTURE_REVIEW.md) — обоснование «масштаб системой, не руками»
 - [Конституция вики](../00-meta/CONSTITUTION.md) · [Шаблон](../00-meta/TEMPLATE.md)
 - Код-опоры: `shared/world/Arena.js` (захардкоженная зона → заменить генератором), `shared/systems/EnemySystem.js` (`eDefs[]`), `shared/systems/WorldEvents.js`

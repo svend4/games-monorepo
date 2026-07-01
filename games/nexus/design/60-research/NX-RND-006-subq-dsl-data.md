@@ -37,7 +37,7 @@ JSON+JSON-Schema, а не как новый язык с нуля.
 ## Краткое содержание
 [NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md) отвечает «*куда* кладём
 данные и *какие* три вороты качества их пускают», а будущий
-[NX-SPEC-002](../40-specs/NX-SPEC-002-content-schema-spec.md) обязан дать *точный
+[NX-SPEC-002](../40-specs/NX-SPEC-002-ecs-archetypes.md) обязан дать *точный
 формат* схем и DSL. Оба закрывают **что мы решили**, но оставляют хвост **что мы ещё
 не измерили**: один источник истины или два с двунаправленной синхронизацией; стоит ли
 дизайнеру писать на внешнем DSL или хватает JSON; кто владелец SQL-схемы — DDL-файл или
@@ -402,7 +402,7 @@ print("ссылочная целостность OK")
 закрытия (по блокирующим 🔴):
 
 1. **Q1.1 + Q3.1** (кто источник истины данных и кто владелец схемы) — закрывает
-   [NX-SPEC-002](../40-specs/NX-SPEC-002-content-schema-spec.md): фиксирует «data-файлы =
+   [NX-SPEC-002](../40-specs/NX-SPEC-002-ecs-archetypes.md): фиксирует «data-файлы =
    writable источник, миграции = владелец схемы, всё прочее — codegen-производное».
 2. **Q5.1** (эшелон валидации) — закрывает расширение
    [NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md): три вороты уже описаны,
@@ -455,7 +455,7 @@ on  load_save(raw):
 - [NX-RND-004 Подвопросы: распределённое эхо (мост Q3.3)](NX-RND-004-subq-distributed-echo.md)
 - [NX-SYS-003 Контент-пайплайн и data-driven](../30-systems/NX-SYS-003-content-pipeline.md)
 - [NX-SYS-005 Бюджет симуляции мира (мост Q4.1)](../30-systems/NX-SYS-005-world-simulation-budget.md)
-- [NX-SPEC-002 Спека формата контента и DSL (кандидат-владелец Q1/Q3)](../40-specs/NX-SPEC-002-content-schema-spec.md)
+- [NX-SPEC-002 Спека формата контента и DSL (кандидат-владелец Q1/Q3)](../40-specs/NX-SPEC-002-ecs-archetypes.md)
 - [NX-POLY-005 Роль Python (codegen, генераторы)](../50-polyglot/NX-POLY-005-python-role.md)
 - [NX-POLY-007 Perl и текстовые языки (DSL-препроцессинг)](../50-polyglot/NX-POLY-007-perl-and-text-langs.md)
 - [NX-POLY-009 Скриптинг и моддинг (встроенный DSL, Lua)](../50-polyglot/NX-POLY-009-scripting-modding-layer.md)

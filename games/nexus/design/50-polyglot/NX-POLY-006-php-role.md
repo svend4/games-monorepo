@@ -123,7 +123,7 @@ SQL-инъекции (классическая дыра PHP-возраста) **
 - 30 игроков ≈ 360 query/с + по 2 cleanup-DELETE на запрос (если не чинить D4) ≈ +240 query/с.
 - MySQL на ноутбуке тянет тысячи простых query/с, так что **~50–100 одновременных игроков —
   потолок** этой модели до того, как латентность полинга станет заметной. Дальше — Node/Go +
-  WebSocket (см. таблицу выбора) или шардирование по зонам ([NX-SYS-002](../30-systems/NX-SYS-002-netcode-and-sync.md)).
+  WebSocket (см. таблицу выбора) или шардирование по зонам ([NX-SYS-002](../30-systems/NX-SYS-002-netcode-echo-layer.md)).
 
 ## Предложения и варианты реализации
 
@@ -336,21 +336,21 @@ PHP в NEXUS общается с другими языками **только п
 Правило большого пальца: **пока связь — это HTTP-полинг, PHP оптимален; как только нужен
 постоянный двунаправленный канал и серверный тик — это работа для Node/Go**, и тогда PHP
 остаётся для «холодных» эндпоинтов (логин, профиль, магазин, лидерборды), а realtime
-уходит на отдельный сервис. См. границу realtime в [NX-SYS-002](../30-systems/NX-SYS-002-netcode-and-sync.md).
+уходит на отдельный сервис. См. границу realtime в [NX-SYS-002](../30-systems/NX-SYS-002-netcode-echo-layer.md).
 
 ## Риски, открытые вопросы
 - **Файловый rate-limit не атомарен между процессами** при высокой конкуренции (гонка
   read-modify-write). Для прототипа достаточно; при росте — APCu (`apcu_inc`) или Redis.
   Открытый вопрос: вводить ли APCu сразу (оно есть в XAMPP) — компромисс простоты/корректности.
 - **D5 (подпись session_id)** вынесена в L2 и зависит от модели сессий в
-  [NX-SYS-002](../30-systems/NX-SYS-002-netcode-and-sync.md). Пока session — голый UUID от
+  [NX-SYS-002](../30-systems/NX-SYS-002-netcode-echo-layer.md). Пока session — голый UUID от
   клиента, любой может слать `sync` за чужой session_id. Нужен HMAC-токен, выдаваемый при `join`.
 - **Граница «когда Node/Go»** дана качественно; точную точку перелома (игроков × Гц) надо
   замерить нагрузочным тестом, а не угадывать. Открытый вопрос: писать ли бенч на Python (locust)
   или k6 — относится к [NX-POLY-003](NX-POLY-003-interop.md).
 - **Версия PHP.** Примеры используют `never`-тип возврата (PHP 8.1+) и `declare(strict_types=1)`.
   Надо зафиксировать минимальную версию PHP проекта (XAMPP обычно несёт 8.2+) в
-  [NX-SYS-003](../30-systems/NX-SYS-003-build-and-deploy.md).
+  [NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md).
 - Риск **scope-creep к фреймворку**: каждый «удобный» пакет тянет следующий. Дисциплина —
   Composer не появляется до Варианта C.
 
@@ -364,7 +364,7 @@ PHP в NEXUS общается с другими языками **только п
 - [NX-POLY-002 Проект-в-проекте: границы и деплой](NX-POLY-002-project-in-project.md)
 - [NX-POLY-003 Механизмы interop (HTTP/JSON, пайпы, FFI, WASM)](NX-POLY-003-interop.md)
 - [NX-POLY-004 Матрица «тип файла → язык»](NX-POLY-004-filetype-language-matrix.md)
-- [NX-SYS-002 Netcode и синхронизация (граница realtime)](../30-systems/NX-SYS-002-netcode-and-sync.md)
-- [NX-SYS-003 Сборка и деплой (версии, окружения)](../30-systems/NX-SYS-003-build-and-deploy.md)
+- [NX-SYS-002 Netcode и синхронизация (граница realtime)](../30-systems/NX-SYS-002-netcode-echo-layer.md)
+- [NX-SYS-003 Сборка и деплой (версии, окружения)](../30-systems/NX-SYS-003-content-pipeline.md)
 - [NX-VIS-001 Видение и столпы](../10-vision/NX-VIS-001-vision-and-pillars.md)
 - Источники-факты: `games/nexus/v1-2d-mmo/nexus_api.php`, `nexus_setup.sql`, `ARCHITECTURE_REVIEW.md`

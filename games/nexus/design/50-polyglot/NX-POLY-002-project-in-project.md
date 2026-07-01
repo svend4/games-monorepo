@@ -325,8 +325,8 @@ function chooseNesting(item):
 
 ## Связанные документы
 - [NX-POLY-001 Язык под роль (полиглот-обзор)](NX-POLY-001-language-per-role.md)
-- [NX-POLY-003 Механизмы interop между языками](NX-POLY-003-interop-mechanisms.md)
-- [NX-SYS-006 Сборка, бандлинг и деплой](../30-systems/NX-SYS-006-build-and-deploy.md)
+- [NX-POLY-003 Механизмы interop между языками](NX-POLY-003-interop.md)
+- [NX-SYS-006 Сборка, бандлинг и деплой](../30-systems/NX-SYS-006-save-versioning-modding.md)
 - [NX-INN-003 Асинхронный эхо-мультиплеер (UGC/моды)](../20-innovation/NX-INN-003-echo-multiplayer.md)
 - [NX-VIS-002 Философия дизайна (модульность)](../10-vision/NX-VIS-002-design-philosophy.md)
-- [NX-SPEC-002 Спека контракта плагинов](../40-specs/NX-SPEC-002-plugin-contract.md)
+- [NX-SPEC-002 Спека контракта плагинов](../40-specs/NX-SPEC-002-ecs-archetypes.md)

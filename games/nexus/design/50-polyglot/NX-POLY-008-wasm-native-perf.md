@@ -52,8 +52,8 @@ NEXUS остаётся JS-приложением; WASM — это маленьк
 вызываемый из JS через линейную память (см. механику в
 [NX-POLY-003#wasm](NX-POLY-003-interop.md)). Кандидаты ровно четыре: **физика**,
 **патфайндинг** (A* по сетке/навмешу), **симуляция экологии** (агентная модель из
-[NX-SYS-005](../30-systems/NX-SYS-005-ecology-simulation.md)) и **процедурные шумы**
-(worldgen, [NX-SPEC-004](../40-specs/NX-SPEC-004-worldgen-noise.md)). Всё остальное —
+[NX-SYS-005](../30-systems/NX-SYS-005-world-simulation-budget.md)) и **процедурные шумы**
+(worldgen, [NX-SPEC-004](../40-specs/NX-SPEC-004-ecology-sim.md)). Всё остальное —
 гейм-логика, UI, сеть — остаётся на JS, потому что там узкого места нет, а цена
 маршалинга съест выгоду.
 
@@ -71,9 +71,9 @@ NEXUS остаётся JS-приложением; WASM — это маленьк
 2. **Патфайндинг.** A* / JPS по сетке или навмешу для каждого NPC, пересчёт при изменении
    карты. См. `shared/systems/EnemySystem.js` — сейчас на JS.
 3. **Симуляция экологии.** Агентная модель «хищник–жертва–ресурс» на тысячах сущностей
-   ([NX-SYS-005](../30-systems/NX-SYS-005-ecology-simulation.md)) — тик мира.
+   ([NX-SYS-005](../30-systems/NX-SYS-005-world-simulation-budget.md)) — тик мира.
 4. **Процедурные шумы.** Perlin/Simplex/value-noise, FBM для worldgen и текстур
-   ([NX-SPEC-004](../40-specs/NX-SPEC-004-worldgen-noise.md)).
+   ([NX-SPEC-004](../40-specs/NX-SPEC-004-ecology-sim.md)).
 
 Общая черта: **много арифметики над плотными массивами чисел, мало ветвлений по строкам и
 объектам**. Это ровно то, на чём JIT JS проигрывает компилированному коду: нет
@@ -111,7 +111,7 @@ WASM не «видит» JS-объекты. Обмен идёт через **л�
 указатель+длину, WASM считает на месте, JS читает результат из той же памяти. **Без
 копий**, если буфер шарится. Контракт стыка (имена экспортов, layout памяти, единицы) —
 часть interop-дисциплины [NX-POLY-003](NX-POLY-003-interop.md) и кодогена
-[NX-SPEC-004#codegen](../40-specs/NX-SPEC-004-worldgen-noise.md).
+[NX-SPEC-004#codegen](../40-specs/NX-SPEC-004-ecology-sim.md).
 
 ## Детали и частные случаи
 
@@ -156,7 +156,7 @@ WASM не «видит» JS-объекты. Обмен идёт через **л�
   посчитать весь тик, а не дёргать WASM на каждого агента.
 
 ### Детерминизм и кросс-платформенность
-Для воспроизводимости (replay, [NX-INN-001](../20-innovation/NX-INN-001-echo-multiplayer.md),
+Для воспроизводимости (replay, [NX-INN-001](../20-innovation/NX-INN-001-systemic-emergent-world.md),
 античит на сервере PHP, симулятор баланса на Python из
 [NX-POLY-005#sim](NX-POLY-005-python-role.md)) горячая формула должна давать **бит-в-бит
 одинаковый результат** на клиенте и в оффлайн-проверке. WASM с фиксированной арифметикой
@@ -169,7 +169,7 @@ Python-обёртку (см. «Варианты»).
 
 ### Вариант A (рекомендуемый MVP): один Rust-крейт «шумы» → WASM
 Самый плотный и предсказуемый по выигрышу путь — процедурные шумы worldgen
-([NX-SPEC-004](../40-specs/NX-SPEC-004-worldgen-noise.md)).
+([NX-SPEC-004](../40-specs/NX-SPEC-004-ecology-sim.md)).
 
 Rust (`crates/nx-hot/src/lib.rs`), FBM-шум в чужую линейную память без копий:
 
@@ -347,13 +347,13 @@ if still_over_budget(path):
 ## Комментарии
 Документ конкретизирует «горячий путь → WASM» из [NX-POLY-001](NX-POLY-001-language-per-role.md)
 и «как маршалить WASM-память» из [NX-POLY-003](NX-POLY-003-interop.md) до прикладного бюджета.
-Прямые потребители — [NX-SPEC-004](../40-specs/NX-SPEC-004-worldgen-noise.md) (шумы) и
-[NX-SYS-005](../30-systems/NX-SYS-005-ecology-simulation.md) (экология). Развёрнутая дискуссия —
+Прямые потребители — [NX-SPEC-004](../40-specs/NX-SPEC-004-ecology-sim.md) (шумы) и
+[NX-SYS-005](../30-systems/NX-SYS-005-world-simulation-budget.md) (экология). Развёрнутая дискуссия —
 в отдельном `NX-CMT-###` при необходимости.
 
 ## Связанные документы
-- [NX-SPEC-004 Worldgen и процедурные шумы](../40-specs/NX-SPEC-004-worldgen-noise.md)
-- [NX-SYS-005 Симуляция экологии](../30-systems/NX-SYS-005-ecology-simulation.md)
+- [NX-SPEC-004 Worldgen и процедурные шумы](../40-specs/NX-SPEC-004-ecology-sim.md)
+- [NX-SYS-005 Симуляция экологии](../30-systems/NX-SYS-005-world-simulation-budget.md)
 - [NX-POLY-001 Язык под роль](NX-POLY-001-language-per-role.md)
 - [NX-POLY-003 Механизмы interop (HTTP/JSON, пайпы, FFI, WASM)](NX-POLY-003-interop.md)
 - [NX-POLY-004 Матрица «тип файла → язык»](NX-POLY-004-filetype-language-matrix.md)

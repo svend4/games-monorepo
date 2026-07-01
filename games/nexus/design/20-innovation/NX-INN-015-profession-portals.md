@@ -182,7 +182,7 @@ legendarist = wear(player, [Scribe, Mythographer])
 
 ## Связанные документы
 - [NX-VIS-004 Мета-слой Койне](../10-vision/NX-VIS-004-meta-layer-koine.md)
-- [NX-INN-004 Знание как декодирование](../20-innovation/NX-INN-004-knowledge.md)
+- [NX-INN-004 Знание как декодирование](NX-INN-004-knowledge-progression.md)
 - [NX-VIS-001 Видение и столпы](../10-vision/NX-VIS-001-vision-and-pillars.md)
 - [NX-STRAT-004 Многомерная стратегия](../15-strategy/NX-STRAT-004-dimensional-strategy.md)
 - [NX-INN-002 Живой мир] · [NX-INN-003 Эхо] · [NX-INN-006 Мифосинтез] · [NX-SPEC-003 Протокол записей]

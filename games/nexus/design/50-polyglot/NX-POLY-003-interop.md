@@ -51,7 +51,7 @@ HTTP/JSON, stdin/stdout-пайпы, файлы-контракты, FFI (C ABI), 
 Главный тезис: interop — это не транспорт, а **контракт**. Транспорт (HTTP, пайп, файл,
 ABI) — проверенный кирпичик. Контракт (схема JSON, сигнатура CLI, ABI WASM, DDL таблицы)
 — то, что мы дисциплинируем и, где можно, **генерируем из единого источника** (см.
-[NX-SPEC-003](../40-specs/NX-SPEC-003-schema-and-codegen.md)).
+[NX-SPEC-003](../40-specs/NX-SPEC-003-echo-protocol.md)).
 
 ## Расширенное содержание (общее)
 
@@ -87,7 +87,7 @@ ABI) — проверенный кирпичик. Контракт (схема J
    скорость в браузере. Горячие пути клиента (см. [NX-POLY-001](NX-POLY-001-language-per-role.md#details)).
 6. **Codegen из единой схемы** — не транспорт, а **мета-механизм**: одна схема (JSON
    Schema / `.proto` / SQL DDL) порождает типы/валидаторы/клиентов на всех языках.
-   Убивает дрейф контрактов в зародыше. Детали — [NX-SPEC-003](../40-specs/NX-SPEC-003-schema-and-codegen.md).
+   Убивает дрейф контрактов в зародыше. Детали — [NX-SPEC-003](../40-specs/NX-SPEC-003-echo-protocol.md).
 7. **Очереди и сокеты** — развязанный во времени (очередь: Redis/файловая очередь) или
    постоянный двунаправленный (WebSocket/TCP) канал. Для real-time MMO-событий и
    фоновых задач (генерация мира воркером на Python, пока игрок играет).
@@ -220,7 +220,7 @@ $loot = http_json('http://127.0.0.1:8077/loot', ['seed' => 12345, 'tier' => 3]);
 **Ключевое наблюдение:** контракт входа/выхода (`{seed,tier} → {seed,tier,items}`)
 **один и тот же** для пайпа и HTTP. Транспорт меняется, контракт — нет. Это и есть
 дисциплина: контракт описан один раз (в идеале — JSON Schema, см.
-[NX-SPEC-003](../40-specs/NX-SPEC-003-schema-and-codegen.md)), транспорт выбирается по
+[NX-SPEC-003](../40-specs/NX-SPEC-003-echo-protocol.md)), транспорт выбирается по
 профилю нагрузки.
 
 ### Частный случай: JS ↔ Rust через WASM
@@ -274,7 +274,7 @@ export async function loadGrid(url) {
 }
 ```
 
-> Цена WASM: (1) сборочный конвейер Rust→WASM в [NX-SYS-003](../30-systems/NX-SYS-003-build-and-deploy.md);
+> Цена WASM: (1) сборочный конвейер Rust→WASM в [NX-SYS-003](../30-systems/NX-SYS-003-content-pipeline.md);
 > (2) **маршалинг** — числа проходят бесплатно, а строки/массивы/структуры нужно
 > копировать через линейную память (`memory.buffer`). Поэтому через границу гоняем
 > «толстые» вызовы (обработать весь массив клеток за один заход), а не миллион мелких.
@@ -318,7 +318,7 @@ interop.writeArtifact(path, json)        // файл-контракт (атом�
 ### Предложение 3: контракт-реестр и валидация на границе
 Каждый стык регистрирует свой контракт (JSON Schema) в `design/40-specs` и валидирует
 данные **на входе** (fail fast). Где языков ≥2 — генерируем код контракта (codegen,
-[NX-SPEC-003](../40-specs/NX-SPEC-003-schema-and-codegen.md)), а не пишем валидаторы руками.
+[NX-SPEC-003](../40-specs/NX-SPEC-003-echo-protocol.md)), а не пишем валидаторы руками.
 
 ```pseudo
 // на любом стыке — валидация по схеме до использования
@@ -386,8 +386,8 @@ choose_transport(call):
 
 ## Связанные документы
 - [NX-POLY-001 Полиглот-архитектура — язык под роль (обзор)](NX-POLY-001-language-per-role.md)
-- [NX-SPEC-003 Единая схема и codegen контрактов](../40-specs/NX-SPEC-003-schema-and-codegen.md)
-- [NX-SYS-003 Сборка и деплой полиглот-монорепо](../30-systems/NX-SYS-003-build-and-deploy.md)
+- [NX-SPEC-003 Единая схема и codegen контрактов](../40-specs/NX-SPEC-003-echo-protocol.md)
+- [NX-SYS-003 Сборка и деплой полиглот-монорепо](../30-systems/NX-SYS-003-content-pipeline.md)
 - [NX-VIS-001 Видение и столпы](../10-vision/NX-VIS-001-vision-and-pillars.md)
-- [NX-INN-001 Инновационный столп](../20-innovation/NX-INN-001.md)
+- [NX-INN-001 Инновационный столп](../20-innovation/NX-INN-001-systemic-emergent-world.md)
 - [NX-META-001 Конституция](../00-meta/CONSTITUTION.md)
