@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mirendil — вики</title>
+  <meta name="description" content="Независимая аналитическая вики о компании Mirendil: обзор, 14 позиций, задачи. Не аффилировано с Mirendil.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <style>
+    :root { --theme-color: #5b57d1; }
+    .markdown-section { max-width: 900px; }
+    .sidebar { width: 340px; }
+    .content { left: 340px; }
+    blockquote { border-left: 4px solid var(--theme-color); background: #f7f7fb; }
+    .app-name-link { font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div id="app">Загрузка вики…</div>
+  <script>
+    window.$docsify = {
+      name: 'Mirendil — вики',
+      loadSidebar: true,      // использует _sidebar.md
+      relativePath: true,     // ссылки резолвятся относительно текущего файла (важно для ../../-ссылок)
+      subMaxLevel: 3,
+      auto2top: true,
+      maxLevel: 4,
+      homepage: 'README.md',
+      notFoundPage: false,
+      search: {
+        placeholder: 'Поиск по вики…',
+        noData: 'Ничего не найдено.',
+        depth: 4
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+</body>
+</html>
