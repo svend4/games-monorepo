@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Safe Search hilft Kindern, geprüfte Quellen zu finden, zu verstehen und für später zu speichern."
+    />
+    <title>Safe Search · Sicher suchen und verstehen</title>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    <link rel="stylesheet" href="../../packages/shared/styles/base.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Direkt zum Inhalt</a>
+
+    <header class="site-header">
+      <a class="site-brand" href="#top" aria-label="Safe Search – Startseite">
+        <span class="site-brand__mark" aria-hidden="true">S</span>
+        <span>Safe Search</span>
+      </a>
+      <nav class="section-nav" aria-label="Seitennavigation">
+        <a href="#search">Suchen</a>
+        <a href="#saved">Gespeichert</a>
+        <a href="#history">Verlauf</a>
+      </nav>
+    </header>
+
+    <div id="top" class="page-shell">
+      <div id="app-intro" lang="en"></div>
+
+      <main id="main-content">
+        <section id="experiences" class="domain-section" aria-labelledby="experiences-title">
+          <div class="section-heading">
+            <p class="section-heading__eyebrow">Drei sichere Starträume</p>
+            <h2 id="experiences-title">Wofür möchtest du suchen?</h2>
+            <p>Wähle ein Ziel oder starte direkt mit deiner eigenen Frage.</p>
+          </div>
+          <div id="experience-cards" lang="en"></div>
+        </section>
+
+        <section id="search" class="search-workspace" aria-labelledby="search-title">
+          <div class="section-heading section-heading--compact">
+            <p class="section-heading__eyebrow">Lokale Quellensammlung</p>
+            <h2 id="search-title">Sicher suchen</h2>
+            <p>
+              Die Suche arbeitet nur mit der eingebauten, kuratierten Liste. Es
+              werden keine Suchbegriffe an einen Server gesendet.
+            </p>
+          </div>
+
+          <form id="search-form" class="search-form" role="search">
+            <div class="field field--query">
+              <label for="search-query">Was möchtest du herausfinden?</label>
+              <input
+                id="search-query"
+                name="query"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                placeholder="Zum Beispiel: Tiere, Nachrichten oder Video"
+              />
+            </div>
+            <div class="field">
+              <label for="search-category">Themenraum</label>
+              <select id="search-category" name="category"></select>
+            </div>
+            <button class="button button--primary search-form__submit" type="submit">
+              Treffer zeigen
+            </button>
+            <button class="button button--quiet" id="clear-search" type="button">
+              Suche leeren
+            </button>
+          </form>
+
+          <p id="search-status" class="search-status" role="status" aria-live="polite"></p>
+          <div id="search-results" class="result-grid" aria-label="Suchergebnisse"></div>
+        </section>
+
+        <div class="collection-layout">
+          <section id="saved" class="collection-panel" aria-labelledby="saved-title">
+            <div class="collection-panel__heading">
+              <div>
+                <p class="section-heading__eyebrow">Deine Auswahl</p>
+                <h2 id="saved-title">Gespeicherte Quellen</h2>
+              </div>
+              <span id="saved-count" class="count-badge" aria-live="polite">0</span>
+            </div>
+            <div id="saved-results"></div>
+          </section>
+
+          <section id="history" class="collection-panel" aria-labelledby="history-title">
+            <div class="collection-panel__heading">
+              <div>
+                <p class="section-heading__eyebrow">Letzte Schritte</p>
+                <h2 id="history-title">Suchverlauf</h2>
+              </div>
+              <button class="text-button" id="clear-history" type="button">
+                Verlauf löschen
+              </button>
+            </div>
+            <div id="search-history"></div>
+          </section>
+        </div>
+      </main>
+
+      <footer class="app-footer">
+        <p>
+          Ein sicherer Treffer ist ein guter Start. Vergleiche bei wichtigen
+          Fragen trotzdem mehrere Quellen und sprich mit einer vertrauten Person.
+        </p>
+      </footer>
+    </div>
+
+    <noscript>
+      <p class="noscript-message">
+        Für Suche, Filter und gespeicherte Quellen muss JavaScript aktiviert sein.
+      </p>
+    </noscript>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

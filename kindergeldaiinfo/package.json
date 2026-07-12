@@ -1,0 +1,15 @@
+{
+  "name": "kindergeld-ai-info",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Four focused digital-safety prototypes built on a dependency-free shared foundation.",
+  "scripts": {
+    "test": "node --test --test-isolation=none",
+    "validate": "node scripts/validate-monorepo.mjs",
+    "smoke": "node scripts/browser-smoke.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

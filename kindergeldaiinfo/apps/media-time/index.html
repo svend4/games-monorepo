@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="de" data-app-id="media-time">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Media Time hilft Familien, Lernzeit, kreative Medienzeit und Offline-Zeit für eine ausgewogene Woche zu planen."
+    />
+    <title>Media Time · Eine ausgewogene Woche planen</title>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    <link rel="stylesheet" href="../../packages/shared/styles/base.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-app="media-time">
+    <a class="skip-link" href="#main-content">Direkt zum Inhalt</a>
+
+    <header class="site-header container">
+      <a class="site-brand" href="../../index.html" aria-label="Zur Übersicht aller Angebote">
+        <span class="site-brand__mark" aria-hidden="true">M</span>
+        <span>Media Time</span>
+      </a>
+      <p class="privacy-note">
+        <span aria-hidden="true">●</span> Bleibt auf diesem Gerät
+      </p>
+    </header>
+
+    <div class="app-shell">
+      <div id="app-intro" lang="en"></div>
+
+      <main id="main-content">
+        <section id="experiences" class="section experience-section" aria-labelledby="experiences-title">
+          <div class="section-heading">
+            <p class="section-eyebrow">Drei Arten von Zeit</p>
+            <h2 id="experiences-title" class="section-title">Was soll in deiner Woche Platz haben?</h2>
+            <p class="section-description">
+              Wähle einen Schwerpunkt oder springe direkt zum Wochenplan. Die Karten verändern noch keine Zeiten.
+            </p>
+          </div>
+          <div id="experience-cards" lang="en"></div>
+        </section>
+
+        <section id="week-planner" class="planner-section" aria-labelledby="planner-title">
+          <div class="planner-heading">
+            <div>
+              <p class="section-eyebrow">Deine Woche</p>
+              <h2 id="planner-title" class="section-title">Minuten eintragen, Balance sehen</h2>
+              <p class="section-description">
+                Schätze die Zeiten grob. Es geht nicht um perfekte Zahlen, sondern um einen hilfreichen Überblick.
+              </p>
+            </div>
+            <span class="local-badge">Automatisch lokal gespeichert</span>
+          </div>
+
+          <div class="planner-layout">
+            <form id="plan-form" class="plan-panel" novalidate>
+              <div class="table-scroll" tabindex="0" role="region" aria-labelledby="planner-table-title">
+                <table class="planner-table">
+                  <caption id="planner-table-title">
+                    Geplante Minuten pro Tag. Lernen und Kreativ ergeben zusammen die Bildschirmzeit.
+                  </caption>
+                  <thead id="planner-head"></thead>
+                  <tbody id="planner-body"></tbody>
+                  <tfoot id="planner-foot"></tfoot>
+                </table>
+              </div>
+
+              <div class="plan-actions">
+                <button id="reset-plan" class="button button--reset" type="button">
+                  Standardwoche wiederherstellen
+                </button>
+                <p id="plan-status" class="plan-status" role="status" aria-live="polite"></p>
+              </div>
+            </form>
+
+            <aside class="summary-panel" aria-labelledby="summary-title">
+              <div class="summary-panel__heading">
+                <p class="section-eyebrow">Live-Auswertung</p>
+                <h3 id="summary-title">Wochenbalance</h3>
+              </div>
+
+              <div id="weekly-metrics" class="weekly-metrics"></div>
+              <div id="balance-bars" class="balance-bars" aria-label="Anteile der geplanten Wochenzeit"></div>
+
+              <section class="feedback-section" aria-labelledby="feedback-title">
+                <h4 id="feedback-title">Sanfte Hinweise</h4>
+                <ul id="balance-feedback" class="feedback-list"></ul>
+                <p class="feedback-note">
+                  Diese Hinweise sind Orientierung, keine medizinischen Empfehlungen oder festen Bildschirmzeitregeln.
+                </p>
+              </section>
+            </aside>
+          </div>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <p>
+          Eine gute Medienwoche darf sich verändern. Plant gemeinsam neu, wenn Schule, Freizeit oder Erholung mehr Raum brauchen.
+        </p>
+      </footer>
+    </div>
+
+    <noscript>
+      <p class="noscript-message">
+        Zum Bearbeiten und lokalen Speichern des Wochenplans muss JavaScript aktiviert sein.
+      </p>
+    </noscript>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

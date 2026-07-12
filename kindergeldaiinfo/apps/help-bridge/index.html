@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A calm, private planning tool for difficult online situations.">
+    <title>Help Bridge</title>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="stylesheet" href="../../packages/shared/styles/base.css">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to the support steps</a>
+
+    <header class="site-header">
+      <a class="back-link" href="../../index.html" aria-label="Back to all tools">← All tools</a>
+      <span class="privacy-label">Local only - optional save</span>
+    </header>
+
+    <main id="main-content">
+      <div id="app-intro"></div>
+
+      <aside class="emergency-note" aria-labelledby="emergency-title">
+        <div aria-hidden="true" class="emergency-icon">!</div>
+        <div>
+          <h2 id="emergency-title">If someone is in immediate danger</h2>
+          <p>Move to a safer place and call your local emergency number (112 in Germany and across the EU), or ask a nearby adult to call. This site cannot call or contact anyone for you.</p>
+        </div>
+      </aside>
+
+      <section id="experiences" class="experience-section" aria-labelledby="experience-title">
+        <div class="section-heading">
+          <p class="eyebrow">Choose a starting point</p>
+          <h2 id="experience-title">Support for different situations</h2>
+        </div>
+        <div id="experience-cards"></div>
+      </section>
+
+      <section class="bridge-shell" aria-labelledby="bridge-title">
+        <div class="bridge-heading">
+          <div>
+            <p class="eyebrow">Calm check-in</p>
+            <h2 id="bridge-title">Make a small safety plan</h2>
+            <p>This takes about two minutes. Nothing is stored unless you choose Save draft. A saved draft keeps only your check-in choices and trusted-adult role, never names or notes.</p>
+          </div>
+          <div class="step-meter" aria-live="polite">
+            <span id="step-label">Step 1 of 4</span>
+            <div class="meter-track" aria-hidden="true"><span id="meter-fill"></span></div>
+          </div>
+        </div>
+
+        <form id="triage-form" novalidate>
+          <section class="form-step" data-step="0" aria-labelledby="step-one-title">
+            <p class="step-kicker">Step 1</p>
+            <h3 id="step-one-title" tabindex="-1">What is closest to what happened?</h3>
+            <p class="step-help">Pick one. You can add details later without repeating anything upsetting.</p>
+
+            <fieldset class="choice-grid">
+              <legend class="visually-hidden">Type of online situation</legend>
+              <label class="choice-card">
+                <input type="radio" name="incidentType" value="insults" required>
+                <span><strong>Insults or bullying</strong><small>Mean messages, rumours or repeated put-downs</small></span>
+              </label>
+              <label class="choice-card">
+                <input type="radio" name="incidentType" value="image-pressure" required>
+                <span><strong>Pressure about images</strong><small>Someone asks, threatens or tries to bargain for images</small></span>
+              </label>
+              <label class="choice-card">
+                <input type="radio" name="incidentType" value="hate-speech" required>
+                <span><strong>Hate speech</strong><small>Targeting identity, disability, race, religion, gender or sexuality</small></span>
+              </label>
+            </fieldset>
+          </section>
+
+          <section class="form-step" data-step="1" aria-labelledby="step-two-title" hidden>
+            <p class="step-kicker">Step 2</p>
+            <h3 id="step-two-title" tabindex="-1">Check what needs attention first</h3>
+            <p class="step-help">These answers only set the urgency of your plan. They are not sent anywhere.</p>
+
+            <div class="question-list">
+              <fieldset class="yes-no-row">
+                <legend>Are you somewhere physically safe right now?</legend>
+                <label><input type="radio" name="safeNow" value="yes" required> Yes</label>
+                <label><input type="radio" name="safeNow" value="no" required> No</label>
+              </fieldset>
+              <fieldset class="yes-no-row">
+                <legend>Has anyone made a direct threat to hurt or meet you?</legend>
+                <label><input type="radio" name="directThreat" value="yes" required> Yes</label>
+                <label><input type="radio" name="directThreat" value="no" required> No</label>
+              </fieldset>
+              <fieldset class="yes-no-row">
+                <legend>Could the person know where you are now?</legend>
+                <label><input type="radio" name="knowsLocation" value="yes" required> Yes</label>
+                <label><input type="radio" name="knowsLocation" value="no" required> No</label>
+              </fieldset>
+              <fieldset class="yes-no-row">
+                <legend>Have they kept contacting you after you wanted it to stop?</legend>
+                <label><input type="radio" name="repeatedContact" value="yes" required> Yes</label>
+                <label><input type="radio" name="repeatedContact" value="no" required> No</label>
+              </fieldset>
+              <fieldset class="yes-no-row">
+                <legend>Has an image already been sent or shared?</legend>
+                <label><input type="radio" name="imageShared" value="yes" required> Yes</label>
+                <label><input type="radio" name="imageShared" value="no" required> No</label>
+              </fieldset>
+            </div>
+
+            <div id="immediate-warning" class="immediate-warning" role="alert" aria-atomic="true" hidden>
+              <strong>Get immediate help now.</strong>
+              <p>Move toward a safer place and involve a nearby adult. If danger is immediate, call your local emergency number (112 in Germany and across the EU). Keep using this form only if it is safe.</p>
+            </div>
+          </section>
+
+          <section class="form-step" data-step="2" aria-labelledby="step-three-title" hidden>
+            <p class="step-kicker">Step 3</p>
+            <h3 id="step-three-title" tabindex="-1">Choose someone to stand beside you</h3>
+            <p class="step-help">Pick the safest available adult, not necessarily the person you usually tell first.</p>
+
+            <div class="field-stack">
+              <label for="adult-role">Trusted adult</label>
+              <select id="adult-role" name="adultRole" required>
+                <option value="">Choose one</option>
+                <option value="parent">Parent or carer</option>
+                <option value="teacher">Teacher</option>
+                <option value="counsellor">School counsellor</option>
+                <option value="relative">Trusted relative</option>
+                <option value="coach">Coach or youth worker</option>
+                <option value="other">Another trusted adult</option>
+              </select>
+
+              <label for="adult-name">Their name <span>(optional)</span></label>
+              <input id="adult-name" name="adultName" type="text" maxlength="80" autocomplete="off">
+
+              <label for="notes">A short note for yourself <span>(optional)</span></label>
+              <textarea id="notes" name="notes" rows="4" maxlength="600" placeholder="For example: when it started, the account name, or what you want the adult to know."></textarea>
+              <p class="field-note">Do not copy private images here. This note is never included in a saved draft.</p>
+            </div>
+          </section>
+
+          <section class="form-step plan-step" data-step="3" aria-labelledby="plan-title" hidden>
+            <p class="step-kicker">Step 4</p>
+            <div id="urgency-panel" class="urgency-panel" tabindex="-1">
+              <p class="urgency-label" id="urgency-label"></p>
+              <h3 id="plan-title"></h3>
+              <p id="urgency-summary"></p>
+            </div>
+            <ol id="plan-list" class="plan-list"></ol>
+            <div class="limits-note">
+              <h4>What this plan can and cannot do</h4>
+              <p>It can help you organise the next steps. It does not send a report, contact an adult, remove content or promise a particular outcome.</p>
+            </div>
+          </section>
+
+          <div class="form-actions">
+            <button type="button" class="button secondary" id="back-button" hidden>Back</button>
+            <button type="button" class="button primary" id="next-button">Continue</button>
+            <button type="submit" class="button primary" id="plan-button" hidden>Build my plan</button>
+            <button type="button" class="button quiet" id="save-button">Save draft</button>
+            <button type="button" class="button quiet danger-text" id="clear-button">Clear my answers</button>
+          </div>
+          <p class="save-explainer">Save draft stores only the structured check-in choices and trusted-adult role in this browser. It excludes the optional name and note.</p>
+          <p id="save-status" class="save-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <footer>
+      <p>Help Bridge is a planning tool, not an emergency or reporting service.</p>
+    </footer>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

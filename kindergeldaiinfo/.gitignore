@@ -1,0 +1,24 @@
+# Source conversation exports
+Claude_*.json
+Claude_*.md
+Claude_*.txt
+
+# Dependencies and generated reports
+node_modules/
+coverage/
+
+# Operating-system files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local browser QA output
+artifacts/

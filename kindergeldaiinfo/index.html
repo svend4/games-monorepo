@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f5ef" />
+    <meta
+      name="description"
+      content="Four small, private-by-default tools for safer searching, balanced media use, getting help, and understanding AI."
+    />
+    <title>Small Steps — Digital confidence toolkit</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./packages/shared/styles/base.css" />
+    <link rel="stylesheet" href="./portal.css" />
+  </head>
+  <body class="portal-page">
+    <a class="skip-link" href="#main">Skip to the tools</a>
+
+    <header class="portal-header" aria-label="Small Steps home">
+      <a class="portal-brand" href="./index.html" aria-current="page">
+        <span class="portal-brand__mark" aria-hidden="true">S</span>
+        <span>Small Steps</span>
+      </a>
+      <p class="portal-header__note">Private by default · no account</p>
+    </header>
+
+    <main id="main">
+      <section class="portal-hero" aria-labelledby="portal-title">
+        <p class="eyebrow">A calm digital confidence toolkit</p>
+        <h1 id="portal-title">One useful next step, right when you need it.</h1>
+        <p class="portal-hero__lede">
+          Four focused tools turn online-safety advice into something you can actually do —
+          search, plan, ask for help, or practise checking an AI answer.
+        </p>
+        <div class="portal-trust" aria-label="Toolkit promises">
+          <span>Works locally</span>
+          <span>No sign-up</span>
+          <span>You stay in control</span>
+        </div>
+      </section>
+
+      <section class="portal-tools" aria-labelledby="tools-title">
+        <div class="portal-section-heading">
+          <div>
+            <p class="eyebrow">Choose your path</p>
+            <h2 id="tools-title">What would help today?</h2>
+          </div>
+          <p>Each tool remembers progress only in this browser.</p>
+        </div>
+        <div id="tool-grid" class="portal-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="portal-principles" aria-labelledby="principles-title">
+        <p class="eyebrow">Built for real moments</p>
+        <h2 id="principles-title">Helpful without taking over</h2>
+        <div class="portal-principles__grid">
+          <article>
+            <span aria-hidden="true">01</span>
+            <h3>Explain the reason</h3>
+            <p>Recommendations show why they are safer or more balanced.</p>
+          </article>
+          <article>
+            <span aria-hidden="true">02</span>
+            <h3>Keep choices reversible</h3>
+            <p>Plans and progress can be changed or cleared at any time.</p>
+          </article>
+          <article>
+            <span aria-hidden="true">03</span>
+            <h3>Bring in a person</h3>
+            <p>When a situation is serious, the tool points toward trusted human help.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="portal-footer">
+      <p><strong>Small Steps</strong> is a local prototype, not an emergency service.</p>
+      <a href="#main">Back to the tools</a>
+    </footer>
+
+    <script type="module" src="./portal.js"></script>
+  </body>
+</html>

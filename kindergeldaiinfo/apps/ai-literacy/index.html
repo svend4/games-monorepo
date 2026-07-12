@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Three short exercises for checking sources, perspectives and AI prompts.">
+    <title>AI Literacy Lab</title>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+    <link rel="stylesheet" href="../../packages/shared/styles/base.css">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body data-app-id="ai-literacy">
+    <a class="skip-link" href="#main-content">Skip to the exercises</a>
+
+    <header class="site-header">
+      <a class="back-link" href="../../index.html" aria-label="Back to all tools">← All tools</a>
+      <span class="lab-mark">AI CHECK / 03</span>
+    </header>
+
+    <main id="main-content">
+      <div id="app-intro"></div>
+
+      <section id="experiences" class="experience-section" aria-labelledby="experience-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Practice modes</p>
+            <h2 id="experience-title">Three habits for stronger AI checks</h2>
+          </div>
+          <p class="section-heading__hint">Choose a mode to move to that exercise. Nothing is answered for you.</p>
+        </div>
+        <div id="experience-cards"></div>
+      </section>
+
+      <section id="exercise-lab" class="lab-layout" aria-labelledby="lab-title">
+        <aside class="progress-panel">
+          <p class="eyebrow">Your progress</p>
+          <h2 id="lab-title">AI Check Lab</h2>
+          <p id="progress-copy" role="status" aria-live="polite" aria-atomic="true">0 of 3 exercises checked</p>
+          <progress id="progress-bar" max="3" value="0">0 of 3</progress>
+          <div class="score-row">
+            <span>Currently correct</span>
+            <strong id="score-copy">0 / 3</strong>
+          </div>
+          <div id="completion-note" class="completion-note" role="status" aria-live="polite" hidden>
+            <strong>All three checked.</strong>
+            <span>Review any explanation or try an answer again.</span>
+          </div>
+          <button id="reset-progress" class="reset-button" type="button" aria-describedby="storage-note">Reset progress</button>
+          <p id="storage-note" class="storage-note">Progress is saved only in this browser.</p>
+        </aside>
+
+        <div class="exercise-column">
+          <div class="lab-principle">
+            <span aria-hidden="true">↳</span>
+            <p><strong>Slow the answer down.</strong> Ask where a claim came from, who is missing and what evidence would let you check it.</p>
+          </div>
+          <div id="exercise-list"></div>
+        </div>
+      </section>
+
+      <aside class="reality-note">
+        <h2>One rule to keep</h2>
+        <p>A polished AI answer can still be incomplete or wrong. Never paste private details into an exercise, and check important claims against reliable original sources.</p>
+      </aside>
+    </main>
+
+    <footer>
+      <p>Built for practice: no account, no external AI call and no score sent anywhere.</p>
+    </footer>
+    <noscript>
+      <p class="noscript-message">Turn on JavaScript to use the exercises. The page does not contact an AI service.</p>
+    </noscript>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
