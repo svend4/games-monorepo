@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Block Surge — прототип ядра (Проход А)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <div class="stat">
+        <span class="label">Очки</span>
+        <span class="value" id="scoreEl">0</span>
+      </div>
+      <div class="stat combo" id="comboEl">Комбо —</div>
+      <div class="stat">
+        <span class="label">Рекорд</span>
+        <span class="value" id="bestEl">0</span>
+      </div>
+    </header>
+
+    <div id="surgeWrap">
+      <span class="surgeLabel">Прилив</span>
+      <div id="surgeBar"><div id="surgeFill"></div></div>
+      <span class="surgePct" id="surgePct">0%</span>
+    </div>
+
+    <canvas id="game"></canvas>
+
+    <div id="hint">Перетаскивай фигуры на поле. Собирай ряды и столбцы —
+      серии очисток заряжают «Прилив» и дают кристальную бомбу 3×3.</div>
+
+    <button id="restartBtn" type="button">Начать заново</button>
+
+    <div id="toast" class="hidden"></div>
+
+    <div id="overlay" class="hidden">
+      <div class="panel">
+        <h2>Ставить некуда — игра окончена</h2>
+        <p class="ovRow">Очки: <b id="overScore">0</b></p>
+        <p class="ovRow">Рекорд: <b id="overBest">0</b></p>
+        <p id="newRecord" class="hidden">🎉 Новый рекорд!</p>
+        <button id="againBtn" type="button">Играть заново</button>
+      </div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,335 @@
+/* Orchard Peaks — прототип ядра (Проход А). Крупные карты и шрифты: ЦА 45+.
+   Все размеры завязаны на --card-w, лейаут стола — чистый CSS calc, без JS-ресайза. */
+
+:root {
+  --card-w: clamp(32px, 8.8vw, 96px);
+  --card-h: calc(var(--card-w) * 1.4);
+  --gap: clamp(2px, 0.4vw, 6px);
+  --row-step: calc(var(--card-h) * 0.55);
+  --ink: #2d3327;
+  --red: #b3362b;
+  --gold: #d9a521;
+  --felt-1: #f6f1de;
+  --felt-2: #dcead0;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", Verdana, system-ui, sans-serif;
+  background: linear-gradient(180deg, var(--felt-1), var(--felt-2) 60%, #cfe3bd);
+  min-height: 100vh;
+  color: var(--ink);
+  font-size: 20px;                 /* базовый кегль ≥18 — требование 07-ux-ui-ftue.md п. 7.4 */
+  touch-action: manipulation;      /* убирает задержку тапа на мобильных */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* ---------- Верхняя панель ---------- */
+
+#hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 22px;
+  padding: 12px 16px 8px;
+}
+
+.hud-title {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.hud-item {
+  font-size: 21px;
+  white-space: nowrap;
+}
+
+.hud-item b { font-variant-numeric: tabular-nums; }
+
+#btn-restart {
+  font-size: 20px;
+  font-family: inherit;
+  padding: 10px 22px;
+  border: 2px solid #7a8a5f;
+  border-radius: 12px;
+  background: #fffdf4;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+#btn-restart:hover { background: #f3edd4; }
+
+/* ---------- Прогресс очистки стола ---------- */
+
+#progress {
+  height: 10px;
+  margin: 0 auto 10px;
+  width: min(92vw, 720px);
+  background: #ffffff99;
+  border: 1px solid #b9c49f;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+#progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #8fbf6b, #5f9e3e);
+  transition: width 0.25s ease;
+}
+
+/* ---------- Стол ---------- */
+
+#table-area {
+  display: flex;
+  justify-content: center;
+  padding: 6px 8px 0;
+}
+
+#peaks {
+  position: relative;
+  width: calc(10 * var(--card-w) + 9 * var(--gap));
+  height: calc(3 * var(--row-step) + var(--card-h) + 8px);
+}
+
+/* ---------- Карта ---------- */
+
+.card {
+  position: absolute;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: calc(var(--card-w) * 0.11);
+  background: #fffdf6;
+  border: 2px solid #a9a288;
+  box-shadow: 0 2px 5px rgba(60, 60, 30, 0.28);
+  overflow: hidden;
+}
+
+.card .face { position: absolute; inset: 0; }
+
+.corner {
+  position: absolute;
+  font-weight: 700;
+  font-size: max(14px, calc(var(--card-w) * 0.30));
+  line-height: 1;
+}
+
+.corner.tl { top: 5%; left: 8%; }
+.corner.br { bottom: 5%; right: 8%; transform: rotate(180deg); }
+
+.suit-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: calc(var(--card-w) * 0.46);
+  line-height: 1;
+}
+
+.card.red-suit { color: var(--red); }
+.card:not(.red-suit) .face { color: var(--ink); }
+
+.apple-badge {
+  position: absolute;
+  top: 4%;
+  right: 5%;
+  font-size: calc(var(--card-w) * 0.30);
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.35));
+}
+
+/* Рубашка */
+.card.down {
+  background:
+    radial-gradient(circle at 30% 25%, #9fc27e 0 18%, transparent 19%),
+    radial-gradient(circle at 70% 65%, #9fc27e 0 18%, transparent 19%),
+    linear-gradient(150deg, #7aa85a, #5b8a41);
+  border-color: #4c7336;
+  cursor: default;
+}
+
+.card.down .face, .card.down .apple-badge { display: none; }
+
+.card.down::after {
+  content: "🍃";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: calc(var(--card-w) * 0.4);
+  opacity: 0.55;
+}
+
+/* Играбельная карта: мягкое «дыхание» 1.00→1.03, период 2 с (03-core-gameplay.md п. 3.3) */
+.card.playable {
+  cursor: pointer;
+  border-color: var(--gold);
+  animation: breathe 2s ease-in-out infinite;
+}
+
+.card.playable:hover { box-shadow: 0 3px 10px rgba(120, 90, 0, 0.45); }
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.03); }
+}
+
+/* Автоподсказка после 12 с бездействия */
+.card.hint { animation: hint-pulse 1.2s ease-in-out infinite; }
+
+@keyframes hint-pulse {
+  0%, 100% { box-shadow: 0 2px 5px rgba(60,60,30,0.28); transform: scale(1); }
+  50%      { box-shadow: 0 0 16px 6px rgba(233, 183, 61, 0.85); transform: scale(1.04); }
+}
+
+/* Ошибочный тап */
+.card.shake { animation: shake 0.35s ease; }
+
+@keyframes shake {
+  0%, 100% { margin-left: 0; }
+  25%      { margin-left: -6px; }
+  75%      { margin-left: 6px; }
+}
+
+/* Убранная карта */
+.card.removed {
+  opacity: 0;
+  transform: scale(0.55);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* ---------- Низ: колода и сброс ---------- */
+
+#bottom {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(16px, 4vw, 48px);
+  padding: 18px 12px 24px;
+  flex-wrap: wrap;
+}
+
+.pile { text-align: center; }
+
+.pile .card {
+  position: relative;
+  margin: 0 auto;
+  width: calc(var(--card-w) * 1.12);
+  height: calc(var(--card-h) * 1.12);
+}
+
+.pile-label {
+  margin-top: 8px;
+  font-size: 19px;
+  color: #4a5240;
+}
+
+#stock-card { cursor: pointer; }
+
+#stock-card::after { content: ""; }   /* без листка — вместо него счётчик */
+
+#stock-card span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--card-w) * 0.42);
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+#stock-card.empty {
+  background: #d8d4c2;
+  border-color: #b0ab97;
+  cursor: default;
+}
+
+#stock-card.empty span { color: #8b8672; text-shadow: none; }
+
+#stock-card.hint { animation: hint-pulse 1.2s ease-in-out infinite; }
+#stock-card.shake { animation: shake 0.35s ease; }
+
+/* Свечение сброса при серии ×2+ (07-ux-ui-ftue.md: мягкое золотое свечение) */
+#waste-card.glow { box-shadow: 0 0 18px 6px rgba(230, 180, 50, 0.6); border-color: var(--gold); }
+
+#hint-text {
+  max-width: 340px;
+  margin: 4px 0 0;
+  font-size: 18px;
+  line-height: 1.45;
+  color: #4a5240;
+}
+
+/* ---------- Экран результата ---------- */
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(40, 48, 30, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+#overlay.hidden { display: none; }
+
+#overlay .panel {
+  background: #fffdf4;
+  border-radius: 20px;
+  padding: 28px 30px;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.panel h2 {
+  margin: 0 0 6px;
+  font-size: 30px;
+}
+
+.panel .emoji { font-size: 52px; line-height: 1.1; margin-bottom: 6px; }
+
+.panel p { font-size: 20px; margin: 10px 0; line-height: 1.45; }
+
+.panel table.reward {
+  margin: 14px auto;
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.panel table.reward td { padding: 4px 10px; text-align: left; }
+.panel table.reward td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.panel table.reward tr.total td { border-top: 2px solid #c9c3a8; padding-top: 8px; }
+
+.panel .btn-main {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 23px;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 14px 40px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #8fbf6b, #5f9e3e);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(60, 100, 30, 0.4);
+}
+
+.panel .btn-main:hover { filter: brightness(1.06); }
+
+.panel .kept { color: #5f7a3e; font-weight: 600; }

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ad-concepts-prototypes",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8145", "--bind", "127.0.0.1", "--directory", "games/ad-concepts"],
+      "port": 8145
+    }
+  ]
+}

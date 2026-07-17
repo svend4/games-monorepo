@@ -1,0 +1,286 @@
+/* WordGrove — прототип ядра (Проход А). Вся графика — CSS/эмодзи/канвас-примитивы. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  background: linear-gradient(170deg, #dcedc8 0%, #a5d6a7 60%, #81c784 100%);
+  color: #1b5e20;
+  display: flex;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  width: 100%;
+  max-width: 540px;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- HUD ---------- */
+
+#hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 6px;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+#hud-title { opacity: 0.85; font-size: 14px; }
+
+#hud-right { display: flex; align-items: center; gap: 10px; }
+
+#hud-coins {
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 14px;
+  padding: 4px 12px;
+  transition: transform 0.15s;
+}
+#hud-coins.pulse { transform: scale(1.18); }
+
+#btn-restart {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  color: #1b5e20;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#btn-restart:hover { background: #fff; }
+
+/* ---------- Игровое поле ---------- */
+
+#playfield {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#grid-area {
+  flex: 1 1 auto;
+  min-height: 120px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+}
+
+#grid { position: relative; }
+
+.cell {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.42);
+  border-radius: 6px;
+  font-weight: 800;
+  color: transparent;
+  box-shadow: inset 0 0 0 1px rgba(27, 94, 32, 0.12);
+}
+
+.cell.revealed {
+  background: #ffffff;
+  color: #33691e;
+  animation: cell-pop 0.28s ease-out;
+  box-shadow: 0 1px 3px rgba(27, 94, 32, 0.25);
+}
+
+.cell.hint-revealed {
+  background: #fff3c4;
+  color: #7a5c00;
+}
+
+@keyframes cell-pop {
+  0% { transform: scale(0.3); }
+  70% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Тост ---------- */
+
+#toast {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  background: rgba(27, 94, 32, 0.92);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 18px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  z-index: 5;
+}
+#toast.show { opacity: 1; }
+
+/* ---------- Текущее слово ---------- */
+
+#current-word {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: 5px;
+  color: #1b5e20;
+  transition: color 0.15s;
+}
+#current-word.ok    { color: #2e7d32; }
+#current-word.bonus { color: #b8860b; }
+#current-word.bad   { color: #c62828; animation: word-shake 0.35s; }
+#current-word.dup   { color: #78909c; }
+
+@keyframes word-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+/* ---------- Колесо и кнопки ---------- */
+
+#wheel-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 2px 10px 16px;
+}
+#wheel-area.shake { animation: word-shake 0.35s; }
+
+#wheel {
+  touch-action: none;
+  cursor: pointer;
+  display: block;
+}
+
+.side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 62px;
+  align-items: center;
+}
+
+.side-col button {
+  width: 58px;
+  height: 58px;
+  border: 2px solid #66bb6a;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.05;
+  transition: transform 0.1s, background 0.15s;
+}
+.side-col button:hover { background: #f1f8e9; }
+.side-col button:active { transform: scale(0.92); }
+.side-col button .icon { font-size: 20px; }
+.side-col button .cost { font-size: 11px; font-weight: 700; color: #558b2f; }
+.side-col button.poor .cost { color: #c62828; }
+
+/* ---------- Оверлей ---------- */
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 40, 18, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+#overlay.hidden { display: none; }
+
+#overlay-panel {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 26px 22px;
+  width: 88%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  animation: panel-in 0.25s ease-out;
+}
+
+@keyframes panel-in {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+#overlay-panel h2 { color: #2e7d32; margin-bottom: 12px; font-size: 24px; }
+#overlay-panel p  { color: #33691e; margin-bottom: 10px; font-size: 15px; }
+
+#overlay-panel .reward-line {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+#overlay-panel .bonus-list {
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+#overlay-panel .bonus-list span {
+  background: #fff3c4;
+  color: #7a5c00;
+  border-radius: 10px;
+  padding: 3px 10px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+#overlay-panel button {
+  margin-top: 14px;
+  padding: 12px 26px;
+  border: none;
+  border-radius: 24px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-block;
+}
+#overlay-panel button.primary {
+  background: #43a047;
+  color: #fff;
+  box-shadow: 0 4px 0 #2e7d32;
+}
+#overlay-panel button.primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
+#overlay-panel button.secondary {
+  background: #eeeeee;
+  color: #455a64;
+  margin-left: 8px;
+  font-size: 14px;
+  padding: 10px 18px;
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>WordGrove — прототип ядра (Проход А)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <div id="hud-level">Уровень 1/10</div>
+      <div id="hud-title">🌿 WordGrove</div>
+      <div id="hud-right">
+        <div id="hud-coins" title="Монеты">🪙 <span id="coins-value">0</span></div>
+        <button id="btn-restart" title="Начать уровень заново">↻</button>
+      </div>
+    </header>
+
+    <main id="playfield">
+      <div id="grid-area">
+        <div id="grid"></div>
+        <div id="toast"></div>
+      </div>
+
+      <div id="current-word">&nbsp;</div>
+
+      <div id="wheel-area">
+        <div class="side-col">
+          <button id="btn-hint" title="Лампа: открыть случайную букву сетки">
+            <span class="icon">💡</span><span class="cost" id="hint-cost">100</span>
+          </button>
+        </div>
+        <canvas id="wheel"></canvas>
+        <div class="side-col">
+          <button id="btn-shuffle" title="Перемешать буквы (бесплатно)">
+            <span class="icon">🔀</span>
+          </button>
+          <button id="btn-bonus" title="Найденные бонусные слова">
+            <span class="icon">⭐</span><span class="cost" id="bonus-count">0</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <div id="overlay" class="hidden">
+      <div id="overlay-panel"></div>
+    </div>
+  </div>
+
+  <script src="levels.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

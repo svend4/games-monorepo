@@ -1,0 +1,188 @@
+/* Block Surge — прототип Прохода А. Тёмная неоновая тема из главы 07 (высокий контраст). */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: radial-gradient(120% 100% at 50% 0%, #16202e 0%, #0b0f16 65%);
+  color: #e6edf3;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 10px 8px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---- Верхняя панель ---- */
+#hud {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 86px;
+}
+.stat .label {
+  font-size: 12px;
+  color: #8b98a9;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.stat .value {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.stat.combo {
+  font-size: 15px;
+  font-weight: 600;
+  color: #8b98a9;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #141b26;
+  border: 1px solid #232e3f;
+  transition: color .15s, border-color .15s, transform .15s;
+}
+.stat.combo.active {
+  color: #ffd43b;
+  border-color: #8a6d1a;
+  transform: scale(1.06);
+}
+
+/* ---- Шкала Прилива ---- */
+#surgeWrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+}
+.surgeLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #67e8f9;
+  white-space: nowrap;
+}
+.surgePct {
+  font-size: 12px;
+  color: #8b98a9;
+  min-width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+#surgeBar {
+  flex: 1;
+  height: 12px;
+  border-radius: 999px;
+  background: #141b26;
+  border: 1px solid #232e3f;
+  overflow: hidden;
+}
+#surgeFill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22d3ee, #818cf8);
+  transition: width .25s ease;
+}
+#surgeWrap.ready #surgeFill {
+  animation: surgePulse 1s ease-in-out infinite;
+}
+@keyframes surgePulse {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.6); }
+}
+
+/* ---- Канвас ---- */
+#game {
+  display: block;
+  max-width: 100%;
+  touch-action: none;       /* критично для drag на таче */
+  border-radius: 14px;
+  background: #10161f;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .45);
+}
+
+#hint {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #8b98a9;
+  text-align: center;
+  max-width: 380px;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  color: #e6edf3;
+  background: #1b2534;
+  border: 1px solid #2c3a50;
+  border-radius: 10px;
+  padding: 8px 22px;
+  cursor: pointer;
+}
+button:hover { background: #223047; }
+button:active { transform: translateY(1px); }
+
+/* ---- Тост ---- */
+#toast {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 20, 30, .92);
+  border: 1px solid #2c8ea3;
+  color: #a5f3fc;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 20;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+#toast.hidden { opacity: 0; }
+
+/* ---- Оверлей результата ---- */
+#overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 12, .72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+#overlay.hidden { display: none; }
+.panel {
+  background: #131a25;
+  border: 1px solid #2c3a50;
+  border-radius: 16px;
+  padding: 26px 34px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, .6);
+}
+.panel h2 { font-size: 19px; font-weight: 700; }
+.ovRow { font-size: 16px; color: #b8c4d3; }
+.ovRow b { color: #e6edf3; font-variant-numeric: tabular-nums; }
+#newRecord { color: #ffd43b; font-weight: 700; }
+#newRecord.hidden { display: none; }
+.panel button { margin-top: 8px; background: #1f4d3a; border-color: #2f7a5a; }
+.panel button:hover { background: #256047; }
