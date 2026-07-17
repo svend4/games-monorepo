@@ -141,7 +141,29 @@ report.safeSearch = await evaluate(`
   query.dispatchEvent(new Event("input", { bubbles: true }));
   document.querySelector("#search-form").requestSubmit();
   await new Promise((resolve) => setTimeout(resolve, 30));
-  document.querySelector("[data-save-id]").click();
+  const submitFocus = document.activeElement.id;
+  query.value = "";
+  query.dispatchEvent(new Event("input", { bubbles: true }));
+  const resultIds = [...document.querySelectorAll("#search-results [data-save-id]")]
+    .slice(0, 2)
+    .map((button) => button.dataset.saveId);
+  if (resultIds.length !== 2) throw new Error("Safe Search focus smoke needs two results.");
+
+  const findResultToggle = (resultId) =>
+    [...document.querySelectorAll("#search-results [data-save-id]")]
+      .find((button) => button.dataset.saveId === resultId);
+  findResultToggle(resultIds[0]).click();
+  const resultToggleFocused =
+    document.querySelector("#search-results").contains(document.activeElement) &&
+    document.activeElement.dataset.saveId === resultIds[0];
+
+  findResultToggle(resultIds[1]).click();
+  document.querySelector("#saved-results [data-save-id]").click();
+  const savedNextFocused = document.activeElement.dataset.saveId === resultIds[1];
+  document.activeElement.click();
+  const savedRemovalFocus = document.activeElement.id;
+
+  findResultToggle(resultIds[0]).click();
   return {
     intents: document.querySelectorAll("[data-experience-intent]").length,
     languages: [
@@ -153,6 +175,10 @@ report.safeSearch = await evaluate(`
     hash: window.location.hash,
     intentCategory,
     intentFocused,
+    submitFocus,
+    resultToggleFocused,
+    savedNextFocused,
+    savedRemovalFocus,
     results: document.querySelectorAll(".result-card").length,
     saved: document.querySelector("#saved-count")?.textContent.trim(),
     history: JSON.parse(localStorage.getItem("safe-search:history") || "[]").length,
@@ -163,6 +189,10 @@ assert.deepEqual(report.safeSearch.languages, ["de", "de", "de"]);
 assert.equal(report.safeSearch.intentCategory, "school");
 assert.equal(report.safeSearch.deepLinkCategory, "news");
 assert.equal(report.safeSearch.intentFocused, "search-query");
+assert.equal(report.safeSearch.submitFocus, "search-results");
+assert.equal(report.safeSearch.resultToggleFocused, true);
+assert.equal(report.safeSearch.savedNextFocused, true);
+assert.equal(report.safeSearch.savedRemovalFocus, "saved-title");
 assert.ok(report.safeSearch.results >= 1);
 assert.equal(report.safeSearch.hash, "#search-school");
 assert.equal(report.safeSearch.saved, "1");

@@ -78,7 +78,13 @@
           </form>
 
           <p id="search-status" class="search-status" role="status" aria-live="polite"></p>
-          <div id="search-results" class="result-grid" aria-label="Suchergebnisse"></div>
+          <div
+            id="search-results"
+            class="result-grid"
+            role="region"
+            aria-label="Suchergebnisse"
+            tabindex="-1"
+          ></div>
         </section>
 
         <div class="collection-layout">
@@ -86,7 +92,7 @@
             <div class="collection-panel__heading">
               <div>
                 <p class="section-heading__eyebrow">Deine Auswahl</p>
-                <h2 id="saved-title">Gespeicherte Quellen</h2>
+                <h2 id="saved-title" tabindex="-1">Gespeicherte Quellen</h2>
               </div>
               <span id="saved-count" class="count-badge" aria-live="polite">0</span>
             </div>

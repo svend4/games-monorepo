@@ -26,8 +26,8 @@ The test suite checks the public shared API, safe HTML rendering, the four produ
 
 The optional smoke check starts a temporary local server and an isolated
 headless Chrome session, verifies one complete loop in every app, checks
-browser storage, and writes responsive screenshots to the ignored
-`artifacts/` directory. Run it as one command:
+browser storage and dynamic focus continuity, and writes responsive screenshots
+to the ignored `artifacts/` directory. Run it as one command:
 
 ```sh
 npm run smoke

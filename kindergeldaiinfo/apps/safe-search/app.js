@@ -36,6 +36,7 @@ const elements = {
   status: document.querySelector("#search-status"),
   results: document.querySelector("#search-results"),
   savedResults: document.querySelector("#saved-results"),
+  savedTitle: document.querySelector("#saved-title"),
   savedCount: document.querySelector("#saved-count"),
   history: document.querySelector("#search-history"),
   clearHistory: document.querySelector("#clear-history"),
@@ -266,11 +267,33 @@ function commitSearch() {
   elements.results.focus({ preventScroll: true });
 }
 
-function handleSavedToggle(resultId) {
+function findSaveButton(container, resultId) {
+  return [...container.querySelectorAll("[data-save-id]")].find(
+    (button) => button.dataset.saveId === resultId,
+  );
+}
+
+function handleSavedToggle(resultId, originButton) {
+  const fromSavedResults = elements.savedResults.contains(originButton);
+  const savedButtons = fromSavedResults
+    ? [...elements.savedResults.querySelectorAll("[data-save-id]")]
+    : [];
+  const savedButtonIndex = savedButtons.indexOf(originButton);
+
   state.savedIds = toggleSavedId(state.savedIds, resultId);
   persistSaved();
   renderResults();
   renderSaved();
+
+  let nextFocus;
+  if (fromSavedResults) {
+    const remainingButtons = [...elements.savedResults.querySelectorAll("[data-save-id]")];
+    nextFocus = remainingButtons[Math.min(savedButtonIndex, remainingButtons.length - 1)] ??
+      elements.savedTitle;
+  } else {
+    nextFocus = findSaveButton(elements.results, resultId);
+  }
+  nextFocus?.focus({ preventScroll: true });
 }
 
 function updateExperienceLocation(control) {
@@ -338,7 +361,7 @@ elements.clearSearch.addEventListener("click", () => resetSearch({ focus: true }
 elements.results.addEventListener("click", (event) => {
   const saveButton = event.target.closest("[data-save-id]");
   if (saveButton) {
-    handleSavedToggle(saveButton.dataset.saveId);
+    handleSavedToggle(saveButton.dataset.saveId, saveButton);
     return;
   }
 
@@ -350,7 +373,7 @@ elements.results.addEventListener("click", (event) => {
 elements.savedResults.addEventListener("click", (event) => {
   const saveButton = event.target.closest("[data-save-id]");
   if (saveButton) {
-    handleSavedToggle(saveButton.dataset.saveId);
+    handleSavedToggle(saveButton.dataset.saveId, saveButton);
   }
 });
 

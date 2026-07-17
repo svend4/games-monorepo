@@ -34,6 +34,7 @@ const rootRequiredFiles = [
   "docs/continuation-sprint-9.md",
   "docs/continuation-sprint-10.md",
   "docs/continuation-sprint-11.md",
+  "docs/continuation-sprint-12.md",
   "packages/shared/src/index.js",
   "packages/shared/styles/base.css",
   "scripts/validate-monorepo.mjs",
@@ -291,6 +292,31 @@ async function validateHtmlPage(relativePath, label) {
     Boolean(skipTarget && mainIds.includes(skipTarget)),
     label + " skip-link must target the main landmark.",
   );
+
+  if (relativePath === "apps/safe-search/index.html") {
+    const resultsTag = html.match(
+      /<div\b(?=[^>]*\bid\s*=\s*["']search-results["'])[^>]*>/i,
+    )?.[0] ?? "";
+    const savedTitleTag = html.match(
+      /<h2\b(?=[^>]*\bid\s*=\s*["']saved-title["'])[^>]*>/i,
+    )?.[0] ?? "";
+    check(
+      /\brole\s*=\s*["']region["']/i.test(resultsTag),
+      "Safe Search results must expose a named region.",
+    );
+    check(
+      /\baria-label\s*=\s*["'][^"']+["']/i.test(resultsTag),
+      "Safe Search results region must have an accessible name.",
+    );
+    check(
+      /\btabindex\s*=\s*["']-1["']/i.test(resultsTag),
+      "Safe Search results must accept programmatic focus.",
+    );
+    check(
+      /\btabindex\s*=\s*["']-1["']/i.test(savedTitleTag),
+      "Safe Search saved heading must accept fallback focus.",
+    );
+  }
 }
 
 await Promise.all([
