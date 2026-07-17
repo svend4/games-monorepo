@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   browserExecutableCandidates,
+  browserShutdownMode,
   resolveStaticPath,
 } from "../scripts/run-browser-smoke.mjs";
 
@@ -34,4 +35,10 @@ test("browser detection prefers an explicit executable and removes duplicates", 
     candidate.endsWith("Google\\Chrome\\Application\\chrome.exe")));
   assert.ok(candidates.some((candidate) =>
     candidate.endsWith("Microsoft\\Edge\\Application\\msedge.exe")));
+});
+
+test("Windows closes the complete isolated browser process tree", () => {
+  assert.equal(browserShutdownMode("win32"), "process-tree");
+  assert.equal(browserShutdownMode("darwin"), "graceful");
+  assert.equal(browserShutdownMode("linux"), "graceful");
 });

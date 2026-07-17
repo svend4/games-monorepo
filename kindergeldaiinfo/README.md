@@ -37,6 +37,8 @@ Chrome, Chromium and Microsoft Edge are detected in their standard locations.
 `CHROME_BIN` can point to another Chromium-based browser executable.
 `APP_ORIGIN` or `CDP_ORIGIN` opt into an already running site or browser;
 `ARTIFACT_DIR` changes the screenshot destination.
+On Windows, the runner stops the complete process tree of only the isolated
+browser it launched before deleting the temporary profile.
 
 ## Shared foundation
 

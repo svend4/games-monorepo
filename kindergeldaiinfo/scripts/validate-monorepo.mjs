@@ -33,6 +33,7 @@ const rootRequiredFiles = [
   "docs/continuation-sprint-8.md",
   "docs/continuation-sprint-9.md",
   "docs/continuation-sprint-10.md",
+  "docs/continuation-sprint-11.md",
   "packages/shared/src/index.js",
   "packages/shared/styles/base.css",
   "scripts/validate-monorepo.mjs",

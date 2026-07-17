@@ -95,6 +95,10 @@ export function browserExecutableCandidates(
   return [...new Set(candidates.filter(Boolean))];
 }
 
+export function browserShutdownMode(platform = process.platform) {
+  return platform === "win32" ? "process-tree" : "graceful";
+}
+
 async function findBrowserExecutable() {
   for (const candidate of browserExecutableCandidates()) {
     try {
@@ -243,8 +247,33 @@ async function waitForProcessExit(child, timeoutMs = 3_000) {
   });
 }
 
+async function terminateWindowsProcessTree(processId) {
+  if (!Number.isInteger(processId) || processId <= 0) return false;
+
+  const terminator = spawn(
+    "taskkill",
+    ["/PID", String(processId), "/T", "/F"],
+    { stdio: "ignore", windowsHide: true },
+  );
+
+  return new Promise((resolve) => {
+    terminator.once("error", () => resolve(false));
+    terminator.once("exit", (code) => resolve(code === 0));
+  });
+}
+
 async function stopBrowser(browserProcess, cdpOrigin) {
   if (browserProcess.exitCode !== null) return;
+
+  if (browserShutdownMode() === "process-tree") {
+    const treeTerminated = await terminateWindowsProcessTree(browserProcess.pid);
+    if (!treeTerminated && browserProcess.exitCode === null) {
+      browserProcess.kill();
+    }
+    await waitForProcessExit(browserProcess);
+    return;
+  }
+
   await requestBrowserClose(cdpOrigin);
   await waitForProcessExit(browserProcess, 2_000);
   if (browserProcess.exitCode === null) {
