@@ -106,6 +106,20 @@ body {
   overflow: hidden;
 }
 
+.table-scroll-hint {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  color: var(--media-muted);
+  background: #faf7ff;
+  border-bottom: 1px solid var(--media-line);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.table-scroll-hint strong {
+  color: var(--media-ink);
+}
+
 .table-scroll {
   max-width: 100%;
   overflow-x: auto;

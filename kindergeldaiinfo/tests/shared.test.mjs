@@ -8,6 +8,7 @@ import {
   getAppConfig,
   renderAppIntro,
   renderExperienceCards,
+  resolveExperienceIntent,
 } from "../packages/shared/src/index.js";
 
 const expectedAppIds = [
@@ -121,6 +122,22 @@ test("renderExperienceCards adds list semantics and safely renders every card", 
   assert.match(renderExperienceCards([]), /role="status"/);
   assert.throws(() => renderExperienceCards(null), TypeError);
   assert.throws(() => renderAppIntro(null), TypeError);
+});
+
+test("experience targets resolve only known local intents", () => {
+  const experiences = [
+    { target: "#first-workflow", intentId: "first-intent" },
+    { target: "#second-workflow", id: "Second Choice" },
+  ];
+
+  assert.equal(
+    resolveExperienceIntent(experiences, "#first-workflow"),
+    "first-intent",
+  );
+  assert.equal(resolveExperienceIntent(experiences, "#second-workflow"), "second-choice");
+  assert.equal(resolveExperienceIntent(experiences, "#unknown"), null);
+  assert.equal(resolveExperienceIntent(experiences, "https://example.test"), null);
+  assert.throws(() => resolveExperienceIntent(null, "#first-workflow"), TypeError);
 });
 
 test("createStorage follows the requested API and round-trips JSON values", () => {

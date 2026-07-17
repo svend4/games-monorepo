@@ -41,6 +41,9 @@
         </section>
 
         <section id="week-planner" class="planner-section" aria-labelledby="planner-title">
+          <span id="week-planner-learning" class="intent-anchor" aria-hidden="true"></span>
+          <span id="week-planner-creative" class="intent-anchor" aria-hidden="true"></span>
+          <span id="week-planner-offline" class="intent-anchor" aria-hidden="true"></span>
           <div class="planner-heading">
             <div>
               <p class="section-eyebrow">Deine Woche</p>
@@ -54,7 +57,16 @@
 
           <div class="planner-layout">
             <form id="plan-form" class="plan-panel" novalidate>
-              <div class="table-scroll" tabindex="0" role="region" aria-labelledby="planner-table-title">
+              <p id="planner-scroll-hint" class="table-scroll-hint">
+                <strong>Seitlich navigieren:</strong> Wische in der Tabelle oder fokussiere den Tabellenbereich und nutze die Pfeiltasten.
+              </p>
+              <div
+                class="table-scroll"
+                tabindex="0"
+                role="region"
+                aria-labelledby="planner-table-title"
+                aria-describedby="planner-scroll-hint"
+              >
                 <table class="planner-table">
                   <caption id="planner-table-title">
                     Geplante Minuten pro Tag. Lernen und Kreativ ergeben zusammen die Bildschirmzeit.

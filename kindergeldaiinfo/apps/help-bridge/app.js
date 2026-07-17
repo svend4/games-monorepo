@@ -4,6 +4,7 @@ import {
   getAppConfig,
   renderAppIntro,
   renderExperienceCards,
+  resolveExperienceIntent,
 } from "../../packages/shared/src/index.js";
 import {
   assessUrgency,
@@ -174,20 +175,12 @@ form.addEventListener("change", (event) => {
   }
 });
 
-experienceCards.addEventListener("click", (event) => {
-  const intentControl = event.target.closest("[data-experience-intent]");
-  if (!intentControl) {
-    return;
-  }
-
-  const incidentType = normalizeDraft({
-    incidentType: intentControl.dataset.experienceIntent,
-  }).incidentType;
+function applyExperienceIntent(intent) {
+  const incidentType = normalizeDraft({ incidentType: intent }).incidentType;
   if (!incidentType) {
-    return;
+    return false;
   }
 
-  event.preventDefault();
   const incidentControl = [...form.querySelectorAll('[name="incidentType"]')].find(
     (control) => control.value === incidentType,
   );
@@ -197,6 +190,35 @@ experienceCards.addEventListener("click", (event) => {
   showStep(0);
   incidentControl?.focus({ preventScroll: true });
   setStatus("Starting point selected. Review it, then continue when you are ready.");
+  return true;
+}
+
+function updateExperienceLocation(control) {
+  const target = control.getAttribute("href");
+  if (target && window.location.hash !== target) {
+    window.history.pushState(null, "", target);
+  }
+}
+
+function applyLocationExperience() {
+  const intent = resolveExperienceIntent(config.domainExperiences, window.location.hash);
+  if (intent) {
+    applyExperienceIntent(intent);
+  }
+}
+
+experienceCards.addEventListener("click", (event) => {
+  const intentControl = event.target.closest("[data-experience-intent]");
+  if (!intentControl) {
+    return;
+  }
+
+  if (!applyExperienceIntent(intentControl.dataset.experienceIntent)) {
+    return;
+  }
+
+  event.preventDefault();
+  updateExperienceLocation(intentControl);
 });
 
 const savedDraft = storage.get(DRAFT_KEY, null);
@@ -209,3 +231,10 @@ if (savedDraft) {
 }
 
 showStep(0, { focus: false });
+
+window.addEventListener("hashchange", applyLocationExperience);
+if (document.readyState === "complete") {
+  applyLocationExperience();
+} else {
+  window.addEventListener("load", applyLocationExperience, { once: true });
+}

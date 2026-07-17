@@ -4,6 +4,7 @@ import {
   getAppConfig,
   renderAppIntro,
   renderExperienceCards,
+  resolveExperienceIntent,
 } from "../../packages/shared/src/index.js";
 import {
   SAFE_RESULTS,
@@ -272,6 +273,20 @@ function handleSavedToggle(resultId) {
   renderSaved();
 }
 
+function updateExperienceLocation(control) {
+  const target = control.getAttribute("href");
+  if (target && window.location.hash !== target) {
+    window.history.pushState(null, "", target);
+  }
+}
+
+function applyLocationExperience() {
+  const intent = resolveExperienceIntent(config.domainExperiences, window.location.hash);
+  if (intent) {
+    applyExperienceIntent(intent);
+  }
+}
+
 function applyExperienceIntent(intent) {
   const category = getCategoryForExperienceIntent(intent);
   if (!category) {
@@ -313,6 +328,7 @@ elements.experienceCards.addEventListener("click", (event) => {
   }
 
   if (applyExperienceIntent(intentControl.dataset.experienceIntent)) {
+    updateExperienceLocation(intentControl);
     event.preventDefault();
   }
 });
@@ -358,3 +374,10 @@ elements.clearHistory.addEventListener("click", () => {
   renderHistory();
   elements.clearHistory.focus();
 });
+
+window.addEventListener("hashchange", applyLocationExperience);
+if (document.readyState === "complete") {
+  applyLocationExperience();
+} else {
+  window.addEventListener("load", applyLocationExperience, { once: true });
+}

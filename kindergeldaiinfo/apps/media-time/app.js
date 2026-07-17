@@ -4,6 +4,7 @@ import {
   getAppConfig,
   renderAppIntro,
   renderExperienceCards,
+  resolveExperienceIntent,
 } from "../../packages/shared/src/index.js";
 import {
   CATEGORIES,
@@ -226,7 +227,7 @@ function clearIntentHighlight() {
 
 function focusExperienceIntent(intent) {
   if (!categoryById.has(intent)) {
-    return;
+    return false;
   }
 
   clearIntentHighlight();
@@ -242,6 +243,21 @@ function focusExperienceIntent(intent) {
   const category = categoryById.get(intent);
   elements.status.textContent = `${category.label} ist markiert. Passe die Minuten an den Tagen an, die du planen möchtest.`;
   highlightTimer = window.setTimeout(clearIntentHighlight, 2800);
+  return true;
+}
+
+function updateExperienceLocation(control) {
+  const target = control.getAttribute("href");
+  if (target && window.location.hash !== target) {
+    window.history.pushState(null, "", target);
+  }
+}
+
+function applyLocationExperience() {
+  const intent = resolveExperienceIntent(config.domainExperiences, window.location.hash);
+  if (intent) {
+    focusExperienceIntent(intent);
+  }
 }
 
 renderStaticContent();
@@ -291,6 +307,17 @@ elements.experienceCards.addEventListener("click", (event) => {
     return;
   }
 
+  if (!focusExperienceIntent(intentControl.dataset.experienceIntent)) {
+    return;
+  }
+
   event.preventDefault();
-  focusExperienceIntent(intentControl.dataset.experienceIntent);
+  updateExperienceLocation(intentControl);
 });
+
+window.addEventListener("hashchange", applyLocationExperience);
+if (document.readyState === "complete") {
+  applyLocationExperience();
+} else {
+  window.addEventListener("load", applyLocationExperience, { once: true });
+}

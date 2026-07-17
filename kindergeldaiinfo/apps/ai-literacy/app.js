@@ -4,6 +4,7 @@ import {
   getAppConfig,
   renderAppIntro,
   renderExperienceCards,
+  resolveExperienceIntent,
 } from "../../packages/shared/src/index.js";
 import {
   EXERCISES,
@@ -53,10 +54,10 @@ function prepareExperienceIntents() {
 }
 
 function activateExercise(exerciseId) {
-  if (!getExercise(exerciseId)) return;
+  if (!getExercise(exerciseId)) return false;
 
   const card = exerciseList.querySelector(`[data-exercise-id="${exerciseId}"]`);
-  if (!card) return;
+  if (!card) return false;
 
   activeExerciseId = exerciseId;
   for (const exerciseCard of exerciseList.querySelectorAll("[data-exercise-id]")) {
@@ -74,6 +75,21 @@ function activateExercise(exerciseId) {
   card.hidden = false;
   card.scrollIntoView({ behavior: "smooth", block: "start" });
   card.querySelector("input")?.focus({ preventScroll: true });
+  return true;
+}
+
+function updateExperienceLocation(control) {
+  const target = control.getAttribute("href");
+  if (target && window.location.hash !== target) {
+    window.history.pushState(null, "", target);
+  }
+}
+
+function applyLocationExperience() {
+  const intent = resolveExperienceIntent(config.domainExperiences, window.location.hash);
+  if (intent) {
+    activateExercise(intent);
+  }
 }
 
 function optionMarkup(exercise, option, selected) {
@@ -173,8 +189,12 @@ experienceCards.addEventListener("click", (event) => {
   const control = event.target.closest("[data-experience-intent]");
   if (!control || !experienceCards.contains(control)) return;
 
+  if (!activateExercise(control.dataset.experienceIntent)) {
+    return;
+  }
+
   event.preventDefault();
-  activateExercise(control.dataset.experienceIntent);
+  updateExperienceLocation(control);
 });
 
 exerciseList.addEventListener("click", (event) => {
@@ -210,3 +230,10 @@ resetButton.addEventListener("click", () => {
 });
 
 renderAll();
+
+window.addEventListener("hashchange", applyLocationExperience);
+if (document.readyState === "complete") {
+  applyLocationExperience();
+} else {
+  window.addEventListener("load", applyLocationExperience, { once: true });
+}

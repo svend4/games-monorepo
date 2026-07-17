@@ -464,6 +464,12 @@ textarea:hover {
   border: 0 !important;
 }
 
+.intent-anchor {
+  display: block;
+  height: 0;
+  scroll-margin-top: 1rem;
+}
+
 @media (min-width: 42rem) {
   .container,
   .app-shell {

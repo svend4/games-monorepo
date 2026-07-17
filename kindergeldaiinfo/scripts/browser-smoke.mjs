@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const cdpOrigin = process.env.CDP_ORIGIN ?? "http://127.0.0.1:9223";
-const appOrigin = process.env.APP_ORIGIN ?? "http://127.0.0.1/01/kindergeldaiinfo";
+const cdpOrigin = (process.env.CDP_ORIGIN ?? "http://127.0.0.1:9223").replace(/\/+$/, "");
+const appOrigin = (process.env.APP_ORIGIN ?? "http://127.0.0.1/01/kindergeldaiinfo").replace(/\/+$/, "");
 const artifactDirectory = path.resolve(process.env.ARTIFACT_DIR ?? "artifacts");
 
 async function waitForChrome(timeoutMs = 12_000) {
@@ -128,8 +128,9 @@ assert.equal(report.portal.cards, 4);
 assert.equal(report.portal.links.length, 4);
 await screenshot("portal-desktop.png", 1440, 1000);
 
-await navigate("/apps/safe-search/");
+await navigate("/apps/safe-search/#search-news");
 report.safeSearch = await evaluate(`
+  const deepLinkCategory = document.querySelector("#search-category").value;
   document.querySelector('[data-experience-intent="school"]').click();
   const intentCategory = document.querySelector("#search-category").value;
   const intentFocused = document.activeElement.id;
@@ -141,6 +142,8 @@ report.safeSearch = await evaluate(`
   document.querySelector("[data-save-id]").click();
   return {
     intents: document.querySelectorAll("[data-experience-intent]").length,
+    deepLinkCategory,
+    hash: window.location.hash,
     intentCategory,
     intentFocused,
     results: document.querySelectorAll(".result-card").length,
@@ -150,14 +153,21 @@ report.safeSearch = await evaluate(`
 `);
 assert.equal(report.safeSearch.intents, 3);
 assert.equal(report.safeSearch.intentCategory, "school");
+assert.equal(report.safeSearch.deepLinkCategory, "news");
 assert.equal(report.safeSearch.intentFocused, "search-query");
 assert.ok(report.safeSearch.results >= 1);
+assert.equal(report.safeSearch.hash, "#search-school");
 assert.equal(report.safeSearch.saved, "1");
 assert.equal(report.safeSearch.history, 1);
 await screenshot("safe-search-mobile.png", 390, 844);
 
-await navigate("/apps/media-time/");
+await navigate("/apps/media-time/#week-planner-offline");
 report.mediaTime = await evaluate(`
+  const tableRegion = document.querySelector(".table-scroll");
+  const tableHint = document.querySelector("#planner-scroll-hint");
+  const tableDescriptionIds = tableRegion.getAttribute("aria-describedby")?.split(/\\s+/) ?? [];
+  const deepLinkApplied = document.querySelector('[data-category-heading="offline"]')
+    ?.classList.contains("intent-highlight");
   document.querySelector('[data-experience-intent="learning"]').click();
   const intentCategory = document.activeElement.dataset.categoryId;
   const input = document.querySelector('[data-day-id="monday"][data-category-id="learning"]');
@@ -167,23 +177,36 @@ report.mediaTime = await evaluate(`
   await new Promise((resolve) => setTimeout(resolve, 30));
   return {
     intents: document.querySelectorAll("[data-experience-intent]").length,
+    tableOverflow: tableRegion.scrollWidth > tableRegion.clientWidth,
+    tableHintLinked: tableDescriptionIds.includes(tableHint?.id),
+    tableHintVisible: Boolean(tableHint?.getBoundingClientRect().height),
+    tableRegionFocusable: tableRegion.tabIndex === 0,
     intentCategory,
+    deepLinkApplied,
+    hash: window.location.hash,
     mondayDigital: document.querySelector("#digital-monday")?.textContent.trim(),
     messages: document.querySelectorAll(".feedback-item").length,
     stored: localStorage.getItem("media-time:weekly-plan") !== null,
   };
 `);
 assert.equal(report.mediaTime.intents, 3);
+assert.equal(report.mediaTime.tableOverflow, true);
+assert.equal(report.mediaTime.tableHintLinked, true);
+assert.equal(report.mediaTime.tableHintVisible, true);
+assert.equal(report.mediaTime.tableRegionFocusable, true);
 assert.equal(report.mediaTime.intentCategory, "learning");
 assert.match(report.mediaTime.mondayDigital, /Std\.|Min\./);
+assert.equal(report.mediaTime.deepLinkApplied, true);
 assert.ok(report.mediaTime.messages >= 1);
+assert.equal(report.mediaTime.hash, "#week-planner-learning");
 assert.equal(report.mediaTime.stored, true);
 await screenshot("media-time-mobile.png", 390, 844);
 report.mediaTime.cleared = await evaluate(`document.querySelector("#reset-plan").click(); return localStorage.getItem("media-time:weekly-plan") === null;`);
 assert.equal(report.mediaTime.cleared, true);
 
-await navigate("/apps/help-bridge/");
+await navigate("/apps/help-bridge/#triage-form-hate-speech");
 report.helpBridge = await evaluate(`
+  const deepLinkIncident = document.querySelector('[name="incidentType"]:checked')?.value;
   document.querySelector('[data-experience-intent="image-pressure"]').click();
   const intentControl = document.querySelector('[name="incidentType"]:checked');
   const intentFocused = document.activeElement === intentControl;
@@ -206,6 +229,8 @@ report.helpBridge = await evaluate(`
     intents: document.querySelectorAll("[data-experience-intent]").length,
     intent: intentControl?.value,
     intentFocused,
+    deepLinkIncident,
+    hash: window.location.hash,
     title: document.querySelector("#plan-title")?.textContent.trim(),
     urgency: document.querySelector("#urgency-label")?.textContent.trim(),
     steps: document.querySelectorAll("#plan-list li").length,
@@ -218,8 +243,10 @@ assert.equal(report.helpBridge.intents, 3);
 assert.equal(report.helpBridge.intent, "image-pressure");
 assert.equal(report.helpBridge.intentFocused, true);
 assert.equal(report.helpBridge.urgency, "Tell an adult today");
+assert.equal(report.helpBridge.deepLinkIncident, "hate-speech");
 assert.ok(report.helpBridge.steps >= 4);
 assert.equal(report.helpBridge.beforeBuild, null);
+assert.equal(report.helpBridge.hash, "#triage-form-image-pressure");
 assert.equal(report.helpBridge.afterBuild, null);
 assert.ok(report.helpBridge.stored);
 assert.equal(Object.hasOwn(report.helpBridge.stored, "adultName"), false);
@@ -235,8 +262,11 @@ report.helpBridge.restored = await evaluate(`
 `);
 assert.deepEqual(report.helpBridge.restored, { incident: "image-pressure", adultName: "", notes: "" });
 
-await navigate("/apps/ai-literacy/");
+await navigate("/apps/ai-literacy/#exercise-link-source-check");
 report.aiLiteracy = await evaluate(`
+  const deepLinkCard = document.querySelector('[data-exercise-id="source-check"]');
+  const deepLinkActive = deepLinkCard?.hasAttribute("data-selected") &&
+    deepLinkCard.contains(document.activeElement);
   document.querySelector('[data-experience-intent="missing-perspectives"]').click();
   const intentCard = document.querySelector('[data-exercise-id="missing-perspectives"]');
   const intentFocused = intentCard.contains(document.activeElement);
@@ -257,6 +287,8 @@ report.aiLiteracy = await evaluate(`
     intentFocused,
     progress: document.querySelector("#progress-copy")?.textContent.trim(),
     score: document.querySelector("#score-copy")?.textContent.trim(),
+    deepLinkActive,
+    hash: window.location.hash,
     completed: !document.querySelector("#completion-note")?.hidden,
   };
 `);
@@ -265,7 +297,9 @@ assert.equal(report.aiLiteracy.intentFocused, true);
 assert.equal(report.aiLiteracy.progress, "3 of 3 exercises checked");
 assert.equal(report.aiLiteracy.score, "3 / 3");
 assert.equal(report.aiLiteracy.completed, true);
+assert.equal(report.aiLiteracy.deepLinkActive, true);
 await screenshot("ai-literacy-mobile.png", 390, 844);
+assert.equal(report.aiLiteracy.hash, "#exercise-link-missing-perspectives");
 
 assert.deepEqual(browserErrors, [], `Browser errors: ${browserErrors.join(" | ")}`);
 console.log(JSON.stringify({ ...report, browserErrors }, null, 2));

@@ -24,23 +24,19 @@ The test suite checks the public shared API, safe HTML rendering, the four produ
 
 ### Browser smoke check
 
-The optional smoke check drives an isolated Chrome tab through the XAMPP site,
-verifies one complete loop in every app, checks browser storage, and writes
-responsive screenshots to the ignored `artifacts/` directory.
-
-Start Chrome with a separate local test profile in another PowerShell window:
-
-```powershell
-& "$env:ProgramFiles\Google\Chrome\Application\chrome.exe" --headless=new --remote-debugging-port=9223 --user-data-dir="$env:TEMP\small-steps-smoke" about:blank
-```
-
-Then run:
+The optional smoke check starts a temporary local server and an isolated
+headless Chrome session, verifies one complete loop in every app, checks
+browser storage, and writes responsive screenshots to the ignored
+`artifacts/` directory. Run it as one command:
 
 ```sh
 npm run smoke
 ```
 
-`APP_ORIGIN`, `CDP_ORIGIN`, and `ARTIFACT_DIR` can override the defaults.
+Chrome, Chromium and Microsoft Edge are detected in their standard locations.
+`CHROME_BIN` can point to another Chromium-based browser executable.
+`APP_ORIGIN` or `CDP_ORIGIN` opt into an already running site or browser;
+`ARTIFACT_DIR` changes the screenshot destination.
 
 ## Shared foundation
 
@@ -60,6 +56,12 @@ The shared stylesheet is `packages/shared/styles/base.css`. It provides design t
 Help Bridge uses the same resilient storage wrapper only after the user chooses
 to save. Its persistent draft excludes names and free-text notes so a shared
 device retains less sensitive context.
+
+Each experience card also carries a unique local URL fragment. Opening or
+copying that link restores only the selected guided starting point. User-entered
+searches, answers, names, notes, and saved progress are never placed in the
+address.
+
 ## Integration example
 
 ```js

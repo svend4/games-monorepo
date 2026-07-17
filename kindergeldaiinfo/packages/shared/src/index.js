@@ -21,7 +21,7 @@ const rawAppConfigs = {
         description:
           "Verwandle eine Hausaufgabenfrage in eine gezielte Suche und vergleiche Quellen, bevor du eine Antwort nutzt.",
         actionLabel: "Ein Thema erkunden",
-        target: "#search",
+        target: "#search-school",
         intentId: "school",
       },
       {
@@ -31,7 +31,7 @@ const rawAppConfigs = {
         description:
           "Lies eine altersgerechte Übersicht, trenne Fakten von Meinungen und prüfe das Veröffentlichungsdatum.",
         actionLabel: "Eine Nachricht prüfen",
-        target: "#search",
+        target: "#search-news",
         intentId: "news",
       },
       {
@@ -41,7 +41,7 @@ const rawAppConfigs = {
         description:
           "Finde praktische Ideen mit klaren Materialien, sinnvollen Schritten und Sicherheitshinweisen.",
         actionLabel: "Eine Idee finden",
-        target: "#search",
+        target: "#search-creative",
         intentId: "creative",
       },
     ],
@@ -68,7 +68,7 @@ const rawAppConfigs = {
         description:
           "Reserviere ablenkungsarme Zeiten für Hausaufgaben, Tutorials und hilfreiche Lernwerkzeuge.",
         actionLabel: "Eine Fokuszeit planen",
-        target: "#week-planner",
+        target: "#week-planner-learning",
         intentId: "learning",
       },
       {
@@ -78,7 +78,7 @@ const rawAppConfigs = {
         description:
           "Schütze Zeit zum Zeichnen, Schneiden, Programmieren, Musizieren und aktiven Nutzen von Technik.",
         actionLabel: "Kreativzeit planen",
-        target: "#week-planner",
+        target: "#week-planner-creative",
         intentId: "creative",
       },
       {
@@ -88,7 +88,7 @@ const rawAppConfigs = {
         description:
           "Erkenne volle Tage und plane Schlaf, Bewegung, Freunde und ruhige Momente ein.",
         actionLabel: "Freiraum finden",
-        target: "#week-planner",
+        target: "#week-planner-offline",
         intentId: "offline",
       },
     ],
@@ -114,7 +114,7 @@ const rawAppConfigs = {
         description:
           "Slow the moment down, preserve useful evidence, and decide who can help without replying under pressure.",
         actionLabel: "Make a calm plan",
-        target: "#triage-form",
+        target: "#triage-form-insults",
         intentId: "insults",
       },
       {
@@ -124,7 +124,7 @@ const rawAppConfigs = {
         description:
           "Stop contact, avoid forwarding private material, and reach a trusted adult through a safer channel.",
         actionLabel: "See protective steps",
-        target: "#triage-form",
+        target: "#triage-form-image-pressure",
         intentId: "image-pressure",
       },
       {
@@ -134,7 +134,7 @@ const rawAppConfigs = {
         description:
           "Document what happened, use platform protections, and build a handoff that explains what support you need.",
         actionLabel: "Prepare a handoff",
-        target: "#triage-form",
+        target: "#triage-form-hate-speech",
         intentId: "hate-speech",
       },
     ],
@@ -160,7 +160,7 @@ const rawAppConfigs = {
         description:
           "Spot claims that need evidence and choose a stronger way to confirm them outside the AI response.",
         actionLabel: "Test a claim",
-        target: "#exercise-lab",
+        target: "#exercise-link-source-check",
         intentId: "source-check",
       },
       {
@@ -170,7 +170,7 @@ const rawAppConfigs = {
         description:
           "Look for whose experience or context is absent before accepting a confident-sounding summary.",
         actionLabel: "Review an answer",
-        target: "#exercise-lab",
+        target: "#exercise-link-missing-perspectives",
         intentId: "missing-perspectives",
       },
       {
@@ -180,7 +180,7 @@ const rawAppConfigs = {
         description:
           "Add purpose, context, and useful constraints so the next response is easier to assess and use.",
         actionLabel: "Rewrite a prompt",
-        target: "#exercise-lab",
+        target: "#exercise-link-prompt-improvement",
         intentId: "prompt-improvement",
       },
     ],
@@ -347,6 +347,27 @@ export function renderExperienceCards(items) {
   });
 
   return '<div class="experience-grid" role="list">' + cards.join("") + "</div>";
+}
+
+export function resolveExperienceIntent(items, target) {
+  if (!Array.isArray(items)) {
+    throw new TypeError("resolveExperienceIntent expects an array of experiences.");
+  }
+
+  const fragment = String(target ?? "").trim();
+  if (!/^#[A-Za-z][A-Za-z0-9_:.-]*$/.test(fragment)) {
+    return null;
+  }
+
+  const experience = items.find((item) =>
+    item && typeof item === "object" && item.target === fragment
+  );
+
+  if (!experience) {
+    return null;
+  }
+
+  return toDomId(experience.intentId ?? experience.id, "experience");
 }
 
 const memoryStorage = new Map();

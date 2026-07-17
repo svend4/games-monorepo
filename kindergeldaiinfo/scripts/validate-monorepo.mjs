@@ -29,10 +29,15 @@ const rootRequiredFiles = [
   "portal.css",
   "docs/continuation-sprint-5.md",
   "docs/continuation-sprint-6.md",
+  "docs/continuation-sprint-7.md",
+  "docs/continuation-sprint-8.md",
+  "docs/continuation-sprint-9.md",
   "packages/shared/src/index.js",
   "packages/shared/styles/base.css",
   "scripts/validate-monorepo.mjs",
+  "scripts/run-browser-smoke.mjs",
   "scripts/browser-smoke.mjs",
+  "tests/browser-smoke-runner.test.mjs",
   "tests/shared.test.mjs",
 ];
 
@@ -91,8 +96,8 @@ try {
     "package.json validate script must run the monorepo validator.",
   );
   check(
-    packageJson.scripts?.smoke === "node scripts/browser-smoke.mjs",
-    "package.json smoke script must run the browser smoke check.",
+    packageJson.scripts?.smoke === "node scripts/run-browser-smoke.mjs",
+    "package.json smoke script must prepare and run the browser smoke check.",
   );
   check(
     !packageJson.dependencies || Object.keys(packageJson.dependencies).length === 0,
@@ -146,6 +151,10 @@ for (const appId of expectedAppIds) {
     appSource === null || appSource.includes("[data-experience-intent]"),
     appId + " must handle experience intent controls.",
   );
+  check(
+    appSource === null || appSource.includes("resolveExperienceIntent"),
+    appId + " must restore experience intents from local fragment targets.",
+  );
 
   check(
     Array.isArray(config.domainExperiences) && config.domainExperiences.length >= 3,
@@ -154,6 +163,7 @@ for (const appId of expectedAppIds) {
 
   const experienceIds = new Set();
   const experienceIntentIds = new Set();
+  const experienceTargets = new Set();
   for (const [index, experience] of (config.domainExperiences ?? []).entries()) {
     const location = appId + " domain experience " + (index + 1);
     for (const field of ["id", "eyebrow", "title", "description", "actionLabel", "target", "intentId"]) {
@@ -172,6 +182,12 @@ for (const appId of expectedAppIds) {
       isFragmentTarget(experience.target) && pageIds.has(experience.target.slice(1)),
       location + " target must reference an element in the app HTML.",
     );
+    check(
+      !experienceTargets.has(experience.target),
+      appId + " contains a duplicate experience target: " + experience.target,
+    );
+    experienceTargets.add(experience.target);
+
     check(
       !experienceIntentIds.has(experience.intentId),
       appId + " contains a duplicate experience intent ID: " + experience.intentId,
