@@ -25,6 +25,7 @@ test("shared data exposes four complete, immutable app configs", () => {
     const config = getAppConfig(appId);
     assert.ok(config, "expected a config for " + appId);
     assert.equal(config.id, appId);
+    assert.ok(["de", "en"].includes(config.locale));
     assert.ok(config.title.length > 0);
     assert.ok(config.description.length > 0);
     assert.match(config.primaryAction.target, /^#[A-Za-z]/);
@@ -37,6 +38,16 @@ test("shared data exposes four complete, immutable app configs", () => {
       assert.ok(experience.intentId.length > 0);
     }
   }
+
+  assert.deepEqual(
+    Object.fromEntries(expectedAppIds.map((appId) => [appId, getAppConfig(appId).locale])),
+    {
+      "safe-search": "de",
+      "media-time": "de",
+      "help-bridge": "en",
+      "ai-literacy": "en",
+    },
+  );
 
   assert.equal(getAppConfig("not-an-app"), null);
   assert.equal(getAppConfig(null), null);

@@ -122,10 +122,12 @@ report.portal = await evaluate(`
     cards: document.querySelectorAll(".portal-card").length,
     heading: document.querySelector("h1")?.textContent.trim(),
     links: [...document.querySelectorAll(".portal-card a")].map((link) => link.getAttribute("href")),
+    cardLanguages: [...document.querySelectorAll(".portal-card")].map((card) => card.lang),
   };
 `);
 assert.equal(report.portal.cards, 4);
 assert.equal(report.portal.links.length, 4);
+assert.deepEqual(report.portal.cardLanguages, ["de", "de", "en", "en"]);
 await screenshot("portal-desktop.png", 1440, 1000);
 
 await navigate("/apps/safe-search/#search-news");
@@ -142,6 +144,11 @@ report.safeSearch = await evaluate(`
   document.querySelector("[data-save-id]").click();
   return {
     intents: document.querySelectorAll("[data-experience-intent]").length,
+    languages: [
+      document.documentElement.lang,
+      document.querySelector("#app-intro").closest("[lang]")?.lang,
+      document.querySelector("#experience-cards").closest("[lang]")?.lang,
+    ],
     deepLinkCategory,
     hash: window.location.hash,
     intentCategory,
@@ -152,6 +159,7 @@ report.safeSearch = await evaluate(`
   };
 `);
 assert.equal(report.safeSearch.intents, 3);
+assert.deepEqual(report.safeSearch.languages, ["de", "de", "de"]);
 assert.equal(report.safeSearch.intentCategory, "school");
 assert.equal(report.safeSearch.deepLinkCategory, "news");
 assert.equal(report.safeSearch.intentFocused, "search-query");
@@ -177,6 +185,11 @@ report.mediaTime = await evaluate(`
   await new Promise((resolve) => setTimeout(resolve, 30));
   return {
     intents: document.querySelectorAll("[data-experience-intent]").length,
+    languages: [
+      document.documentElement.lang,
+      document.querySelector("#app-intro").closest("[lang]")?.lang,
+      document.querySelector("#experience-cards").closest("[lang]")?.lang,
+    ],
     tableOverflow: tableRegion.scrollWidth > tableRegion.clientWidth,
     tableHintLinked: tableDescriptionIds.includes(tableHint?.id),
     tableHintVisible: Boolean(tableHint?.getBoundingClientRect().height),
@@ -190,6 +203,7 @@ report.mediaTime = await evaluate(`
   };
 `);
 assert.equal(report.mediaTime.intents, 3);
+assert.deepEqual(report.mediaTime.languages, ["de", "de", "de"]);
 assert.equal(report.mediaTime.tableOverflow, true);
 assert.equal(report.mediaTime.tableHintLinked, true);
 assert.equal(report.mediaTime.tableHintVisible, true);
@@ -227,6 +241,11 @@ report.helpBridge = await evaluate(`
   await new Promise((resolve) => setTimeout(resolve, 30));
   return {
     intents: document.querySelectorAll("[data-experience-intent]").length,
+    languages: [
+      document.documentElement.lang,
+      document.querySelector("#app-intro").closest("[lang]")?.lang,
+      document.querySelector("#experience-cards").closest("[lang]")?.lang,
+    ],
     intent: intentControl?.value,
     intentFocused,
     deepLinkIncident,
@@ -240,6 +259,7 @@ report.helpBridge = await evaluate(`
   };
 `);
 assert.equal(report.helpBridge.intents, 3);
+assert.deepEqual(report.helpBridge.languages, ["en", "en", "en"]);
 assert.equal(report.helpBridge.intent, "image-pressure");
 assert.equal(report.helpBridge.intentFocused, true);
 assert.equal(report.helpBridge.urgency, "Tell an adult today");
@@ -284,6 +304,11 @@ report.aiLiteracy = await evaluate(`
   await new Promise((resolve) => setTimeout(resolve, 30));
   return {
     intents: document.querySelectorAll("[data-experience-intent]").length,
+    languages: [
+      document.documentElement.lang,
+      document.querySelector("#app-intro").closest("[lang]")?.lang,
+      document.querySelector("#experience-cards").closest("[lang]")?.lang,
+    ],
     intentFocused,
     progress: document.querySelector("#progress-copy")?.textContent.trim(),
     score: document.querySelector("#score-copy")?.textContent.trim(),
@@ -293,6 +318,7 @@ report.aiLiteracy = await evaluate(`
   };
 `);
 assert.equal(report.aiLiteracy.intents, 3);
+assert.deepEqual(report.aiLiteracy.languages, ["en", "en", "en"]);
 assert.equal(report.aiLiteracy.intentFocused, true);
 assert.equal(report.aiLiteracy.progress, "3 of 3 exercises checked");
 assert.equal(report.aiLiteracy.score, "3 / 3");

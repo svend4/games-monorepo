@@ -95,6 +95,7 @@ const rawAppConfigs = {
   },
   "help-bridge": {
     id: "help-bridge",
+    locale: "en",
     title: "Help Bridge",
     productLabel: "A calm next step",
     tagline: "You do not have to solve a difficult online moment alone.",
@@ -141,6 +142,7 @@ const rawAppConfigs = {
   },
   "ai-literacy": {
     id: "ai-literacy",
+    locale: "en",
     title: "AI Literacy Lab",
     productLabel: "Think with AI, not after it",
     tagline: "Practice the small checks that turn an AI answer into a better decision.",

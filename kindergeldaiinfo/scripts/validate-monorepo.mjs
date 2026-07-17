@@ -32,6 +32,7 @@ const rootRequiredFiles = [
   "docs/continuation-sprint-7.md",
   "docs/continuation-sprint-8.md",
   "docs/continuation-sprint-9.md",
+  "docs/continuation-sprint-10.md",
   "packages/shared/src/index.js",
   "packages/shared/styles/base.css",
   "scripts/validate-monorepo.mjs",
@@ -124,12 +125,38 @@ for (const appId of expectedAppIds) {
   const appHtml = await readText("apps/" + appId + "/index.html");
   const appSource = await readText("apps/" + appId + "/app.js");
   const pageIds = new Set([...(appHtml ?? "").matchAll(/\bid\s*=\s*["']([^"']+)["']/gi)].map((match) => match[1]));
+  const pageLanguage = appHtml
+    ?.match(/<html\b[^>]*\blang\s*=\s*["']([^"']+)["']/i)?.[1]
+    ?.toLowerCase() ?? null;
 
   check(config.id === appId, "Config ID does not match its key for " + appId + ".");
-  for (const field of ["title", "productLabel", "tagline", "description", "audience", "theme"]) {
+  for (const field of ["locale", "title", "productLabel", "tagline", "description", "audience", "theme"]) {
     check(
       isNonEmptyString(config[field]),
       appId + " must define a non-empty " + field + ".",
+    );
+  }
+
+  check(
+    ["de", "en"].includes(config.locale),
+    appId + " must define a supported locale.",
+  );
+  check(
+    pageLanguage === config.locale,
+    appId + " HTML language must match its configured locale.",
+  );
+
+  for (const mountId of ["app-intro", "experience-cards"]) {
+    const mountTag = (appHtml ?? "").match(
+      new RegExp("<div\\b[^>]*\\bid\\s*=\\s*[\"']" + mountId + "[\"'][^>]*>", "i"),
+    )?.[0];
+    check(Boolean(mountTag), appId + " must expose the #" + mountId + " mount.");
+    const mountLanguage = mountTag
+      ?.match(/\blang\s*=\s*["']([^"']+)["']/i)?.[1]
+      ?.toLowerCase() ?? null;
+    check(
+      mountLanguage === null || mountLanguage === config.locale,
+      appId + " #" + mountId + " must inherit or match the configured locale.",
     );
   }
 
