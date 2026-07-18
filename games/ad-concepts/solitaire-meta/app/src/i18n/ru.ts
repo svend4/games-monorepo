@@ -203,6 +203,11 @@ export const ru = {
   'settings.lang.note': 'Смена языка перезагружает страницу — прогресс и сейвы сохраняются.',
   'settings.lang.ru': 'Русский',
   'settings.lang.en': 'English',
+  'settings.sound.title': '🔊 Звук',
+  'settings.sound.note':
+    'Мягкие ноты пентатоники: ходы, урожай, победы. Включён по умолчанию, громкость щадящая.',
+  'settings.sound.on': '🔊 Вкл',
+  'settings.sound.off': '🔇 Выкл',
   'settings.ftue.title': '❓ Обучение',
   'settings.ftue.note': 'Коуч-марки первого запуска можно пройти заново в любой момент.',
   'settings.ftue.replay': 'Пройти обучение снова',

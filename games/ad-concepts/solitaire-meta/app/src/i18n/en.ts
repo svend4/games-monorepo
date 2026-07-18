@@ -200,6 +200,11 @@ export const en = {
   'settings.lang.note': 'Switching the language reloads the page — your progress and saves are kept.',
   'settings.lang.ru': 'Русский',
   'settings.lang.en': 'English',
+  'settings.sound.title': '🔊 Sound',
+  'settings.sound.note':
+    'Gentle pentatonic notes for moves, harvest and wins. On by default, at an easy volume.',
+  'settings.sound.on': '🔊 On',
+  'settings.sound.off': '🔇 Off',
   'settings.ftue.title': '❓ Tutorial',
   'settings.ftue.note': 'You can replay the first-run coach marks at any time.',
   'settings.ftue.replay': 'Replay the tutorial',

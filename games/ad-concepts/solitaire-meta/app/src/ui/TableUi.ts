@@ -38,6 +38,7 @@ import { Meta, streakRewardFor } from '../meta/meta';
 import { TOTAL_ORDERS } from '../meta/config';
 import type { MonetizeController } from '../monetize/monetize';
 import { t, tDyn } from '../i18n';
+import { sound } from '../audio';
 import type { MetaUi } from './MetaUi';
 
 /** Локализованный номинал карты (Т/В/Д/К ↔ A/J/Q/K; ядро остаётся русским). */
@@ -386,6 +387,9 @@ export class TableUi {
       this.finishLose();
       return;
     }
+    // Проход З: звук хода. Финалы звучат своей темой (finishWin/finishLose);
+    // 🍎 — тёплый двузвук, обычная карта — нота, растущая с длиной серии.
+    sound.play(res.harvest ? { kind: 'harvest' } : { kind: 'cardRemoved', chain: res.chain });
     this.render();
     this.armIdleTimer();
   }
@@ -404,6 +408,7 @@ export class TableUi {
       this.finishLose();
       return;
     }
+    sound.play({ kind: 'stockDraw' }); // Проход З: обрыв серии — низкая мягкая нота
     this.render();
     this.armIdleTimer();
   }
@@ -545,6 +550,7 @@ export class TableUi {
     if (s === null) return;
     this.clearHint();
     this.disarmJoker();
+    sound.play({ kind: 'win' }); // Проход З: восходящее арпеджио победы
 
     const n = s.entryLevel; // уровень только что сыгранной раздачи
     const stockCards = stockLeft(s.game);
@@ -642,6 +648,7 @@ export class TableUi {
     if (s === null) return;
     this.clearHint();
     this.disarmJoker();
+    sound.play({ kind: 'lose' }); // Проход З: две мягкие ноты вниз (утешительно)
 
     this.gamesCount++;
     this.lsSet(ECON.LEGACY_GAMES, this.gamesCount);
@@ -816,7 +823,10 @@ export class TableUi {
     const claimBtn = this.byId('overlay').querySelector('[data-streak]');
     if (claimBtn !== null) {
       claimBtn.addEventListener('click', () => {
-        if (this.meta.claimStreak()) this.gToast(t('game.toast.streakClaimed'));
+        if (this.meta.claimStreak()) {
+          sound.play({ kind: 'reward' }); // Проход З: двузвук награды стрика
+          this.gToast(t('game.toast.streakClaimed'));
+        }
         this.hideOverlay();
         this.syncHud();
       });

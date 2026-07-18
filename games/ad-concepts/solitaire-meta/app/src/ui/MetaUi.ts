@@ -11,6 +11,7 @@ import type { Economy } from '../economy/economy';
 import { Meta, streakRewardFor } from '../meta/meta';
 import { TOTAL_ORDERS, ZONES } from '../meta/config';
 import { getLocale, setLocale, t, tDyn } from '../i18n';
+import { sound } from '../audio';
 
 export type MetaTab = 'garden' | 'tasks' | 'shop' | 'settings';
 
@@ -77,6 +78,7 @@ export class MetaUi {
       const before = this.meta.activeOrder();
       const res = this.meta.completeActiveOrder();
       if (res !== null) {
+        sound.play({ kind: 'orderDone' }); // Проход З: «колокольчик» заказа
         this.render();
         if (res.zoneCompleted !== null && before !== null) {
           const zid = ZONES[before.zoneIdx].id;
@@ -103,11 +105,13 @@ export class MetaUi {
     } else if (act === 'claim-mission') {
       const id = b.getAttribute('data-id') ?? '';
       if (this.meta.claimMission(id)) {
+        sound.play({ kind: 'reward' }); // Проход З: двузвук награды миссии
         this.render();
         this.flashToast(t('meta.toast.missionClaimed'));
       }
     } else if (act === 'claim-streak') {
       if (this.meta.claimStreak()) {
+        sound.play({ kind: 'reward' }); // Проход З: двузвук награды стрика
         this.render();
         this.flashToast(t('meta.toast.streakClaimed'));
       }
@@ -122,6 +126,16 @@ export class MetaUi {
         // Применение смены языка — перезагрузка страницы (см. src/i18n/index.ts):
         // консистентный ре-рендер всех экранов, сейвы не затрагиваются.
         window.location.reload();
+      }
+    } else if (act === 'set-sound') {
+      // Проход З: «Звук: вкл/выкл» — применяется сразу, персистится в
+      // localStorage (orchardPeaks.sound). При включении — слышимое
+      // подтверждение (клик по кнопке = жест, AudioContext уже разбужен).
+      const on = b.getAttribute('data-on') === '1';
+      if (on !== sound.isEnabled()) {
+        sound.setEnabled(on);
+        if (on) sound.play({ kind: 'reward' });
+        this.render();
       }
     } else if (act === 'replay-ftue') {
       this.close();
@@ -416,7 +430,7 @@ export class MetaUi {
     return html;
   }
 
-  /* ---------- Вкладка «Настройки»: язык RU/EN + повтор обучения ---------- */
+  /* ---------- Вкладка «Настройки»: язык RU/EN + звук + повтор обучения ---------- */
 
   private renderSettings(): string {
     const cur = getLocale();
@@ -432,6 +446,22 @@ export class MetaUi {
       '<button class="ghost-btn lang-btn' + (cur === 'en' ? ' active' : '') +
       '" data-action="set-lang" data-lang="en" ' + (cur === 'en' ? 'disabled' : '') + '>' +
       t('settings.lang.en') + '</button>';
+    html += '</div></div>';
+
+    // Проход З: «Звук» — рядом с языком, те же крупные кнопки (ЦА 45+).
+    const soundOn = sound.isEnabled();
+    html += '<div class="card-panel">';
+    html += '<div class="panel-title">' + t('settings.sound.title') + '</div>';
+    html += '<div class="claimed-note">' + t('settings.sound.note') + '</div>';
+    html += '<div class="lang-row">';
+    html +=
+      '<button class="ghost-btn lang-btn' + (soundOn ? ' active' : '') +
+      '" data-action="set-sound" data-on="1" ' + (soundOn ? 'disabled' : '') + '>' +
+      t('settings.sound.on') + '</button>';
+    html +=
+      '<button class="ghost-btn lang-btn' + (soundOn ? '' : ' active') +
+      '" data-action="set-sound" data-on="0" ' + (soundOn ? '' : 'disabled') + '>' +
+      t('settings.sound.off') + '</button>';
     html += '</div></div>';
 
     html += '<div class="card-panel">';

@@ -121,6 +121,9 @@ export const EN = {
   /* ---------- Settings (meta footer) ---------- */
   'settings.language': 'Language',
   'settings.langNote': 'Changing the language reloads the page',
+  'settings.sound': 'Sound',
+  'settings.soundOn': '🔊 on',
+  'settings.soundOff': '🔇 off',
   'settings.replayOnboarding': '❔ Replay the tutorial',
 
   /* ---------- Shop ---------- */

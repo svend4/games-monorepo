@@ -33,6 +33,11 @@ export class MetaUi {
   piggyOpener: (() => Promise<number>) | null = null;
   /** «Пройти обучение снова» из настроек меты (Проход Ж.1, OnboardingUi). */
   onReplayOnboarding: (() => void) | null = null;
+  /**
+   * Переключатель «Звук: вкл/выкл» в настройках (Проход З): мост к GameAudio
+   * (назначает main.ts). null — кнопка рендерится, но клик — no-op.
+   */
+  soundControl: { isEnabled(): boolean; setEnabled(on: boolean): void } | null = null;
 
   private scr: HTMLElement | null = null;
   private contentEl: HTMLElement | null = null;
@@ -80,6 +85,10 @@ export class MetaUi {
       '<button type="button" data-action="lang-ru"' + (loc === 'ru' ? ' class="active"' : '') + '>RU</button>' +
       '<button type="button" data-action="lang-en"' + (loc === 'en' ? ' class="active"' : '') + '>EN</button>' +
       '</span>' +
+      // Звук (Проход З): вкл/выкл рядом с языком, персист — GameAudio.
+      '<span class="settings-label">' + t('settings.sound') + ':</span>' +
+      '<button type="button" class="meta-ob-replay" data-action="toggle-sound">' +
+      this.soundLabel() + '</button>' +
       '<button type="button" class="meta-ob-replay" data-action="replay-onboarding">' +
       t('settings.replayOnboarding') + '</button>' +
       '</div>';
@@ -132,10 +141,23 @@ export class MetaUi {
       meta.claimMission(el.getAttribute('data-id') ?? '');
     } else if (action === 'lang-ru' || action === 'lang-en') {
       this.switchLocale(action === 'lang-ru' ? 'ru' : 'en');
+    } else if (action === 'toggle-sound') {
+      // Звук (Проход З): мгновенное применение + персист в GameAudio.
+      const sc = this.soundControl;
+      if (sc !== null) {
+        sc.setEnabled(!sc.isEnabled());
+        el.textContent = this.soundLabel();
+      }
     } else if (action === 'replay-onboarding') {
       this.close();
       this.onReplayOnboarding?.();
     }
+  }
+
+  /** Подпись кнопки звука по текущему состоянию (по умолчанию — вкл). */
+  private soundLabel(): string {
+    const on = this.soundControl === null || this.soundControl.isEnabled();
+    return t(on ? 'settings.soundOn' : 'settings.soundOff');
   }
 
   /** Смена языка: персист + reload (применение к уже отрисованному UI). */

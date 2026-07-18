@@ -16,6 +16,7 @@ import { MAP_NODES, MISSION_BONUS, STREAK_REWARDS, type NodeReward } from '../me
 import { missionDef } from '../meta/missions';
 import { getLocale, setLocale, t, type Locale } from '../i18n';
 import { setThemeMode, themeMode, type ThemeMode } from './theme';
+import { playSound, setSoundEnabled, soundEnabled } from '../audio/index';
 
 /**
  * Панель rewarded-офферов мета-экрана (Проход Е.2: RW-3/RW-4, 06 §2.2).
@@ -132,6 +133,10 @@ export class MetaUi {
       '<div class="setRow"><span class="setLabel">' + t('settings.brightness') + '</span>' +
       '<button id="briDarkBtn" type="button" class="geoBtn">' + t('settings.brightnessDark') + '</button>' +
       '<button id="briLightBtn" type="button" class="geoBtn">' + t('settings.brightnessLight') + '</button></div>' +
+      // ПРОХОД З: тумблер звука — рядом с яркостью, персист blocksurge_sound.
+      '<div class="setRow"><span class="setLabel">' + t('settings.sound') + '</span>' +
+      '<button id="sndOnBtn" type="button" class="geoBtn">' + t('settings.soundOn') + '</button>' +
+      '<button id="sndOffBtn" type="button" class="geoBtn">' + t('settings.soundOff') + '</button></div>' +
       '<p class="metaNote">' + t('settings.reloadNote') + '</p>' +
       '<div class="streakBtns">' +
       '<button id="ftueReplayBtn" type="button" class="ghostBtn">' + t('settings.replayFtue') + '</button>' +
@@ -139,7 +144,11 @@ export class MetaUi {
       '</div>';
 
     this.el('metaCloseBtn').addEventListener('click', () => this.closeMeta());
-    this.el('streakClaimBtn').addEventListener('click', () => this.meta.claimStreak());
+    this.el('streakClaimBtn').addEventListener('click', () => {
+      // ПРОХОД З: кнопка активна только когда награда доступна — двузвук уместен.
+      if (this.meta.streakClaimable()) playSound({ type: 'reward' });
+      this.meta.claimStreak();
+    });
     this.el('simDayBtn').addEventListener('click', () => this.meta.simNextDay());
     this.el('rwBoosterBtn').addEventListener('click', () => this.adPanel?.onRw3());
     this.el('rwStreakBtn').addEventListener('click', () => this.adPanel?.onRw4());
@@ -149,6 +158,8 @@ export class MetaUi {
     this.el('langEnBtn').addEventListener('click', () => this.switchLocale('en'));
     this.el('briDarkBtn').addEventListener('click', () => this.switchTheme('dark'));
     this.el('briLightBtn').addEventListener('click', () => this.switchTheme('lighter'));
+    this.el('sndOnBtn').addEventListener('click', () => this.switchSound(true));
+    this.el('sndOffBtn').addEventListener('click', () => this.switchSound(false));
     this.el('ftueReplayBtn').addEventListener('click', () => {
       this.closeMeta();
       this.onFtueReplay?.();
@@ -159,6 +170,9 @@ export class MetaUi {
       const target = e.target as HTMLElement;
       const nodeBtn = target.closest('[data-node]');
       if (nodeBtn) {
+        // ПРОХОД З: кнопка «Забрать» рендерится только у готового узла —
+        // клик по ней всегда означает успешную выдачу награды.
+        playSound({ type: 'reward' });
         this.meta.claimNode(parseInt(nodeBtn.getAttribute('data-node') ?? '', 10));
         return;
       }
@@ -167,6 +181,7 @@ export class MetaUi {
         const id = buyBtn.getAttribute('data-buy') as BoosterId;
         const def = ECON.BOOSTERS[id];
         if (this.economy.buyBooster(id)) {
+          playSound({ type: 'reward' }); // ПРОХОД З: успешная покупка — двузвук
           this.toast(t('toast.boosterBought', { name: t(`booster.${id}.name`) }));
         } else {
           this.toast(t('toast.notEnoughCoins', { price: def.price }));
@@ -247,6 +262,14 @@ export class MetaUi {
     this.renderMeta(); // обновить active-состояние кнопок
   }
 
+  /** Звук (ПРОХОД З): вкл/выкл сразу + персист; включение подтверждаем двузвуком. */
+  private switchSound(on: boolean): void {
+    if (on === soundEnabled()) return;
+    setSoundEnabled(on);
+    if (on) playSound({ type: 'reward' }); // слышимое подтверждение «звук работает»
+    this.refreshSettingsButtons();
+  }
+
   /** active-подсветка кнопок настроек по текущим значениям. */
   private refreshSettingsButtons(): void {
     const mark = (id: string, active: boolean): void => {
@@ -256,6 +279,8 @@ export class MetaUi {
     mark('langEnBtn', getLocale() === 'en');
     mark('briDarkBtn', themeMode() === 'dark');
     mark('briLightBtn', themeMode() === 'lighter');
+    mark('sndOnBtn', soundEnabled());
+    mark('sndOffBtn', !soundEnabled());
   }
 
   /* =========================== МЕТА-ЭКРАН =========================== */

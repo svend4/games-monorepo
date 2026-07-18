@@ -24,6 +24,7 @@ import type { MetaUi } from '../ui/MetaUi';
 import type { MonetizeController } from '../monetize/monetize';
 import { t } from '../i18n';
 import { onThemeChanged, theme } from '../ui/theme';
+import { playSound } from '../audio/index';
 
 /** Сервисы меты (Проход Е.2): экономика, прогрессия, бустеры, DOM-оверлей,
  * монетизация (interstitial на рестарте + rewarded на экране итога). */
@@ -234,6 +235,16 @@ export class GameScene extends Phaser.Scene {
     const res = placePiece(this.state, slot, r, c);
     if (!res) return;
     this.services.meta.onMove(res.lineCount, res.mult, res.cleanBoard);
+    // ПРОХОД З (звук, карта — src/audio/notes.ts): без очистки — одиночная
+    // нота по строке (ниже на поле = ниже тон); очистка — аккорд по числу
+    // линий; комбо — восходящая ступень поверх; полный «Прилив» — глиссандо.
+    if (res.lineCount > 0) {
+      playSound({ type: 'clear', lines: res.lineCount });
+      if (res.mult > 1) playSound({ type: 'combo', mult: res.mult });
+    } else {
+      playSound({ type: 'place', row: r, boardRows: N });
+    }
+    if (res.bombBecameReady) playSound({ type: 'surgeReady' });
     const now = this.time.now;
     for (const cell of res.clearedCells) {
       this.clearFx.push({ r: cell.r, c: cell.c, color: COLORS[cell.colorIdx] ?? 0xffffff, t0: now });
@@ -264,6 +275,7 @@ export class GameScene extends Phaser.Scene {
     const res = dropBomb(this.state, r, c);
     if (!res) return;
     this.services.meta.onBomb(res.cleanBoard);
+    playSound({ type: 'bomb' }); // ПРОХОД З: широкий аккорд + глиссандо вниз
     const now = this.time.now;
     for (const cell of res.clearedCells) {
       this.clearFx.push({ r: cell.r, c: cell.c, color: COLORS[cell.colorIdx] ?? 0xffffff, t0: now });
@@ -290,6 +302,8 @@ export class GameScene extends Phaser.Scene {
     const end = this.services.meta.onGameEnd(finalScore);
     this.overTimer = this.time.delayedCall(OVER_DELAY_MS, () => {
       this.overTimer = null;
+      // ПРОХОД З: мягкие 3 ноты вниз вместе с экраном итога (не пугающие).
+      playSound({ type: 'gameOver' });
       this.overScoreText.setText(String(finalScore));
       this.overBestText.setText(String(finalBest));
       this.overStarsText.setText(
@@ -358,6 +372,7 @@ export class GameScene extends Phaser.Scene {
     if (economy.getBooster(id) <= 0) {
       const def = ECON.BOOSTERS[id];
       if (economy.buyBooster(id)) {
+        playSound({ type: 'reward' }); // ПРОХОД З: успешная докупка — двузвук
         ui.toast(t('toast.boosterBoughtPrice', { name: t(`booster.${id}.name`), price: def.price }));
       } else {
         ui.toast(t('toast.notEnoughCoins', { price: def.price }));

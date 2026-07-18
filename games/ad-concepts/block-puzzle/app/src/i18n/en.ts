@@ -102,6 +102,9 @@ export const en = {
   'settings.brightness': 'Background brightness',
   'settings.brightnessDark': 'Dark',
   'settings.brightnessLight': 'Lighter',
+  'settings.sound': 'Sound',
+  'settings.soundOn': '🔊 On',
+  'settings.soundOff': '🔇 Off',
   'settings.replayFtue': '🎓 Replay the tutorial',
 
   /* ========================= Тосты меты =============================== */

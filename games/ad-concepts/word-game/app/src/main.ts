@@ -34,6 +34,7 @@ import { DashboardUi } from './ui/DashboardUi';
 import { Experiments } from './experiments/experiments';
 import { CockpitUi } from './ui/CockpitUi';
 import { OnboardingUi } from './ui/OnboardingUi';
+import { GameAudio } from './audio';
 
 /* ==================== I18N-СТАТИКА (Проход Ж.1) ==================== */
 
@@ -99,12 +100,27 @@ meta.bridge = game;
  * прогресс, награды за уже пройденные регионы выдаются (миграция Прохода А). */
 meta.init();
 
+/* ==================== ЗВУК (Проход З, процедурный WebAudio) ==================== */
+/* Пентатоника C4–A5 (порт эталона Kotlin): notes.ts выбирает ноты, synth.ts
+ * синтезирует (sine + огибающая), GameAudio хранит настройку вкл/выкл
+ * (wordgrove.sound.v1, по умолчанию ВКЛ). AudioContext создаётся ЛЕНИВО по
+ * первому жесту (autoplay-политика) — до него события звука тихо no-op. */
+const audio = new GameAudio(storage);
+audio.subscribeFirstGesture();
+
 /* DOM-рендер: сетка + HUD + оверлеи (GridUi), мета-экран (MetaUi). */
 const gridUi = new GridUi(game, economy, meta);
 const metaUi = new MetaUi({ meta, economy, game, toast: (msg) => gridUi.toast(msg) });
 gridUi.onMetaOpen = (tab) => metaUi.open(tab);
 metaUi.onPlayDaily = () => gridUi.startDaily();
 meta.onToast = (msg) => gridUi.toast(msg);
+
+/* Хуки звука: ядро (core/) о звуке не знает — события идут из UI-слоя. */
+gridUi.sfx = (event) => audio.event(event);
+metaUi.soundControl = {
+  isEnabled: () => audio.isEnabled(),
+  setEnabled: (on) => audio.setEnabled(on)
+};
 
 gridUi.mount();
 metaUi.mount();
@@ -271,6 +287,10 @@ new Phaser.Game({
   width: WHEEL_SIZE,
   height: WHEEL_SIZE,
   transparent: true,
+  // Звук игры — собственный WebAudio-синтез (Проход З, src/audio): глушим
+  // Phaser Sound Manager, иначе он создаёт СВОЙ AudioContext при загрузке
+  // модуля (до жеста) — нарушение autoplay-политики и warning в консоли.
+  audio: { noAudio: true },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH

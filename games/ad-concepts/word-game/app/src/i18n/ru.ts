@@ -122,6 +122,9 @@ export const RU = {
   /* ---------- Настройки (футер меты) ---------- */
   'settings.language': 'Язык',
   'settings.langNote': 'Смена языка перезагрузит страницу',
+  'settings.sound': 'Звук',
+  'settings.soundOn': '🔊 вкл',
+  'settings.soundOff': '🔇 выкл',
   'settings.replayOnboarding': '❔ Пройти обучение снова',
 
   /* ---------- Магазин ---------- */

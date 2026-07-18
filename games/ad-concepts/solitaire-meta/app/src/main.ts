@@ -27,11 +27,17 @@ import { DashboardUi } from './ui/DashboardUi';
 import { Experiments } from './experiments/experiments';
 import { CockpitUi } from './ui/CockpitUi';
 import { OnboardingUi } from './ui/OnboardingUi';
+import { installSoundUnlock } from './audio';
 
 /* Проход Ж.1: i18n RU/EN. Локаль решена при импорте src/i18n (localStorage →
  * navigator → en); статический каркас index.html переводим ДО построения
  * экранов — дальше все строки идут через t()/tDyn() в месте рендера. */
 applyStaticI18n();
+
+/* Проход З: процедурный звук (пентатоника, WebAudio). Autoplay-политика —
+ * AudioContext создаётся лениво по ПЕРВОМУ жесту (pointerdown/keydown);
+ * до него все sound.play(...) — тихие no-op. Настройка — ⚙️ «Звук». */
+installSoundUnlock();
 
 /* Слой экономики и меты: один Store — атомарный сейв orchardPeaks.meta
  * (те же ключи, что у прототипа: прогресс подхватывается без миграции). */

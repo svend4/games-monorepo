@@ -10,6 +10,7 @@ import { IAP_SHELF } from '../monetize/config';
 import type { MonetizeController } from '../monetize/monetize';
 import type { Economy } from '../economy/economy';
 import { t } from '../i18n';
+import { playSound } from '../audio/index';
 
 export class ShopUi {
   constructor(
@@ -43,7 +44,14 @@ export class ShopUi {
       const btn = (e.target as HTMLElement).closest('.iapBuy');
       if (btn instanceof HTMLButtonElement && !btn.disabled) {
         const id = btn.getAttribute('data-sku');
-        if (id) void this.monetize.purchase(id);
+        // ПРОХОД З: приятный двузвук — только после успешной «покупки».
+        if (id) {
+          void this.monetize.purchase(id)
+            .catch(() => false) // сбой покупки (прод-SDK) → без звука, не роняем UI
+            .then((ok) => {
+              if (ok) playSound({ type: 'reward' });
+            });
+        }
       }
     });
   }

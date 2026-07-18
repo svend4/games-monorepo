@@ -20,6 +20,7 @@ import {
   WORD_FLASH_MS
 } from '../core/config';
 import type { CoreGame, WinInfo } from '../core/game';
+import type { SoundEvent } from '../audio';
 import { ECON } from '../economy/econ';
 import type { Economy } from '../economy/economy';
 import { t } from '../i18n';
@@ -58,11 +59,15 @@ export class GridUi {
   freeHint: (() => boolean) | null = null;
   /** Уровень перерисован (переход/рестарт/дневной) — для баннера/RV-1 (Е.2). */
   onAfterRebuild: (() => void) | null = null;
+  /** Звук (Проход З): игровое событие → GameAudio.event (назначает main.ts). */
+  sfx: ((event: SoundEvent) => void) | null = null;
 
   private readonly cellEls = new Map<string, HTMLElement>();
   private toastTimer: number | null = null;
   private flashTimer: number | null = null;
   private firstRunToastShown = false;
+  /** Длина слова прошлого onWordChange — детект добавления/отката буквы (звук). */
+  private lastWordLen = 0;
 
   constructor(
     private readonly game: CoreGame,
@@ -83,7 +88,10 @@ export class GridUi {
     this.el('btn-hint').addEventListener('click', () => this.useHint());
     this.el('btn-restart').addEventListener('click', () => this.restartLevel());
     this.el('btn-bonus').addEventListener('click', () => this.showBonusOverlay());
-    this.el('btn-meta').addEventListener('click', () => this.onMetaOpen?.('atlas'));
+    this.el('btn-meta').addEventListener('click', () => {
+      this.sfx?.({ type: 'uiClick' }); // переход в мету/атлас — тихий клик-тон
+      this.onMetaOpen?.('atlas');
+    });
 
     // Пульс HUD при любом сдвиге монет (порт addCoins ядра).
     this.game.onCoinsChanged = () => {
@@ -191,6 +199,8 @@ export class GridUi {
 
   /** Роутер результата протяжки (порт submitPath): вызывается WheelScene. */
   submitWord(word: string): void {
+    // Протяжка завершена: следующая начнётся с первой ноты пентатоники.
+    this.lastWordLen = 0;
     const res = this.game.submitWord(word);
     switch (res.kind) {
       case 'empty':
@@ -201,6 +211,7 @@ export class GridUi {
         this.updateWordDisplay('');
         break;
       case 'gridHit': {
+        this.sfx?.({ type: 'wordValid', length: word.length }); // мажорный аккорд
         let i = 0;
         for (const key of res.keys) this.revealCellEl(key, false, i++ * 60);
         this.flashWord(word, 'ok');
@@ -208,16 +219,19 @@ export class GridUi {
         break;
       }
       case 'duplicate':
+        this.sfx?.({ type: 'wordDuplicate' });
         this.flashWord(word, 'dup'); // DUPLICATE: нейтрально, без наград (03 §2.1)
         this.toast(t('toast.duplicate'));
         break;
       case 'bonus':
+        this.sfx?.({ type: 'wordBonus' }); // двузвук + высокая нота «жёлудь»
         this.flashWord(word, 'bonus');
         if (res.acorns.burned > 0) this.toast(t('toast.piggyFull'));
         else this.toast(t('toast.bonusWord', { n: ECON.ACORN_PER_BONUS }));
         this.updateHud();
         break;
       case 'invalid':
+        this.sfx?.({ type: 'wordInvalid' }); // нейтральная низкая нота
         this.flashWord(word, 'bad'); // INVALID: мягкая тряска, без штрафа (03 §1)
         this.shakeWheel();
         break;
@@ -230,6 +244,14 @@ export class GridUi {
       window.clearTimeout(this.flashTimer);
       this.flashTimer = null;
     }
+    // Мелодия протяжки (Проход З): +буква — следующая нота вверх по
+    // пентатонике, откат — нота буквы, к которой вернулись (ниже). Сбросы
+    // в '' (shuffle/cancelDrag/оверлей) — беззвучны. Откат к пустоте
+    // невозможен (WheelScene.pop требует path.length >= 2).
+    const len = word.length;
+    if (len === this.lastWordLen + 1) this.sfx?.({ type: 'letterAdd', index: len - 1 });
+    else if (len > 0 && len === this.lastWordLen - 1) this.sfx?.({ type: 'letterRemove', index: len - 1 });
+    this.lastWordLen = len;
     this.updateWordDisplay(word);
   }
 
@@ -247,6 +269,7 @@ export class GridUi {
       if (res.reason === 'noCoins') this.toast(t('toast.noCoins'));
       return;
     }
+    this.sfx?.({ type: 'hint' }); // «волшебный» glissando Лампы
     this.revealCellEl(res.key, true, 0);
     this.toast(t('toast.hintUsed'));
     this.updateHud();
@@ -261,6 +284,7 @@ export class GridUi {
   revealFreeLetterFromAd(): boolean {
     const res = this.game.revealFreeLetter();
     if (res === null) return false;
+    this.sfx?.({ type: 'hint' }); // тот же glissando: RV-1 / клубный безлимит
     this.revealCellEl(res.key, true, 0);
     this.updateHud();
     if (res.win !== null) this.scheduleWin(res.win);
@@ -281,12 +305,16 @@ export class GridUi {
     const levelAtWin = this.game.getLevelIndex();
     window.setTimeout(() => {
       if (win.daily) {
-        if (this.game.isDailyMode() && this.game.allCompleted()) this.showDailyWinOverlay();
+        if (this.game.isDailyMode() && this.game.allCompleted()) {
+          this.sfx?.({ type: 'levelComplete' }); // арпеджио победы (дневной)
+          this.showDailyWinOverlay();
+        }
       } else if (
         !this.game.isDailyMode() &&
         this.game.getLevelIndex() === levelAtWin &&
         this.game.allCompleted()
       ) {
+        this.sfx?.({ type: 'levelComplete' }); // арпеджио победы
         this.showWinOverlay(win);
       }
     }, WIN_DELAY_MS);
@@ -392,7 +420,10 @@ export class GridUi {
       this.game.exitDaily();
       this.rebuild();
       if (this.game.isFinished()) this.showFinalOverlay();
-      else this.onMetaOpen?.('daily');
+      else {
+        this.sfx?.({ type: 'uiClick' }); // переход в мету — тихий клик-тон
+        this.onMetaOpen?.('daily');
+      }
     });
   }
 

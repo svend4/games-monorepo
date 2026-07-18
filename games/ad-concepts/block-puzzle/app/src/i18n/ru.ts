@@ -105,6 +105,9 @@ export const ru = {
   'settings.brightness': 'Яркость фона',
   'settings.brightnessDark': 'Тёмный',
   'settings.brightnessLight': 'Светлее',
+  'settings.sound': 'Звук',
+  'settings.soundOn': '🔊 Вкл',
+  'settings.soundOff': '🔇 Выкл',
   'settings.replayFtue': '🎓 Пройти обучение снова',
 
   /* ========================= Тосты меты =============================== */
