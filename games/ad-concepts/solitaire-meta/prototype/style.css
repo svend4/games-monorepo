@@ -861,6 +861,15 @@ body.meta-open { overflow: hidden; }
 }
 .hud-btn-soft:hover { filter: brightness(1.06); background: linear-gradient(180deg, #e08a3c, #c96a1f); }
 
+/* Кнопка «❓ Обучение» — повтор FTUE (Проход Д). Спокойный тёплый акцент. */
+.hud-btn-tutorial {
+  background: linear-gradient(180deg, #f2ead2, #e4d7ad);
+  color: #5a4a1f;
+  border-color: #b39a4f;
+  font-weight: 700;
+}
+.hud-btn-tutorial:hover { filter: brightness(1.03); background: linear-gradient(180deg, #f2ead2, #e4d7ad); }
+
 /* Кнопка «Кошелёк» (RW6) в панели бустеров — рекламный акцент. */
 #booster-bar button.bst-ad {
   border-color: var(--ad-dk);

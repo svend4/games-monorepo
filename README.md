@@ -8,6 +8,7 @@
 |------|--------|---------|
 | `games/nexus/` | Игра **NEXUS** | Браузерная экшен-RPG в трёх версиях рендера: v1 (2D-MMO), v2 (изометрия), v3 (Three.js 3D) |
 | `games/crystal-collector/` | **Crystal Collector** | Отдельные прототипы-тесты рендера (собрать кристаллы → портал): 2.5D и 3D |
+| `games/ad-concepts/` | **Ad-concepts** | Три рекламно-монетизируемые мобильные игры (Block Surge / Orchard Peaks / WordGrove): книги GDD + играбельные прототипы, проходы А→Д. Хаб: `games/ad-concepts/index.html` |
 | `sites/pomosch-po-domu/` | Лендинг **«Помощь по дому»** | Статичный сайт бытовых услуг + генераторы прайса (Python/PHP) |
 | `vendor/tiddlywiki/` | TiddlyWiki | Сторонний вики-движок (пустой экспорт), не часть проектов |
 

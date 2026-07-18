@@ -929,3 +929,126 @@ button:active { transform: translateY(1px); }
 .ckVerdict button { margin-top: 8px; margin-right: 6px; font-size: 11.5px; padding: 6px 12px; }
 .ckAbToggle { margin-top: 9px; font-size: 11.5px; color: #b8c4d3; align-items: center; }
 .ckAbToggle input { accent-color: #2c8ea3; margin-right: 4px; }
+
+/* ============================================================================
+ * ПРОХОД Д — FTUE-ОНБОРДИНГ (коуч-марки первых 5 минут, 07 §3)
+ * Оверлей сам ловит ввод (не проваливает клики в игру). Подсветка сделана
+ * гигантским box-shadow-spread на #ftueSpot: «дырка» = целевой элемент,
+ * всё вокруг затемнено. Крупный текст/кнопки — доступность 07 §4.
+ * ========================================================================== */
+#ftueOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;                 /* выше всех экранов: adOverlay 60, iap 45, meta 40 */
+  /* фон рисует дырку через box-shadow #ftueSpot; тут прозрачно, но ввод ловим */
+}
+#ftueOverlay.hidden { display: none; }
+#ftueOverlay.ftue-nospot { background: rgba(6, 10, 16, .84); }   /* шаг без цели → сплошное затемнение */
+
+#ftueSpot {
+  position: fixed;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 3px rgba(103, 232, 249, .95),
+    0 0 22px 4px rgba(103, 232, 249, .35),
+    0 0 0 9999px rgba(6, 10, 16, .82);
+  animation: ftuePulse 1.4s ease-in-out infinite;
+}
+@keyframes ftuePulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px rgba(103, 232, 249, .95),
+      0 0 22px 4px rgba(103, 232, 249, .30),
+      0 0 0 9999px rgba(6, 10, 16, .82);
+  }
+  50% {
+    box-shadow:
+      0 0 0 5px rgba(103, 232, 249, 1),
+      0 0 30px 8px rgba(103, 232, 249, .55),
+      0 0 0 9999px rgba(6, 10, 16, .82);
+  }
+}
+
+#ftueCard {
+  position: fixed;
+  z-index: 2;
+  width: min(360px, calc(100vw - 28px));
+  background: #131a25;
+  border: 1px solid #2c8ea3;
+  border-radius: 16px;
+  padding: 18px 20px 16px;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .65);
+  text-align: left;
+}
+.ftueTag {
+  font-size: 11px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: #67e8f9;
+  font-weight: 700;
+}
+.ftueStepMeta {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: #7d8ba0;
+  font-variant-numeric: tabular-nums;
+}
+#ftueCard h3 {
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #e6edf3;
+}
+#ftueCard p {
+  margin-top: 8px;
+  font-size: 15.5px;
+  line-height: 1.5;
+  color: #c4cfdd;
+}
+.ftueDots {
+  display: flex;
+  gap: 7px;
+  margin-top: 14px;
+}
+.ftueDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #2c3a50;
+  transition: background .2s, transform .2s;
+}
+.ftueDot.done { background: #2f7a5a; }
+.ftueDot.active { background: #67e8f9; transform: scale(1.25); }
+.ftueBtns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ftueSpacer { flex: 1; }
+.ftueSkipBtn {
+  background: transparent;
+  border: 1px solid #2c3a50;
+  color: #9aa7b8;
+  padding: 9px 14px;
+  min-height: 44px;
+}
+.ftueSkipBtn:hover { background: #161f2c; }
+.ftueNavBtn {
+  padding: 9px 16px;
+  min-height: 44px;
+  background: #1b2534;
+  border: 1px solid #2c3a50;
+}
+.ftueNavBtn.ftuePrimary {
+  background: #14657a;
+  border-color: #2c8ea3;
+  color: #eafcff;
+}
+.ftueNavBtn.ftuePrimary:hover { background: #187f99; }
+.ftueNavBtn[disabled] { opacity: .4; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  #ftueSpot { animation: none; }         /* 07 §4: reduced motion */
+}

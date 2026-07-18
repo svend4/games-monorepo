@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orchard Peaks — Store Listing Preview (Проход Д)</title>
+<style>
+  /* Самодостаточный мокап карточки магазина. Вся графика — CSS/SVG/эмодзи,
+     без внешних ассетов, шрифтов и скриптов. Открывается как статическая страница.
+     Это ДИЗАЙН-МОКАП собственной игры студии, не копия реального App Store/Google Play. */
+  :root{
+    --ink:#2d3327; --muted:#6d7560; --line:#e2dcc6;
+    --felt-1:#f6f1de; --felt-2:#dcead0; --card:#fffdf4;
+    --green:#5f9e3e; --green-dk:#4c7336; --green-lt:#8fbf6b;
+    --gold:#d9a521; --red:#b3362b; --sky:#bfe0f2;
+    --get:#2f7fd1;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI",Verdana,system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 500px at 50% -120px, #fff7e6, transparent),
+      linear-gradient(180deg,var(--felt-1),var(--felt-2) 60%,#cfe3bd);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:16px 18px 60px;}
+
+  /* Лента-пометка: честно помечаем как мокап */
+  .mock-ribbon{
+    display:flex;align-items:center;gap:10px;justify-content:center;
+    background:#fff4d6;border:1px solid #e6cf8a;color:#8a6d1f;
+    border-radius:12px;padding:8px 14px;font-size:14px;margin:6px 0 22px;font-weight:600;
+  }
+
+  /* ---------- Шапка продукта ---------- */
+  .head{display:flex;gap:22px;align-items:center;flex-wrap:wrap;}
+  .icon{
+    width:132px;height:132px;flex:0 0 auto;border-radius:29px;
+    box-shadow:0 10px 26px rgba(60,50,20,.28);overflow:hidden;border:1px solid #0000000f;
+  }
+  .head-main{flex:1 1 300px;min-width:260px;}
+  .app-name{font-size:30px;font-weight:800;line-height:1.15;margin:0 0 4px;}
+  .app-sub{font-size:19px;color:var(--muted);margin:0 0 6px;}
+  .dev{font-size:15px;color:var(--get);font-weight:600;margin:0 0 14px;}
+  .cta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .get{
+    background:var(--get);color:#fff;border:none;border-radius:999px;
+    font:800 18px/1 inherit;padding:13px 34px;cursor:pointer;letter-spacing:.3px;
+    box-shadow:0 6px 14px rgba(47,127,209,.35);
+  }
+  .get:hover{filter:brightness(1.06);}
+  .iap-note{font-size:13px;color:var(--muted);}
+
+  /* Полоса метрик, как под названием в сторе */
+  .metrics{
+    display:flex;gap:0;margin:26px 0 8px;border:1px solid var(--line);
+    border-radius:14px;background:var(--card);overflow:hidden;
+  }
+  .metric{flex:1;text-align:center;padding:12px 8px;border-right:1px solid var(--line);}
+  .metric:last-child{border-right:none;}
+  .metric .b{font-size:19px;font-weight:800;}
+  .metric .s{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+  .stars{color:var(--gold);letter-spacing:1px;}
+
+  /* ---------- Feature graphic ---------- */
+  .feature{
+    margin:26px 0 10px;border-radius:20px;overflow:hidden;position:relative;
+    border:1px solid #0000000d;box-shadow:0 8px 22px rgba(60,50,20,.16);
+  }
+  .feature .cap{
+    position:absolute;left:26px;top:50%;transform:translateY(-50%);
+    max-width:60%;
+  }
+  .feature .cap h2{margin:0 0 6px;font-size:30px;font-weight:800;color:#3a4a22;text-shadow:0 1px 0 #ffffffaa;}
+  .feature .cap p{margin:0;font-size:17px;color:#4a5a34;font-weight:600;}
+
+  .section-title{font-size:15px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--muted);margin:30px 2px 12px;}
+
+  /* ---------- Скриншоты (телефонные рамки) ---------- */
+  .shots{display:flex;gap:16px;overflow-x:auto;padding:6px 2px 14px;scroll-snap-type:x mandatory;}
+  .shot{flex:0 0 auto;width:210px;scroll-snap-align:start;}
+  .phone{
+    width:210px;height:420px;border-radius:30px;background:#20281c;
+    padding:9px;box-shadow:0 10px 24px rgba(40,35,15,.30);position:relative;
+  }
+  .phone::before{content:"";position:absolute;top:14px;left:50%;transform:translateX(-50%);
+    width:64px;height:6px;border-radius:4px;background:#00000066;z-index:3;}
+  .screen{
+    width:100%;height:100%;border-radius:22px;overflow:hidden;position:relative;
+    background:linear-gradient(180deg,var(--felt-1),var(--felt-2) 65%,#cfe3bd);
+    display:flex;flex-direction:column;
+  }
+  .scap{font-size:14px;font-weight:700;text-align:center;color:#3f4a30;margin:12px 6px 0;line-height:1.3;}
+
+  /* мини-HUD внутри скрина */
+  .mini-hud{display:flex;justify-content:space-between;align-items:center;padding:22px 12px 6px;font-size:12px;font-weight:700;}
+  .mini-hud .pill{background:#fffdf4;border:1px solid #cbd3b0;border-radius:20px;padding:2px 8px;}
+
+  /* мини-карты */
+  .mini-cards{position:relative;flex:1;margin:2px 8px;}
+  .mc{
+    position:absolute;width:30px;height:42px;border-radius:5px;background:#fff;
+    border:1px solid #cfc9ad;box-shadow:0 1px 2px #0000001f;
+    font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;color:#2d3327;
+  }
+  .mc.r{color:var(--red);}
+  .mini-bottom{display:flex;align-items:center;justify-content:center;gap:12px;padding:6px 0 14px;}
+  .mc.big{width:40px;height:56px;font-size:15px;position:static;box-shadow:0 2px 5px #00000026;}
+  .mc.down{background:repeating-linear-gradient(45deg,#6f9e4e,#6f9e4e 4px,#5f8e42 4px,#5f8e42 8px);color:transparent;border-color:#4c7336;}
+  .ring{outline:3px solid var(--gold);outline-offset:2px;}
+
+  /* сцена сада внутри скрина */
+  .garden-scene{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px;}
+  .garden-row{font-size:30px;letter-spacing:2px;}
+  .progress-mini{width:80%;height:9px;border-radius:5px;background:#ffffffaa;border:1px solid #b9c49f;overflow:hidden;}
+  .progress-mini>i{display:block;height:100%;width:72%;background:linear-gradient(90deg,#8fbf6b,#5f9e3e);}
+  .order-card{background:#fffdf4;border:1px solid #cbd3b0;border-radius:12px;padding:8px 10px;font-size:12px;font-weight:700;text-align:center;width:86%;}
+
+  /* rewarded-оффер сцена */
+  .offer{margin:auto;background:#fffdf4;border:1px solid #cbd3b0;border-radius:14px;padding:14px 12px;width:86%;text-align:center;box-shadow:0 4px 12px #0000001a;}
+  .offer .vbtn{background:#2f7fd1;color:#fff;border-radius:10px;padding:8px;font-size:12px;font-weight:800;margin:8px 0 6px;}
+  .offer .no{font-size:12px;color:#6d7560;border:1px solid #cbd3b0;border-radius:10px;padding:6px;font-weight:700;}
+  .sim-tag{display:inline-block;background:#eee;color:#777;border-radius:4px;font-size:9px;padding:1px 4px;vertical-align:middle;}
+
+  /* ---------- Инфо-чипы ---------- */
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 4px;}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:14px;font-weight:600;}
+  .chip b{font-weight:800;}
+
+  /* ---------- Описание ---------- */
+  .desc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-top:14px;font-size:16px;line-height:1.55;}
+  .desc p{margin:0 0 12px;}
+  .desc ul{margin:0;padding-left:20px;}
+  .desc li{margin:5px 0;}
+
+  .foot{margin-top:26px;font-size:13px;color:var(--muted);text-align:center;line-height:1.6;}
+
+  @media (max-width:560px){
+    .app-name{font-size:24px;}
+    .feature .cap h2{font-size:21px;}
+    .feature .cap p{font-size:14px;}
+    .icon{width:104px;height:104px;border-radius:23px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="mock-ribbon">🎨 Мокап карточки магазина · Orchard Peaks · Проход Д (не настоящая страница App Store / Google Play)</div>
+
+  <!-- ============ ШАПКА ПРОДУКТА ============ -->
+  <header class="head">
+    <!-- Иконка приложения: акварельный холм-сад с яблоком, чистый SVG -->
+    <div class="icon" aria-label="Иконка приложения Orchard Peaks">
+      <svg viewBox="0 0 132 132" width="132" height="132" xmlns="http://www.w3.org/2000/svg" role="img">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#eaf6ff"/><stop offset="1" stop-color="#cdeafc"/>
+          </linearGradient>
+          <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#a7d67f"/><stop offset="1" stop-color="#6ba844"/>
+          </linearGradient>
+          <linearGradient id="hill2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#8fc766"/><stop offset="1" stop-color="#5b9a38"/>
+          </linearGradient>
+          <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+            <stop offset="0" stop-color="#ffe9a8"/><stop offset="1" stop-color="#ffcf5c"/>
+          </radialGradient>
+        </defs>
+        <rect width="132" height="132" fill="url(#sky)"/>
+        <circle cx="98" cy="34" r="17" fill="url(#sun)"/>
+        <path d="M0 92 Q40 66 74 84 T132 78 V132 H0 Z" fill="url(#hill2)"/>
+        <path d="M0 108 Q46 84 84 102 T132 100 V132 H0 Z" fill="url(#hill)"/>
+        <!-- дерево -->
+        <rect x="40" y="70" width="7" height="24" rx="3" fill="#7a5230"/>
+        <circle cx="43.5" cy="62" r="18" fill="#5f9e3e"/>
+        <circle cx="33" cy="66" r="12" fill="#6fae4a"/>
+        <circle cx="55" cy="66" r="12" fill="#569338"/>
+        <circle cx="37" cy="60" r="3.4" fill="#d94b3a"/>
+        <circle cx="50" cy="58" r="3.4" fill="#d94b3a"/>
+        <circle cx="45" cy="68" r="3.4" fill="#e0604f"/>
+        <!-- играющая карта, намёк на солитер -->
+        <g transform="rotate(-12 96 96)">
+          <rect x="82" y="80" width="30" height="42" rx="5" fill="#fffdf4" stroke="#caa23a" stroke-width="2"/>
+          <text x="86" y="94" font-family="Segoe UI, sans-serif" font-size="12" font-weight="800" fill="#b3362b">A</text>
+          <text x="97" y="108" font-family="Segoe UI, sans-serif" font-size="16" fill="#b3362b">♥</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="head-main">
+      <h1 class="app-name">Orchard Peaks: Cozy Solitaire</h1>
+      <p class="app-sub">Relaxing TriPeaks · no timers</p>
+      <p class="dev">Sunny Gardens Studio</p>
+      <div class="cta-row">
+        <button class="get" type="button">GET</button>
+        <span class="iap-note">Free · Offers In-App Purchases · Contains Ads</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Полоса метрик -->
+  <div class="metrics">
+    <div class="metric"><div class="b stars">★★★★★</div><div class="s">4.8 · 12K ratings</div></div>
+    <div class="metric"><div class="b">4+</div><div class="s">Age</div></div>
+    <div class="metric"><div class="b">Card</div><div class="s">Category</div></div>
+    <div class="metric"><div class="b">#8</div><div class="s">Card Games</div></div>
+    <div class="metric"><div class="b">EN · RU</div><div class="s">Languages</div></div>
+  </div>
+
+  <!-- ============ FEATURE GRAPHIC ============ -->
+  <div class="feature" aria-label="Фичер-графика">
+    <svg viewBox="0 0 1024 340" width="100%" xmlns="http://www.w3.org/2000/svg" role="img">
+      <defs>
+        <linearGradient id="fbg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#f8f2dd"/><stop offset="0.6" stop-color="#dcead0"/><stop offset="1" stop-color="#c6e0ae"/>
+        </linearGradient>
+        <radialGradient id="fsun" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#ffeeb0"/><stop offset="1" stop-color="#ffd66a"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="340" fill="url(#fbg)"/>
+      <circle cx="880" cy="70" r="46" fill="url(#fsun)"/>
+      <path d="M0 250 Q220 190 460 232 T1024 210 V340 H0 Z" fill="#8fc766"/>
+      <path d="M0 288 Q260 236 520 276 T1024 262 V340 H0 Z" fill="#5f9e3e"/>
+      <!-- деревья справа -->
+      <g transform="translate(690,150)">
+        <rect x="26" y="70" width="12" height="46" rx="5" fill="#7a5230"/>
+        <circle cx="32" cy="54" r="34" fill="#5f9e3e"/><circle cx="10" cy="64" r="22" fill="#6fae4a"/><circle cx="54" cy="64" r="22" fill="#569338"/>
+        <circle cx="20" cy="48" r="6" fill="#d94b3a"/><circle cx="44" cy="44" r="6" fill="#d94b3a"/><circle cx="34" cy="64" r="6" fill="#e0604f"/>
+      </g>
+      <g transform="translate(820,180)">
+        <rect x="20" y="60" width="10" height="40" rx="4" fill="#7a5230"/>
+        <circle cx="25" cy="46" r="26" fill="#6aa544"/><circle cx="8" cy="54" r="16" fill="#79b551"/><circle cx="42" cy="54" r="16" fill="#5d963a"/>
+      </g>
+      <!-- парящие карты слева -->
+      <g transform="rotate(-10 210 190)">
+        <rect x="150" y="150" width="86" height="120" rx="12" fill="#fffdf4" stroke="#caa23a" stroke-width="3"/>
+        <text x="164" y="186" font-family="Segoe UI, sans-serif" font-size="30" font-weight="800" fill="#b3362b">A</text>
+        <text x="176" y="238" font-family="Segoe UI, sans-serif" font-size="44" fill="#b3362b">♥</text>
+      </g>
+      <g transform="rotate(8 330 200)">
+        <rect x="250" y="160" width="86" height="120" rx="12" fill="#fffdf4" stroke="#8aa06a" stroke-width="3"/>
+        <text x="264" y="196" font-family="Segoe UI, sans-serif" font-size="30" font-weight="800" fill="#2d3327">10</text>
+        <text x="276" y="248" font-family="Segoe UI, sans-serif" font-size="44" fill="#2d3327">♠</text>
+      </g>
+    </svg>
+    <div class="cap">
+      <h2>Orchard Peaks</h2>
+      <p>The cozy TriPeaks solitaire — no timers, no rush.</p>
+    </div>
+  </div>
+
+  <!-- ============ СКРИНШОТЫ ============ -->
+  <div class="section-title">Preview · 5 screenshots</div>
+  <div class="shots">
+
+    <!-- 1. геймплей / no timers -->
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="mini-hud"><span class="pill">💰 650</span><span class="pill">Ур. 3</span><span class="pill">🍎 12</span></div>
+        <div class="mini-cards">
+          <div class="mc r" style="left:78px;top:2px;">A♥</div>
+          <div class="mc" style="left:56px;top:34px;">9♠</div>
+          <div class="mc r" style="left:100px;top:34px;">5♦</div>
+          <div class="mc down" style="left:34px;top:66px;">·</div>
+          <div class="mc r" style="left:78px;top:66px;">4♥</div>
+          <div class="mc" style="left:122px;top:66px;">3♣</div>
+        </div>
+        <div class="mini-bottom">
+          <div class="mc big down">·</div>
+          <div class="mc big r">10<span style="font-size:11px">♥</span></div>
+        </div>
+      </div></div>
+      <div class="scap">Relaxing TriPeaks —<br>no timers, ever.</div>
+    </div>
+
+    <!-- 2. big cards -->
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="mini-hud"><span class="pill">💰 820</span><span class="pill">Серия ×2</span></div>
+        <div class="garden-scene">
+          <div style="display:flex;gap:10px;">
+            <div class="mc big r" style="width:56px;height:78px;font-size:22px;">K<span style="font-size:16px">♦</span></div>
+            <div class="mc big" style="width:56px;height:78px;font-size:22px;">Q<span style="font-size:16px">♣</span></div>
+          </div>
+          <div style="font-size:13px;color:#4a5a34;font-weight:700;text-align:center;">Extra-large cards,<br>clear high-contrast text</div>
+        </div>
+      </div></div>
+      <div class="scap">Big cards,<br>easy on the eyes.</div>
+    </div>
+
+    <!-- 3. harvest grows garden -->
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="mini-hud"><span class="pill">🍎 +8</span><span class="pill">Победа!</span></div>
+        <div class="garden-scene">
+          <div class="garden-row">🧺🍎🍎🍎</div>
+          <div style="font-size:13px;color:#4a5a34;font-weight:700;">Harvest banked</div>
+          <div class="order-card">Every hand feeds<br>your garden 🌱</div>
+        </div>
+      </div></div>
+      <div class="scap">Every hand grows<br>your garden.</div>
+    </div>
+
+    <!-- 4. garden order bloom -->
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="mini-hud"><span class="pill">🌳 Сад</span><span class="pill">Крыльцо 72%</span></div>
+        <div class="garden-scene">
+          <div class="garden-row">🏡🌷🌻🐝</div>
+          <div class="progress-mini"><i></i></div>
+          <div class="order-card">Order: “clear the porch”<br>✓ nearly done</div>
+        </div>
+      </div></div>
+      <div class="scap">Fulfil cozy orders,<br>watch it bloom.</div>
+    </div>
+
+    <!-- 5. rewards are optional -->
+    <div class="shot">
+      <div class="phone"><div class="screen">
+        <div class="mini-hud"><span class="pill">💰 +820</span><span class="pill">Победа</span></div>
+        <div class="offer">
+          <div style="font-size:13px;font-weight:800;">Double your coins? <span class="sim-tag">optional</span></div>
+          <div class="vbtn">📺 Watch a short video</div>
+          <div class="no">No, thanks</div>
+        </div>
+      </div></div>
+      <div class="scap">Rewards are<br>always your choice.</div>
+    </div>
+
+  </div>
+
+  <!-- ============ ИНФО-ЧИПЫ ============ -->
+  <div class="section-title">At a glance</div>
+  <div class="chips">
+    <span class="chip">⏳ <b>No timers</b></span>
+    <span class="chip">🔎 <b>Big cards</b> &amp; text</span>
+    <span class="chip">🃏 <b>TriPeaks</b> solitaire</span>
+    <span class="chip">🌳 Cozy <b>garden meta</b></span>
+    <span class="chip">👵 Made for <b>ages 45+</b></span>
+    <span class="chip">🎬 Rewarded ads <b>optional</b></span>
+    <span class="chip">🔒 Age <b>4+</b> / Everyone</span>
+    <span class="chip">🌍 US · CA · UK · AU</span>
+  </div>
+
+  <!-- ============ ОПИСАНИЕ ============ -->
+  <div class="section-title">Description</div>
+  <div class="desc">
+    <p><b>Come home to Orchard Peaks</b> — a warm, unhurried solitaire where every hand you
+    play brings a neglected family orchard back to life.</p>
+    <p>You've inherited Aunt Martha's old orchard on the hills, somewhere between Vermont and
+    the Cotswolds: a greenhouse, a pond, a beehive, and a very good dog named Biscuit who
+    keeps stealing the gardening gloves. Clear the cards, gather the harvest, and fulfil
+    gentle garden orders. Season by season, the garden grows and tells its quiet story.</p>
+    <ul>
+      <li><b>No timers, no move limits, no penalties</b> for pausing — take your time.</li>
+      <li><b>Extra-large cards and buttons</b>, high-contrast text, one-tap “Large text” preset.</li>
+      <li><b>Simple TriPeaks rule</b>: remove a card one rank above or below the pile; Ace and King are neighbours.</li>
+      <li><b>A garden with a story</b>: twelve watercolour zones, warm little scenes, a herbarium to collect.</li>
+      <li><b>Fair &amp; honest</b>: rewarded ads are always optional; nothing you buy purchases a win.</li>
+    </ul>
+    <p>No casino glitz. No pressure. Just a beautiful garden, a calm deck of cards, and all the
+    time in the world. Pour yourself a cup of tea and start restoring Orchard Peaks today.</p>
+  </div>
+
+  <div class="foot">
+    Самодостаточный мокап карточки магазина (Проход Д) — вся графика на CSS/SVG/эмодзи, без внешних
+    ассетов, шрифтов и скриптов. Тексты — из <b>store-listing.md</b>. Это дизайн-макет собственной
+    игры студии, а не действующая страница App Store или Google Play; оценки/позиции — иллюстративные.
+  </div>
+
+</div>
+</body>
+</html>

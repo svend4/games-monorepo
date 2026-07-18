@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Block Surge — мокап карточки магазина (Проход Д)</title>
+<style>
+  /* =========================================================================
+   * Block Surge — САМОДОСТАТОЧНЫЙ мокап стор-карточки (Проход Д).
+   * Вся графика — примитивами CSS/SVG/эмодзи. Ноль внешних ассетов, шрифтов и
+   * скриптов из сети: открывается как статическая страница по file://.
+   * Тексты синхронны с store-listing.md. Это ДИЗАЙН-МОКАП собственного продукта
+   * (не копия реального магазина): в шапке стоит явная плашка «МОКАП».
+   * Неоновая палитра — из прототипа (style.css / game.js COLORS).
+   * ========================================================================= */
+  :root{
+    --bg0:#0b0f16; --bg1:#16202e; --panel:#131a25; --panel2:#0e1622;
+    --ink:#e6edf3; --sub:#8b98a9; --line:#2c3a50;
+    --cyan:#67e8f9; --cyan2:#22d3ee; --indigo:#818cf8;
+    --c0:#ff6b6b; --c1:#ffa94d; --c2:#ffd43b; --c3:#69db7c;
+    --c4:#38d9a9; --c5:#4dabf7; --c6:#9775fa; --c7:#f783ac;
+    --green:#51cf66; --gold:#ffd43b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{
+    background:radial-gradient(130% 100% at 50% 0%, var(--bg1) 0%, var(--bg0) 62%);
+    color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+    min-height:100%;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:20px 16px 60px;}
+
+  /* Плашка «это мокап» */
+  .ribbon{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:rgba(103,232,249,.08);border:1px dashed #2c8ea3;color:#a5f3fc;
+    border-radius:12px;padding:9px 14px;font-size:13px;margin-bottom:20px;
+  }
+  .ribbon b{color:#eafcff;}
+  .ribbon .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);}
+
+  section{margin-bottom:26px;}
+  .secTitle{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--sub);margin:0 2px 10px;}
+
+  /* ---------- 1. Продуктовая шапка ---------- */
+  .product{
+    display:flex;gap:20px;align-items:center;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px;
+    box-shadow:0 16px 50px rgba(0,0,0,.45);
+  }
+  .icon{
+    width:110px;height:110px;border-radius:26px;flex:0 0 auto;
+    box-shadow:0 8px 26px rgba(34,211,238,.28), inset 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .product .meta{flex:1 1 260px;min-width:240px;}
+  .product h1{font-size:26px;font-weight:800;letter-spacing:-.01em;}
+  .product .sub{font-size:15px;color:var(--sub);margin-top:3px;}
+  .devRow{font-size:12.5px;color:#7d8ba0;margin-top:8px;}
+  .devRow b{color:#b8c4d3;font-weight:600;}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .chip{
+    font-size:11.5px;color:#cbd6e4;background:#0f1723;border:1px solid var(--line);
+    border-radius:999px;padding:5px 11px;display:flex;align-items:center;gap:5px;
+  }
+  .chip.rating{color:#eafcff;border-color:#2c8ea3;}
+  .buyCol{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;}
+  .getBtn{
+    font:inherit;font-weight:700;font-size:15px;color:#04222a;
+    background:linear-gradient(180deg,#7ff0ff,#22d3ee);border:none;border-radius:999px;
+    padding:11px 30px;cursor:default;box-shadow:0 6px 18px rgba(34,211,238,.35);
+  }
+  .buyNote{font-size:11px;color:#7d8ba0;}
+  .stars{color:var(--gold);font-size:14px;letter-spacing:2px;}
+
+  /* ---------- 2. Фичер-графика ---------- */
+  .feature{
+    position:relative;border-radius:20px;overflow:hidden;border:1px solid #21405a;
+    background:
+      radial-gradient(80% 120% at 12% 10%, rgba(129,140,248,.30), transparent 60%),
+      radial-gradient(90% 130% at 92% 90%, rgba(34,211,238,.28), transparent 55%),
+      linear-gradient(120deg,#0c1a28,#0a1420);
+    padding:30px 32px;min-height:210px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  }
+  .feature .fLeft{max-width:60%;min-width:250px;}
+  .feature h2{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.05;}
+  .feature h2 .accent{color:var(--cyan);}
+  .feature p{margin-top:10px;font-size:15px;color:#c4cfdd;line-height:1.5;max-width:440px;}
+  .feature .tagRow{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;}
+  .feature .tag{font-size:12px;color:#04222a;background:var(--cyan);border-radius:999px;padding:4px 12px;font-weight:700;}
+  .feature .tag.ghost{background:transparent;color:var(--cyan);border:1px solid #2c8ea3;}
+  .fBlocks{display:grid;grid-template-columns:repeat(3,30px);grid-auto-rows:30px;gap:6px;filter:drop-shadow(0 6px 14px rgba(0,0,0,.4));}
+  .fBlocks i{border-radius:7px;}
+
+  /* ---------- 3. Скриншоты ---------- */
+  .shotScroll{overflow-x:auto;padding-bottom:8px;}
+  .shots{display:flex;gap:20px;min-width:min-content;}
+  .shotCard{flex:0 0 auto;width:216px;}
+  .phone{
+    width:216px;height:432px;border-radius:30px;padding:9px;
+    background:linear-gradient(160deg,#232f40,#131a25);
+    box-shadow:0 14px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .screen{
+    width:100%;height:100%;border-radius:23px;overflow:hidden;position:relative;
+    background:radial-gradient(120% 90% at 50% 0%, #16202e, #0b0f16 70%);
+    display:flex;flex-direction:column;padding:12px 11px;gap:8px;
+  }
+  .notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:70px;height:5px;border-radius:3px;background:#0a0f16;}
+  .capName{margin-top:12px;font-size:14.5px;font-weight:700;text-align:center;color:var(--ink);}
+  .capName .en{display:block;font-size:11.5px;font-weight:500;color:var(--sub);margin-top:2px;}
+
+  /* мини-HUD внутри скрина */
+  .miniHud{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:var(--sub);padding:0 2px;}
+  .miniHud .sc{color:var(--ink);font-weight:700;font-size:12px;}
+  .miniHud .cmb{color:var(--gold);font-weight:700;background:#141b26;border:1px solid #3a2f10;border-radius:999px;padding:2px 7px;font-size:9px;}
+  .surge{display:flex;align-items:center;gap:5px;font-size:8.5px;color:var(--cyan);}
+  .surge .bar{flex:1;height:7px;border-radius:999px;background:#141b26;border:1px solid #223;overflow:hidden;}
+  .surge .fill{height:100%;background:linear-gradient(90deg,var(--cyan2),var(--indigo));}
+  .surge.full .fill{animation:pulse 1.1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.7)}}
+
+  /* поле 8x8 */
+  .board{background:#0d131c;border-radius:9px;padding:5px;flex:1;display:grid;place-items:center;}
+  .grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;width:100%;aspect-ratio:1/1;}
+  .cell{border-radius:3px;background:#1a2230;position:relative;}
+  .cell.g{background:rgba(105,219,124,.35);box-shadow:inset 0 0 0 1px var(--green);}
+  .cell.crystal{background:radial-gradient(circle,#a5f3fc,#22d3ee);box-shadow:0 0 6px var(--cyan);}
+  .cell .gloss{position:absolute;inset:2px 2px auto 2px;height:32%;border-radius:2px;background:rgba(255,255,255,.28);}
+  .blast{position:absolute;inset:0;border-radius:50%;border:2px solid var(--cyan);opacity:.7;}
+
+  /* док */
+  .dock{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .slot{background:#141a24;border-radius:8px;height:44px;display:grid;place-items:center;padding:5px;}
+  .slot.bomb{background:#10202a;border:1px dashed #2c8ea3;}
+  .pieceMini{display:grid;gap:2px;}
+  .pieceMini i{width:9px;height:9px;border-radius:2px;}
+
+  /* фигурное поле (звезда) */
+  .starField{flex:1;display:grid;place-items:center;background:#0d131c;border-radius:9px;padding:8px;}
+  .starGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;width:100%;aspect-ratio:1/1;}
+  .starGrid span{border-radius:3px;}
+  .starGrid span.on{background:linear-gradient(160deg,#ffd43b,#ffa94d);}
+  .starGrid span.on.b{background:linear-gradient(160deg,#9775fa,#4dabf7);}
+  .starGrid span.off{background:transparent;}
+
+  /* мета-скрин (карта/серия/миссии) */
+  .metaMock{flex:1;display:flex;flex-direction:column;gap:7px;font-size:10px;}
+  .mCard{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 9px;}
+  .mCard h4{font-size:10.5px;color:#cbd6e4;margin-bottom:5px;display:flex;justify-content:space-between;}
+  .mapDots{display:flex;align-items:center;gap:4px;}
+  .mapDots i{width:14px;height:14px;border-radius:50%;background:#1c2736;border:1px solid #2c3a50;font-size:7px;display:grid;place-items:center;color:#6b7a8d;}
+  .mapDots i.done{background:#1f4d3a;border-color:#2f7a5a;color:#a9f0c9;}
+  .mapDots i.now{background:#14657a;border-color:var(--cyan);color:#eafcff;box-shadow:0 0 6px var(--cyan);}
+  .mapDots .link{flex:1;height:2px;background:#2c3a50;}
+  .miss{display:flex;align-items:center;gap:6px;margin-top:4px;color:#b8c4d3;}
+  .miss .box{width:12px;height:12px;border-radius:3px;border:1px solid #2c3a50;display:grid;place-items:center;font-size:8px;}
+  .miss .box.ok{background:#1f4d3a;border-color:#2f7a5a;color:#a9f0c9;}
+  .streakRow{display:flex;gap:4px;margin-top:3px;}
+  .streakRow i{flex:1;height:15px;border-radius:4px;background:#141b26;border:1px solid #2c3a50;display:grid;place-items:center;font-size:9px;}
+  .streakRow i.hit{background:#241a06;border-color:#8a6d1a;}
+
+  /* ---------- 4. Информация ---------- */
+  .infoGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .infoCell{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;}
+  .infoCell .k{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--sub);}
+  .infoCell .v{font-size:15px;font-weight:600;margin-top:4px;color:var(--ink);}
+  .infoCell .v small{display:block;font-weight:400;font-size:12px;color:#94a2b4;margin-top:2px;}
+
+  .privacy{
+    margin-top:18px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;
+    padding:15px 17px;font-size:13px;color:#b8c4d3;line-height:1.6;
+  }
+  .privacy b{color:var(--ink);}
+  .foot{margin-top:22px;text-align:center;font-size:12px;color:#6b7a8d;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="ribbon">
+    <span class="dot"></span>
+    <span><b>МОКАП стор-карточки</b> · Block Surge · Проход Д — глобальный запуск</span>
+    <span style="color:#7d8ba0">·&nbsp; дизайн-превью собственного продукта, не копия реального магазина; тексты — из&nbsp;<b style="color:#a5f3fc">store-listing.md</b></span>
+  </div>
+
+  <!-- ============ 1. ПРОДУКТОВАЯ ШАПКА ============ -->
+  <section>
+    <div class="secTitle">Карточка приложения</div>
+    <div class="product">
+      <!-- Иконка: неоновый глиф-волна из блоков, чистый SVG -->
+      <svg class="icon" viewBox="0 0 110 110" role="img" aria-label="Иконка Block Surge">
+        <defs>
+          <linearGradient id="ig" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#12233a"/><stop offset="1" stop-color="#0a0f16"/>
+          </linearGradient>
+          <linearGradient id="wv" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#7ff0ff"/><stop offset="1" stop-color="#818cf8"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="110" height="110" rx="26" fill="url(#ig)"/>
+        <!-- блоки, выстроенные восходящей «волной прилива» -->
+        <g fill="url(#wv)">
+          <rect x="20" y="66" width="16" height="16" rx="4"/>
+          <rect x="38" y="52" width="16" height="16" rx="4"/>
+          <rect x="56" y="38" width="16" height="16" rx="4"/>
+          <rect x="74" y="24" width="16" height="16" rx="4"/>
+        </g>
+        <g fill="#ffd43b">
+          <rect x="20" y="48" width="16" height="16" rx="4" opacity=".55"/>
+          <rect x="38" y="70" width="16" height="16" rx="4" opacity=".9"/>
+        </g>
+        <circle cx="82" cy="32" r="17" fill="none" stroke="#a5f3fc" stroke-width="2" opacity=".6"/>
+      </svg>
+
+      <div class="meta">
+        <h1>Block Surge</h1>
+        <div class="sub">Block Puzzle · Zen block puzzle, no timer</div>
+        <div class="devRow">Разработчик <b>Surge Games</b> · <b>Puzzle</b> · Покупки в приложении</div>
+        <div class="chips">
+          <span class="chip rating">4+</span>
+          <span class="chip">🧩 Puzzle</span>
+          <span class="chip">⏱️ Без таймера</span>
+          <span class="chip">📶 Офлайн</span>
+          <span class="chip">🌐 8 языков</span>
+        </div>
+      </div>
+
+      <div class="buyCol">
+        <button class="getBtn" type="button" aria-disabled="true">Установить</button>
+        <div class="buyNote">Бесплатно · есть реклама</div>
+        <div class="stars">★★★★★</div>
+        <div class="buyNote">рейтинг витрины (мокап)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. ФИЧЕР-ГРАФИКА ============ -->
+  <section>
+    <div class="secTitle">Фичер-графика (1024×500)</div>
+    <div class="feature">
+      <div class="fLeft">
+        <h2>Клади фигуры. Собирай линии.<br><span class="accent">Лови «Прилив».</span></h2>
+        <p>Спокойный блок-пазл без таймера. Комбо ×2·×3·×5 заряжают шкалу — и следующая фигура взрывает поле.</p>
+        <div class="tagRow">
+          <span class="tag">Без таймера</span>
+          <span class="tag ghost">Управляемое комбо</span>
+          <span class="tag ghost">Ежедневные поля</span>
+        </div>
+      </div>
+      <div class="fBlocks" aria-hidden="true">
+        <i style="background:var(--c5)"></i><i style="background:var(--c3)"></i><i style="background:var(--c2)"></i>
+        <i style="background:var(--c6)"></i><i style="background:var(--c0)"></i><i style="background:var(--c1)"></i>
+        <i style="background:var(--c4)"></i><i style="background:var(--c7)"></i><i style="background:radial-gradient(circle,#a5f3fc,#22d3ee)"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. СКРИНШОТЫ ============ -->
+  <section>
+    <div class="secTitle">Скриншоты витрины (4 кадра)</div>
+    <div class="shotScroll">
+      <div class="shots" id="shots"><!-- заполняется скриптом ниже --></div>
+    </div>
+  </section>
+
+  <!-- ============ 4. ИНФОРМАЦИЯ ============ -->
+  <section>
+    <div class="secTitle">Информация</div>
+    <div class="infoGrid">
+      <div class="infoCell"><div class="k">Категория</div><div class="v">Puzzle<small>вторичная — Board / Casual</small></div></div>
+      <div class="infoCell"><div class="k">Возраст</div><div class="v">4+ · Everyone<small>реклама и покупки задекларированы</small></div></div>
+      <div class="infoCell"><div class="k">Цена</div><div class="v">Бесплатно<small>реклама + покупки $0.99–$99.99</small></div></div>
+      <div class="infoCell"><div class="k">Языки</div><div class="v">EN · RU +6<small>JA · DE · FR · ES · PT-BR · KO</small></div></div>
+      <div class="infoCell"><div class="k">Размер</div><div class="v">~22 МБ<small>веб-стек, лёгкий билд</small></div></div>
+      <div class="infoCell"><div class="k">Совместимость</div><div class="v">iOS · Android<small>офлайн-игра, облачный бэкап</small></div></div>
+    </div>
+
+    <div class="privacy">
+      <b>🔒 Конфиденциальность.</b> Регистрации и аккаунта нет. Собираются обезличенные данные для
+      рекламы, атрибуции и аналитики: рекламный ID (по согласию ATT), события использования,
+      диагностика, история покупок, приблизительный регион (по IP). <b>Имя, e-mail, контакты и точная
+      геолокация не собираются.</b> Отслеживание — только после запроса ATT; в ЕС/UK — баннер согласия
+      (CMP), в Калифорнии — «Do Not Sell or Share». Приложение общей аудитории, не направлено на детей.
+      Полная раскладка — в <b>store-listing.md §9</b>.
+    </div>
+  </section>
+
+  <div class="foot">
+    Block Surge · мокап карточки магазина · Проход Д (глобальный запуск).<br>
+    Вся графика — примитивы CSS/SVG/эмодзи, без внешних ассетов. Копии Apple/Google-брендинга нет — это дизайн-превью собственного листинга.
+  </div>
+
+</div>
+
+<script>
+/* Скриншоты собираются из компактных паттернов — это те же CSS-примитивы (див-клетки),
+ * просто без ручного набора сотен узлов. Никакой сети: чистый DOM в статической странице. */
+(function(){
+  var COLORS = ['#ff6b6b','#ffa94d','#ffd43b','#69db7c','#38d9a9','#4dabf7','#9775fa','#f783ac'];
+
+  // 8×8 паттерны: '.' пусто, 0-7 цвет, 'g' ghost-подсветка линии, 'x' кристалл
+  function board(pattern){
+    var g=document.createElement('div'); g.className='grid';
+    pattern.join('').split('').forEach(function(ch){
+      var d=document.createElement('div'); d.className='cell';
+      if(ch==='g'){ d.className='cell g'; }
+      else if(ch==='x'){ d.className='cell crystal'; var gl=document.createElement('div'); gl.className='gloss'; d.appendChild(gl); }
+      else if(ch!=='.'){ d.style.background=COLORS[+ch]; var gl=document.createElement('div'); gl.className='gloss'; d.appendChild(gl); }
+      g.appendChild(d);
+    });
+    return g;
+  }
+  function miniPiece(rows,color){
+    var p=document.createElement('div'); p.className='pieceMini';
+    p.style.gridTemplateColumns='repeat('+rows[0].length+',9px)';
+    rows.join('').split('').forEach(function(ch){
+      var i=document.createElement('i');
+      i.style.background = ch==='#'? color : 'transparent';
+      p.appendChild(i);
+    });
+    return p;
+  }
+  function el(tag,cls,html){var e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e;}
+
+  function phone(build){
+    var card=el('div','shotCard');
+    var ph=el('div','phone'); var sc=el('div','screen');
+    sc.appendChild(el('div','notch'));
+    build(sc);
+    ph.appendChild(sc); card.appendChild(ph);
+    return {card:card};
+  }
+
+  var shots=document.getElementById('shots');
+
+  /* --- Кадр 1: базовое поле + ghost-линия --- */
+  (function(){
+    var o=phone(function(sc){
+      var hud=el('div','miniHud');
+      hud.appendChild(el('div',null,'<span class="sc">4 320</span>'));
+      hud.appendChild(el('div','cmb','Комбо ×2'));
+      hud.appendChild(el('div',null,'Рекорд 9 180'));
+      sc.appendChild(hud);
+      var sg=el('div','surge'); sg.innerHTML='Прилив<div class="bar"><div class="fill" style="width:45%"></div></div>45%';
+      sc.appendChild(sg);
+      var bd=el('div','board'); bd.appendChild(board([
+        '....5...',
+        '..6.5.1.',
+        '..6.5.1.',
+        'gggggggg',
+        '..3.5...',
+        '4.3.5..7',
+        '4.3.5.27',
+        '4...5.22'
+      ])); sc.appendChild(bd);
+      var dock=el('div','dock');
+      var s1=el('div','slot'); s1.appendChild(miniPiece(['##','##'],COLORS[2]));
+      var s2=el('div','slot'); s2.appendChild(miniPiece(['#..','###'],COLORS[5]));
+      var s3=el('div','slot'); s3.appendChild(miniPiece(['#','#','#'],COLORS[3]));
+      var s4=el('div','slot bomb'); s4.innerHTML='<span style="font-size:9px;color:#3d5065">заполни<br>Прилив</span>';
+      dock.appendChild(s1);dock.appendChild(s2);dock.appendChild(s3);dock.appendChild(s4);
+      sc.appendChild(dock);
+    });
+    o.card.appendChild(el('div','capName','Клади, вставляй, очищай<span class="en">Drop, fit, clear — learn in 10 seconds</span>'));
+    shots.appendChild(o.card);
+  })();
+
+  /* --- Кадр 2: полный Прилив + кристальный взрыв 3×3 --- */
+  (function(){
+    var o=phone(function(sc){
+      var hud=el('div','miniHud');
+      hud.appendChild(el('div',null,'<span class="sc">7 640</span>'));
+      hud.appendChild(el('div','cmb','Комбо ×5'));
+      hud.appendChild(el('div',null,'Рекорд 9 180'));
+      sc.appendChild(hud);
+      var sg=el('div','surge full'); sg.innerHTML='Прилив<div class="bar"><div class="fill" style="width:100%"></div></div>100%';
+      sc.appendChild(sg);
+      var bd=el('div','board');
+      var g=board([
+        '1...66..',
+        '1..xxx.7',
+        '4..xxx.7',
+        '4..xxx..',
+        '4.......',
+        '3.5.....',
+        '3.5..22.',
+        '3.5..22.'
+      ]);
+      // кольцо взрыва поверх центра
+      var ring=el('div','blast'); ring.style.left='34%'; ring.style.top='24%'; ring.style.width='34%'; ring.style.height='30%';
+      bd.style.position='relative'; bd.appendChild(g); bd.appendChild(ring);
+      sc.appendChild(bd);
+      var dock=el('div','dock');
+      var s1=el('div','slot'); s1.appendChild(miniPiece(['##'],COLORS[1]));
+      var s2=el('div','slot'); s2.appendChild(miniPiece(['#','#'],COLORS[6]));
+      var s3=el('div','slot'); s3.appendChild(miniPiece(['###'],COLORS[4]));
+      var s4=el('div','slot bomb'); s4.innerHTML='<span style="font-size:20px">💎</span>';
+      dock.appendChild(s1);dock.appendChild(s2);dock.appendChild(s3);dock.appendChild(s4);
+      sc.appendChild(dock);
+    });
+    o.card.appendChild(el('div','capName','Лови «Прилив» — комбо ×5 и взрывы 3×3<span class="en">Ride the Surge — ×5 combos &amp; 3×3 blasts</span>'));
+    shots.appendChild(o.card);
+  })();
+
+  /* --- Кадр 3: Фигурное поле (звезда) --- */
+  (function(){
+    var o=phone(function(sc){
+      sc.appendChild(el('div','miniHud','<span>Фигурное поле · сегодня</span><span class="cmb" style="color:#a5f3fc;border-color:#2c8ea3;background:#0e1f26">⭐ Звезда</span>'));
+      var wrap=el('div','starField');
+      // 7×7 маска звезды: 1 = игровая клетка, точка = вне поля
+      var mask=[
+        '...1...',
+        '..111..',
+        '1111111',
+        '.11111.',
+        '.11111.',
+        '.1...1.',
+        '.1...1.'
+      ].join('').split('');
+      var sg=el('div','starGrid');
+      mask.forEach(function(ch,i){
+        var s=document.createElement('span');
+        if(ch==='1'){ s.className = (i%3===0)?'on b':'on'; }
+        else s.className='off';
+        sg.appendChild(s);
+      });
+      wrap.appendChild(sg); sc.appendChild(wrap);
+      var dock=el('div','dock');
+      var s1=el('div','slot'); s1.appendChild(miniPiece(['##','#.'],COLORS[2]));
+      var s2=el('div','slot'); s2.appendChild(miniPiece(['.#','##'],COLORS[0]));
+      var s3=el('div','slot'); s3.appendChild(miniPiece(['##'],COLORS[3]));
+      var s4=el('div','slot bomb'); s4.innerHTML='<span style="font-size:11px;color:#67e8f9">🎟️ ещё</span>';
+      dock.appendChild(s1);dock.appendChild(s2);dock.appendChild(s3);dock.appendChild(s4);
+      sc.appendChild(dock);
+    });
+    o.card.appendChild(el('div','capName','Ежедневные Фигурные поля<span class="en">Daily Shape Fields, fresh every day</span>'));
+    shots.appendChild(o.card);
+  })();
+
+  /* --- Кадр 4: мета (карта, серия, миссии, монеты) --- */
+  (function(){
+    var o=phone(function(sc){
+      sc.appendChild(el('div','miniHud','<span class="sc" style="font-size:11px">🪙 1 160</span><span>🗺️ Путешествие</span><span>★ 34</span>'));
+      var m=el('div','metaMock');
+
+      var c1=el('div','mCard');
+      c1.appendChild(el('h4',null,'Карта «Путешествия»<span style="color:#7d8ba0">узел 12/30</span>'));
+      var dots=el('div','mapDots');
+      dots.innerHTML='<i class="done">✓</i><span class="link"></span><i class="done">✓</i><span class="link"></span><i class="now">12</i><span class="link"></span><i>13</i><span class="link"></span><i>★</i>';
+      c1.appendChild(dots); m.appendChild(c1);
+
+      var c2=el('div','mCard');
+      c2.appendChild(el('h4',null,'Серия дней 🔥<span style="color:#ffd43b">5 дней</span>'));
+      var sr=el('div','streakRow');
+      sr.innerHTML='<i class="hit">✓</i><i class="hit">✓</i><i class="hit">✓</i><i class="hit">✓</i><i class="hit">✓</i><i>6</i><i>🎁</i>';
+      c2.appendChild(sr); m.appendChild(c2);
+
+      var c3=el('div','mCard');
+      c3.appendChild(el('h4',null,'Миссии дня<span style="color:#7d8ba0">2 / 3</span>'));
+      c3.appendChild(el('div','miss','<span class="box ok">✓</span> Очисти 8 линий'));
+      c3.appendChild(el('div','miss','<span class="box ok">✓</span> Собери комбо ×3'));
+      c3.appendChild(el('div','miss','<span class="box"></span> Сыграй 2 партии'));
+      m.appendChild(c3);
+
+      sc.appendChild(m);
+    });
+    o.card.appendChild(el('div','capName','Серии, миссии, бустеры — без гринда<span class="en">Streaks, missions, boosters — no grind</span>'));
+    shots.appendChild(o.card);
+  })();
+})();
+</script>
+</body>
+</html>

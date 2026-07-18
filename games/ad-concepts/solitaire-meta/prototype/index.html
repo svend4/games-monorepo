@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Orchard Peaks — прототип (Проходы А + Б + В + Г)</title>
+  <title>Orchard Peaks — прототип (Проходы А + Б + В + Г + Д)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,6 +19,7 @@
     <button id="btn-store" type="button" class="hud-btn hud-btn-store">💎 Магазин</button>
     <button id="btn-dash" type="button" class="hud-btn hud-btn-dash">📊 KPI</button>
     <button id="btn-soft" type="button" class="hud-btn hud-btn-soft" title="Soft-launch кокпит: симулятор экономики, A/B, тюнинг, гейты go/no-go (Проход Г)">🚀 Soft</button>
+    <button id="btn-tutorial" type="button" class="hud-btn hud-btn-tutorial" title="Пройти обучение снова (FTUE, Проход Д)">❓ Обучение</button>
     <button id="btn-restart" type="button" class="hud-btn">Новый расклад</button>
   </header>
 
@@ -88,5 +89,10 @@
   <script src="sim.js"></script>
   <script src="experiments.js"></script>
   <script src="game.js"></script>
+  <!-- Проход Д: FTUE-онбординг первого запуска. Подключён ПОСЛЕ game.js —
+       к его DOMContentLoaded ядро уже разложило раздачу, коуч-марки указывают
+       на реальные элементы. Флаг orchardPeaks.onboarding (localStorage): отсутствие
+       = показать (совместимо со старыми сейвами). Кнопка «❓ Обучение» — повтор. -->
+  <script src="onboarding.js"></script>
 </body>
 </html>

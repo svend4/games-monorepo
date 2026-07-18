@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Block Surge — прототип (Проходы А + Б + В + Г)</title>
+  <title>Block Surge — прототип (Проходы А + Б + В + Г + Д)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -124,6 +124,15 @@
             <button id="metaDashBtn" type="button" class="metaBtn">📊 Дашборд KPI</button>
           </div>
         </section>
+
+        <!-- Проход Д: точка повторного запуска FTUE-обучения (07 §3). -->
+        <section class="metaSection" id="ftueSection">
+          <h3>❔ Обучение <span class="simTag">Проход Д</span></h3>
+          <p class="metaNote">Интерактивные подсказки первых 5 минут (07 §3): фигуры и
+            правило «клади на поле», очистка линии, комбо и «Прилив», кристальная бомба,
+            монеты, честная реклама. Показываются автоматически на первом запуске.</p>
+          <button id="ftueReplayBtn" type="button" class="ghostBtn">▶ Пройти обучение снова</button>
+        </section>
       </div>
     </div>
   </div>
@@ -209,5 +218,9 @@
   <script src="experiments.js"></script>
   <script src="meta.js"></script>
   <script src="game.js"></script>
+  <!-- Проход Д: FTUE-коуч-марки. ПОСЛЕ game.js — читает его глобалы (CFG/BOARD_X/
+       DOCK_Y/GRID_W/slotRect/W/H) для геометрии подсветки; сам создаёт свой
+       оверлей в DOM и всплывает на первом запуске (флаг blocksurge_ftue). -->
+  <script src="onboarding.js"></script>
 </body>
 </html>
