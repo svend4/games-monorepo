@@ -53,6 +53,24 @@ export function themeLabel(theme: string): string {
   return key === undefined ? theme : t(key);
 }
 
+/* --------------------------- Гео (реклама) --------------------------- */
+
+/** Канонические гео-теры (ads/ecpm.ts GEO_LABELS) → ключи словаря.
+ * Дев-инструменты (DashboardUi/CockpitUi) продолжают показывать канон
+ * GEO_LABELS; локализуется только ИГРОВОЙ UI — метка симулированного
+ * баннера B-1 и строка eCPM в оверлее показа рекламы (SimAdProvider). */
+const GEO_LABEL_KEYS: Readonly<Record<string, TranslationKey>> = {
+  tier1: 'geo.tier1',
+  blend: 'geo.blend',
+  tier23: 'geo.tier23'
+};
+
+/** Метка гео-тера для игрового UI (fallback — каноническая строка). */
+export function geoLabel(tier: string, fallback: string): string {
+  const key = GEO_LABEL_KEYS[tier] as TranslationKey | undefined;
+  return key === undefined ? fallback : t(key);
+}
+
 /* ------------------------------ Магазин ------------------------------ */
 
 const SKU_TITLE_KEYS: Readonly<Record<string, TranslationKey>> = {

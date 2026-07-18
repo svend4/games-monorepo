@@ -6,10 +6,12 @@
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { LEVELS, levelsFor } from '../src/core/levels';
+import { LEVELS_EN } from '../src/core/levelsEn';
 import { getLocale, resolveLocale, setLocale, t, tPlural, LOCALE_STORAGE_KEY } from '../src/i18n';
 import { EN } from '../src/i18n/en';
 import { RU } from '../src/i18n/ru';
-import { missionText, planLabel, regionName, skuBadge, skuDesc, skuTitle, subPerks, themeLabel } from '../src/i18n/labels';
+import { geoLabel, missionText, planLabel, regionName, skuBadge, skuDesc, skuTitle, subPerks, themeLabel } from '../src/i18n/labels';
+import { GEO_LABELS, GEO_ORDER } from '../src/ads/ecpm';
 import { MISSIONS, REGIONS, THEMES } from '../src/meta/config';
 import { IAP_SHELF } from '../src/monetize/config';
 
@@ -137,6 +139,10 @@ describe('labels: метки конфиг-строк с fallback', () => {
       expect(subPerks()).toHaveLength(6);
       expect(planLabel('monthly')).not.toBe('');
       expect(planLabel('yearly')).not.toBe('');
+      // Гео-метки симулятора рекламы (баннер B-1 / оверлей) локализованы:
+      // «Бленд 60/40» не утекает в EN-игровой UI.
+      for (const g of GEO_ORDER) expect(geoLabel(g, GEO_LABELS[g])).not.toBe('');
+      if (locale === 'en') expect(geoLabel('blend', GEO_LABELS.blend)).toBe('Blend 60/40');
     }
   });
 
@@ -149,6 +155,7 @@ describe('labels: метки конфиг-строк с fallback', () => {
       expect(skuTitle(sku)).toBe(sku.title);
       expect(skuDesc(sku)).toBe(sku.desc);
     }
+    for (const g of GEO_ORDER) expect(geoLabel(g, 'x')).toBe(GEO_LABELS[g]);
   });
 
   it('неизвестный id падает на fallback, а не роняет UI', () => {
@@ -161,8 +168,9 @@ describe('labels: метки конфиг-строк с fallback', () => {
 });
 
 describe('levelsFor(locale): точка подключения языкозависимого контента', () => {
-  it('пока обе локали играют русский набор (EN-пакет — следующий этап)', () => {
+  it('ru играет русский набор, en — английский пакет Ж.2', () => {
     expect(levelsFor('ru')).toBe(LEVELS);
-    expect(levelsFor('en')).toBe(LEVELS);
+    expect(levelsFor('en')).toBe(LEVELS_EN);
+    expect(levelsFor('en')).not.toBe(LEVELS);
   });
 });

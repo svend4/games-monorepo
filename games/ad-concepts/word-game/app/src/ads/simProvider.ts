@@ -17,6 +17,7 @@
  * impression'ы и выручка считаются как обычно — логика тестируема без браузера.
  */
 import { t, type TranslationKey } from '../i18n';
+import { geoLabel } from '../i18n/labels';
 import type { AdFormat, AdImpression, AdProvider, InterstitialResult, RewardedResult } from './provider';
 import { DEFAULT_GEO, GEO_LABELS, ecpmFor, genRevenue, type GeoTier } from './ecpm';
 
@@ -160,7 +161,7 @@ export class SimAdProvider implements AdProvider {
     if (typeof document === 'undefined') return;
     const el = document.getElementById('adBannerEcpm');
     if (el) {
-      el.textContent = '$' + ecpmFor('banner', this.geo).toFixed(2) + ' · ' + GEO_LABELS[this.geo];
+      el.textContent = '$' + ecpmFor('banner', this.geo).toFixed(2) + ' · ' + geoLabel(this.geo, GEO_LABELS[this.geo]);
     }
   }
 
@@ -240,7 +241,7 @@ export class SimAdProvider implements AdProvider {
     }
     if (this.ecpmEl) {
       this.ecpmEl.textContent =
-        'eCPM (' + GEO_LABELS[this.geo] + '): $' + ecpmFor(fmt, this.geo).toFixed(2) + ' / 1000';
+        'eCPM (' + geoLabel(this.geo, GEO_LABELS[this.geo]) + '): $' + ecpmFor(fmt, this.geo).toFixed(2) + ' / 1000';
     }
     skip.classList.add('hidden');
     claim.classList.add('hidden');

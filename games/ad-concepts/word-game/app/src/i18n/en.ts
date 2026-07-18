@@ -227,6 +227,11 @@ export const EN = {
   'adsim.close': 'Close ✕',
   'adsim.claim': 'Claim reward 🎁',
 
+  /* ---------- Geo labels of the ad simulator (B-1 banner / overlay) ---------- */
+  'geo.tier1': 'Tier-1 (US/UK/CA/AU)',
+  'geo.blend': 'Blend 60/40',
+  'geo.tier23': 'Tier-2/3',
+
   /* ---------- FTUE onboarding (port of prototype/onboarding.js) ---------- */
   'ob.step': 'Step {n} of {total}',
   'ob.next': 'Next',

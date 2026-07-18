@@ -14,17 +14,19 @@
  * Буквы «Ё» в данных нет — нормализация е/ё (03 §2.3) не требуется.
  */
 import type { Locale } from '../i18n';
+import { LEVELS_EN } from './levelsEn';
 import type { LevelData } from './types';
 
 /**
- * ТОЧКА ПОДКЛЮЧЕНИЯ языкозависимого контента (Проход Ж.1): набор уровней
- * выбирается по локали. Пока ОБЕ локали играют русский набор LEVELS —
- * английский пакет уровней подключит следующий этап (Ж.2), заменив ветку
- * 'en' на свой массив (те же инварианты INV-W1/W2, validateLevel).
- * main.ts передаёт результат в CoreGame({ levels }).
+ * ТОЧКА ПОДКЛЮЧЕНИЯ языкозависимого контента (Проход Ж.1/Ж.2): набор уровней
+ * выбирается по локали — ru играет русский LEVELS (порт прототипа), en —
+ * сгенерированный пакет LEVELS_EN (tools/gen-levels.ts, те же инварианты
+ * INV-W1/W2, validateLevel). main.ts передаёт результат в CoreGame({ levels });
+ * дневной кроссворд тоже языкозависим автоматически: Meta.dailySeedIndex()
+ * берёт пул через bridge.getTotalLevels() из того же набора ядра.
  */
-export function levelsFor(_locale: Locale): readonly LevelData[] {
-  return LEVELS;
+export function levelsFor(locale: Locale): readonly LevelData[] {
+  return locale === 'en' ? LEVELS_EN : LEVELS;
 }
 
 export const LEVELS: readonly LevelData[] = [

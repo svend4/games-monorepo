@@ -81,8 +81,8 @@ const meta = new Meta(economy, analytics, storage);
 const game = new CoreGame({
   storage,
   rng: mulberry32(randomSeed()), // подсказка «Лампа»: сид вне логики, PRNG внутри
-  // Контент языкозависим (Ж.1): набор уровней по локали (пока RU для обеих,
-  // EN-пакет подключит следующий этап через levelsFor).
+  // Контент языкозависим (Ж.1/Ж.2): набор уровней по локали — ru играет
+  // русский LEVELS, en — сгенерированный пакет LEVELS_EN (tools/gen-levels.ts).
   levels: levelsFor(getLocale()),
   acorns: economy,
   track: (event, params) => analytics.track(event, params),

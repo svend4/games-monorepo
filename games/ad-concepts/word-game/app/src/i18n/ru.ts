@@ -228,6 +228,11 @@ export const RU = {
   'adsim.close': 'Закрыть ✕',
   'adsim.claim': 'Забрать награду 🎁',
 
+  /* ---------- Гео-метки рекламного симулятора (баннер B-1 / оверлей) ---------- */
+  'geo.tier1': 'Tier-1 (US/UK/CA/AU)',
+  'geo.blend': 'Бленд 60/40',
+  'geo.tier23': 'Tier-2/3',
+
   /* ---------- FTUE-онбординг (порт prototype/onboarding.js) ---------- */
   'ob.step': 'Шаг {n} из {total}',
   'ob.next': 'Дальше',
