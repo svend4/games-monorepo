@@ -38,6 +38,8 @@ export class MetaUi {
   /** Проход Е.2: клики по бейджам топбара (магазин 🛒 / дашборд 📊). */
   onShopClick: (() => void) | null = null;
   onDashClick: (() => void) | null = null;
+  /** Проход Е.3: клик по бейджу soft-launch кокпита (🚀). */
+  onCockpitClick: (() => void) | null = null;
   /** Проход Е.2: rewarded-панель мета-экрана (null — секция скрыта). */
   adPanel: MetaAdPanel | null = null;
 
@@ -65,11 +67,13 @@ export class MetaUi {
       '<div class="topbarBtns">' +
       '<button id="openShopBtn" type="button" class="metaBtn" title="Магазин (СИМУЛЯЦИЯ)">🛒</button>' +
       '<button id="openDashBtn" type="button" class="metaBtn" title="Дашборд монетизации">📊</button>' +
+      '<button id="openCockpitBtn" type="button" class="metaBtn" title="Soft-launch кокпит">🚀</button>' +
       '<button id="openMetaBtn" type="button" class="metaBtn">🗺️ Мета</button>' +
       '</div>';
     this.el('openMetaBtn').addEventListener('click', () => this.openMeta());
     this.el('openShopBtn').addEventListener('click', () => this.onShopClick?.());
     this.el('openDashBtn').addEventListener('click', () => this.onDashClick?.());
+    this.el('openCockpitBtn').addEventListener('click', () => this.onCockpitClick?.());
 
     // Бустер-бар: делегирование кликов по кнопкам.
     this.el('boosterBar').addEventListener('click', (e) => {

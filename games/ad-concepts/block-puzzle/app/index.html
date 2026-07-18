@@ -174,8 +174,8 @@
     #adSimClaim { font-size: 14px; font-weight: 700; padding: 9px 18px; border-radius: 10px; background: #1f4d3a; border: 1px solid #2f7a5a; }
     #adSimClaim:hover { background: #256047; }
 
-    /* ==================== МАГАЗИН (🛒) И ДАШБОРД (📊) ==================== */
-    #shopScreen, #dashboardScreen {
+    /* ==================== МАГАЗИН (🛒), ДАШБОРД (📊), КОКПИТ (🚀) ======== */
+    #shopScreen, #dashboardScreen, #cockpitScreen {
       position: fixed; inset: 0; z-index: 50;
       background: radial-gradient(120% 100% at 50% 0%, #16202e 0%, #0b0f16 70%);
       overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -222,6 +222,101 @@
     .shareBar { display: flex; height: 22px; border-radius: 8px; overflow: hidden; background: #182130; font-size: 10.5px; font-weight: 700; }
     .shareAd { background: #1c4a63; color: #67e8f9; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
     .shareIap { background: #4a3a10; color: #ffd43b; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
+
+    /* ==================== ПРОХОД Е.3: SOFT-LAUNCH КОКПИТ (🚀) ============ */
+    .ckSess { font-size: 11px; color: #7d8b9f; }
+    .ckSess code { color: #67e8f9; }
+    .ckSection { border: 1px solid #1e2a3b; border-radius: 10px; padding: 9px 11px; background: #0e1622; margin-bottom: 10px; }
+    .ckSection h4 { margin: 0 0 6px; font-size: 12.5px; color: #cdd7e3; }
+    .ckNote { font-size: 11px; color: #7d8b9f; line-height: 1.45; margin: 0 0 8px; }
+    .ckNote code { color: #67e8f9; }
+    .ckWarn { color: #ffd43b; }
+    .ckOk { color: #69db7c; }
+
+    /* A/B-эксперименты */
+    .ckExp { border: 1px solid #24324a; border-radius: 10px; padding: 8px 10px; background: #101823; margin-bottom: 8px; }
+    .ckExpTop { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; }
+    .ckExpId { font-size: 10px; color: #5c6a7d; font-family: monospace; }
+    .ckExpMeta { font-size: 10.5px; color: #7d8b9f; margin: 2px 0 6px; }
+    .ckVariants { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 7px; }
+    .ckVar { font-size: 11px; color: #8b98a9; border: 1px solid #24324a; border-radius: 999px; padding: 3px 9px; }
+    .ckVar.active { color: #67e8f9; border-color: #2c8ea3; background: #102530; }
+    .ckCompareOut { margin-top: 6px; }
+
+    /* Таблицы кокпита + цветовая разметка */
+    .ckTableWrap { overflow-x: auto; }
+    .ckTable { width: 100%; border-collapse: collapse; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .ckTable th { text-align: right; padding: 3px 6px; color: #5c6a7d; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #24324a; }
+    .ckTable th:first-child, .ckTable td:first-child { text-align: left; }
+    .ckTable td { text-align: right; padding: 2px 6px; border-bottom: 1px solid #16202e; color: #b8c4d3; }
+    .ckTable td.ok { color: #69db7c; }
+    .ckTable td.near { color: #ffd43b; }
+    .ckTable td.off { color: #ff8787; }
+    .ckBand { font-weight: 700; }
+    .ckBand.kill { color: #ff8787; }
+    .ckBand.iterate { color: #ffd43b; }
+    .ckBand.scale { color: #69db7c; }
+
+    /* KPI-плитки результатов */
+    .ckKpiGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin: 10px 0 6px; }
+    .ckKpi { border: 1px solid #24324a; border-radius: 8px; padding: 6px 7px; background: #101823; }
+    .ckKpi.ok { border-color: #2f7a5a; }
+    .ckKpi.near { border-color: #8a5a1a; }
+    .ckKpi.off { border-color: #7a2f2f; }
+    .ckKpiV { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .ckKpi.ok .ckKpiV { color: #69db7c; }
+    .ckKpi.near .ckKpiV { color: #ffd43b; }
+    .ckKpi.off .ckKpiV { color: #ff8787; }
+    .ckKpiL { font-size: 10px; color: #b8c4d3; margin-top: 1px; }
+    .ckKpiS { font-size: 9.5px; color: #5c6a7d; }
+    .ckMini { font-size: 11px; color: #7d8b9f; margin-top: 6px; line-height: 1.45; }
+    .ckFlags { font-size: 11px; color: #ffd43b; border: 1px dashed #8a5a1a; border-radius: 8px; padding: 7px 9px; margin-top: 8px; }
+    .ckFlags ul { margin: 4px 0 0 16px; padding: 0; }
+
+    /* Панель тюнинга */
+    .ckGroup { margin-bottom: 8px; }
+    .ckGroupName { font-size: 10px; color: #5c6a7d; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .ckKnob { border: 1px solid #1e2a3b; border-radius: 8px; padding: 6px 8px; background: #101823; margin-bottom: 5px; }
+    .ckKnob.edited { border-color: #2c8ea3; box-shadow: 0 0 0 1px #1c4a63 inset; }
+    .ckKnobLbl { font-size: 11.5px; color: #cdd7e3; display: flex; flex-direction: column; }
+    .ckKnobHint { font-size: 9.5px; color: #5c6a7d; }
+    .ckKnobCtl { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+    .ckRange { flex: 1; min-width: 60px; accent-color: #67e8f9; }
+    .ckNum { width: 62px; background: #0e1117; color: #e8edf4; border: 1px solid #24324a; border-radius: 6px; padding: 3px 5px; font-size: 11px; }
+    .ckBook { font-size: 10px; color: #5c6a7d; white-space: nowrap; }
+    .ckResetOne { font-size: 11px; padding: 3px 7px; border-radius: 6px; background: transparent; border: 1px solid #24324a; color: #8b98a9; }
+    .ckResetOne:disabled { opacity: 0.35; cursor: default; }
+
+    /* Прогон */
+    .ckRunRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .ckNlabel { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #b8c4d3; }
+    .ckNlabel input[type="range"] { accent-color: #67e8f9; }
+    .ckAbToggle { margin-top: 7px; font-size: 11px; color: #8b98a9; }
+    .ckRunBtn { font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 10px; background: #1c4a63; border: 1px solid #2c8ea3; color: #67e8f9; }
+    .ckRunBtn:hover:not(:disabled) { background: #215a78; }
+    .ckRunBtn:disabled { opacity: 0.6; cursor: default; }
+
+    /* Гейты */
+    .ckGateCtl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: #b8c4d3; margin-bottom: 8px; }
+    .ckGateCtl select, .ckGateCtl input { background: #0e1117; color: #e8edf4; border: 1px solid #24324a; border-radius: 6px; padding: 3px 6px; font-size: 11px; }
+    .ckGateCtl input { width: 62px; }
+    .ckVerdict { border-radius: 10px; padding: 9px 11px; margin-top: 8px; border: 1px solid #24324a; }
+    .ckVerdict.kill { border-color: #7a2f2f; background: #1c1012; }
+    .ckVerdict.iterate { border-color: #8a5a1a; background: #171410; }
+    .ckVerdict.scale { border-color: #2f7a5a; background: #10231c; }
+    .ckVerdictTop { font-size: 13px; }
+    .ckVerdict.kill .ckVerdictTop b { color: #ff8787; }
+    .ckVerdict.iterate .ckVerdictTop b { color: #ffd43b; }
+    .ckVerdict.scale .ckVerdictTop b { color: #69db7c; }
+    .ckVerdictWhy { font-size: 11px; color: #8b98a9; margin: 5px 0; line-height: 1.45; }
+
+    /* ==================== ПРОХОД Е.3: SAFE-AREA (Capacitor) ==============
+       Вырезы/чёлки устройств: viewport-fit=cover уже задан во viewport;
+       топбар, бустер-бар и баннер отступают от инсетов. */
+    #metaTopbar { padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+    #boosterBar { padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+    #adBanner { padding-bottom: calc(7px + env(safe-area-inset-bottom, 0px)); }
+    .metaInner { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
   </style>
 </head>
 <body>
@@ -250,6 +345,9 @@
   <div id="shopScreen" class="hidden"></div>
   <div id="dashboardScreen" class="hidden"></div>
   <div id="adOverlay" class="hidden"></div>
+
+  <!-- Soft-launch кокпит 🚀 (Проход Е.3): A/B + тюнинг + симулятор + гейты. -->
+  <div id="cockpitScreen" class="hidden"></div>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

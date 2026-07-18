@@ -22,6 +22,8 @@ import { MonetizeController } from './monetize/monetize';
 import { SimPurchaseProvider } from './monetize/purchase';
 import { ShopUi } from './ui/ShopUi';
 import { DashboardUi } from './ui/DashboardUi';
+import { Experiments } from './experiments/experiments';
+import { CockpitUi } from './ui/CockpitUi';
 
 /* Слой экономики и меты (Проход Б): один Store — атомарный сейв blocksurge_meta. */
 const store = new Store();
@@ -46,7 +48,7 @@ let monetizeRef: MonetizeController | null = null;
  * и не под экраном итога в канвасе (порт mainScreenActive прототипа). */
 function bannerActive(): boolean {
   if (monetizeRef !== null && monetizeRef.isResultOverlayVisible()) return false;
-  const overlayIds = ['metaScreen', 'shopScreen', 'dashboardScreen', 'adOverlay'];
+  const overlayIds = ['metaScreen', 'shopScreen', 'dashboardScreen', 'adOverlay', 'cockpitScreen'];
   return overlayIds.every((id) => {
     const el = document.getElementById(id);
     return el === null || el.classList.contains('hidden');
@@ -83,9 +85,18 @@ shopUi.mount();
 const dashboardUi = new DashboardUi(monetize);
 dashboardUi.mount();
 
+/* ==================== SOFT-LAUNCH КОКПИТ (Проход Е.3) ===================== */
+/* Офлайн-инструмент прод-команды поверх симулятора экономики (src/sim):
+ * A/B по персистентному session-id, тюнинг ручек, гейты 09 §5.4. В игру не
+ * вмешивается — пишет только свой ключ localStorage blocksurge_softlaunch. */
+const experiments = new Experiments();
+const cockpitUi = new CockpitUi(experiments);
+cockpitUi.mount();
+
 /* Бейджи топбара и rewarded-панель мета-экрана. */
 ui.onShopClick = () => shopUi.open();
 ui.onDashClick = () => dashboardUi.open();
+ui.onCockpitClick = () => cockpitUi.open();
 ui.adPanel = {
   statusLine: () => monetize.metaAdStatusLine(),
   rw3Enabled: () => monetize.canFreeBooster(),
