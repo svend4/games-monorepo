@@ -407,6 +407,8 @@ function placePieceFromSlot(slot, r, c) {
   var p = DEF[id];
   if (!canPlace(board, p, r, c)) return;
 
+  if (window.Meta) window.Meta.snapshot();   // Проход Б: снимок для бустера «Отмена»
+
   var wasFirstMove = handMovesMade === 0;
   handMovesMade++;
 
@@ -435,6 +437,9 @@ function placePieceFromSlot(slot, r, c) {
   var pts = p.size + mult * linePts + (clean ? CFG.CLEAN_BONUS : 0);
   score += pts;
 
+  // Проход Б: монеты за очистку/комбо/«чистое поле» + прогресс миссий
+  if (window.Meta) window.Meta.onMove(lineCount, mult, clean, p.size);
+
   // Визуальный фидбек
   var fx = boardToPx(r + p.h / 2, c + p.w / 2);
   addFloat(fx.x, fx.y, '+' + pts, lineCount > 0 ? '#ffd43b' : '#b8c4d3');
@@ -454,6 +459,7 @@ function placePieceFromSlot(slot, r, c) {
 /* Кристальная бомба: очищает 3×3 вокруг клетки. Не ход: комбо не двигается. */
 function dropBomb(r, c) {
   if (!bombReady || gameOver) return;
+  if (window.Meta) window.Meta.snapshot();   // Проход Б: снимок для «Отмены»
   var removed = 0;
   var now = performance.now();
   for (var dr = -1; dr <= 1; dr++) {
@@ -472,6 +478,9 @@ function dropBomb(r, c) {
   if (clean) pts += CFG.CLEAN_BONUS;
   score += pts;
 
+  // Проход Б: монеты за «чистое поле» от бомбы + прогресс миссии
+  if (window.Meta) window.Meta.onBomb(removed, clean);
+
   var fx = boardToPx(r + 0.5, c + 0.5);
   ringFx.push({ x: fx.x, y: fx.y, t0: now });
   addFloat(fx.x, fx.y, '+' + pts, '#67e8f9');
@@ -486,9 +495,11 @@ function dropBomb(r, c) {
 /* ===================== GAME OVER И РЕСТАРТ (11 §4.1) ====================== */
 
 function checkGameOver() {
+  if (gameOver) return;    // партия уже завершена — не начисляем награды повторно (Проход Б)
   if (bombReady) return;   // бомба ставится всегда — мёртвого состояния нет
   for (var i = 0; i < 3; i++) if (handPlaceable[i]) return;
   gameOver = true;
+  if (window.Meta) window.Meta.onGameEnd(score);   // Проход Б: монеты/звёзды/миссии за конец партии
   var isRecord = score > startBest;
   if (score > best) {
     best = score;
@@ -523,6 +534,7 @@ function newGame() {
   rng = mulberry32((Date.now() ^ (Math.random() * 0xFFFFFFFF)) >>> 0);  // сид партии
   dealHand();
   document.getElementById('overlay').classList.add('hidden');
+  if (window.Meta) window.Meta.onNewGame();   // Проход Б: сброс счётчиков партии, обновление бустер-бара
   updateHUD();
 }
 

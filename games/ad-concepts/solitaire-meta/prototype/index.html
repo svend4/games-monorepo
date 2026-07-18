@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Orchard Peaks — прототип ядра (Проход А)</title>
+  <title>Orchard Peaks — прототип (Проходы А + Б)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header id="hud">
     <div class="hud-title">🍎 Orchard Peaks</div>
     <div class="hud-item" title="Баланс монет (сохраняется)">💰 <b id="hud-coins">0</b></div>
+    <div class="hud-item" title="Урожай для заказов сада (сохраняется)">🍎 <b id="hud-harvest-bank">0</b></div>
+    <div class="hud-item" title="Текущий уровень n (растит взнос E(n) и множитель W(n))">Ур. <b id="hud-level">1</b></div>
     <div class="hud-item" title="Очки за уровень">Очки: <b id="hud-score">0</b></div>
     <div class="hud-item" title="Серия подряд убранных карт">Серия: <b id="hud-chain">—</b></div>
-    <div class="hud-item" title="Собранный урожай">🍎 <b id="hud-harvest">0/8</b></div>
-    <button id="btn-restart" type="button">Новый расклад</button>
+    <div class="hud-item" title="Урожай, собранный в этой раздаче">🍎 стол: <b id="hud-harvest">0/8</b></div>
+    <button id="btn-garden" type="button" class="hud-btn">🌳 Сад</button>
+    <button id="btn-restart" type="button" class="hud-btn">Новый расклад</button>
   </header>
 
   <div id="progress" title="Прогресс очистки стола"><div id="progress-fill"></div></div>
@@ -21,6 +24,12 @@
   <main id="table-area">
     <div id="peaks"></div>
   </main>
+
+  <section id="booster-bar" aria-label="Бустеры">
+    <button id="bst-undo" type="button" title="Отменить последний ход">↩ Отмена</button>
+    <button id="bst-joker" type="button" title="Джокер: убрать любую открытую карту">🃏 Джокер (0)</button>
+    <button id="bst-basket" type="button" title="Золотое лукошко: ×2 урожай за раздачу">🧺 Лукошко (0)</button>
+  </section>
 
   <section id="bottom">
     <div class="pile">
@@ -36,15 +45,37 @@
     </div>
     <p id="hint-text">
       Убирайте открытые карты на&nbsp;1 выше или ниже карты сброса.<br>
-      Туз и&nbsp;Король — соседи. Карты с&nbsp;🍎 приносят монеты.
+      Туз и&nbsp;Король — соседи. Карты с&nbsp;🍎 дают урожай для сада.
     </p>
   </section>
+
+  <div id="game-toast" aria-live="polite"></div>
 
   <div id="overlay" class="hidden" aria-live="polite">
     <div class="panel"></div>
   </div>
 
+  <!-- ===================== МЕТА-ЭКРАН (Проход Б) ===================== -->
+  <div id="meta-screen" class="hidden" aria-label="Сад и задания">
+    <header id="meta-top">
+      <button id="meta-back" type="button">← Играть</button>
+      <div class="meta-bal" title="Монеты">💰 <b id="meta-coins">0</b></div>
+      <div class="meta-bal" title="Урожай для заказов">🍎 <b id="meta-harvest">0</b></div>
+    </header>
+    <nav id="meta-tabs">
+      <button data-tab="garden" class="active" type="button">🌳 Сад</button>
+      <button data-tab="tasks" type="button">🎯 Задания</button>
+      <button data-tab="shop" type="button">🛒 Лавка</button>
+    </nav>
+    <main id="meta-body"></main>
+    <div id="meta-toast" aria-live="polite"></div>
+  </div>
+
   <noscript><p style="text-align:center;font-size:20px">Для игры нужен включённый JavaScript.</p></noscript>
+
+  <!-- Порядок важен: экономика и мета до ядра (готовые window.Economy/Meta). -->
+  <script src="economy.js"></script>
+  <script src="meta.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

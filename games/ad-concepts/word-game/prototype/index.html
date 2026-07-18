@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>WordGrove — прототип ядра (Проход А)</title>
+  <title>WordGrove — прототип (Проходы А + Б)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
     <header id="hud">
       <div id="hud-level">Уровень 1/10</div>
-      <div id="hud-title">🌿 WordGrove</div>
       <div id="hud-right">
         <div id="hud-coins" title="Монеты">🪙 <span id="coins-value">0</span></div>
+        <div id="hud-acorns" title="Жёлуди (копилка)">🌰 <span id="acorns-value">0</span></div>
+        <button id="btn-meta" title="Мета: атлас, дневной, копилка, миссии">🗺️</button>
         <button id="btn-restart" title="Начать уровень заново">↻</button>
       </div>
     </header>
@@ -49,6 +50,8 @@
   </div>
 
   <script src="levels.js"></script>
+  <script src="economy.js"></script>
+  <script src="meta.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

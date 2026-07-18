@@ -186,3 +186,237 @@ button:active { transform: translateY(1px); }
 #newRecord.hidden { display: none; }
 .panel button { margin-top: 8px; background: #1f4d3a; border-color: #2f7a5a; }
 .panel button:hover { background: #256047; }
+#overMetaBtn { background: #23324a; border-color: #38517a; }
+#overMetaBtn:hover { background: #2b3f5d; }
+
+/* ============================================================================
+ * ПРОХОД Б — экономика и мета-прогрессия
+ * ========================================================================== */
+
+/* ---- Верхняя панель: монеты + вход в мету ---- */
+#topbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 6px;
+}
+.coinBox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #141b26;
+  border: 1px solid #6b5518;
+  border-radius: 999px;
+  padding: 5px 14px;
+}
+.coinBox .coinIcon { font-size: 16px; }
+.coinBox .value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffd43b;
+  font-variant-numeric: tabular-nums;
+}
+.metaBtn {
+  font-size: 13px;
+  padding: 8px 14px;
+  background: #17233a;
+  border-color: #2c436b;
+}
+.metaBtn:hover { background: #1f2f4d; }
+
+/* ---- Бустер-бар в партии ---- */
+#boosterBar {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  padding: 0 4px;
+}
+.boosterBtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 4px;
+  background: #141b26;
+  border: 1px solid #2c3a50;
+  border-radius: 12px;
+  cursor: pointer;
+  line-height: 1.15;
+}
+.boosterBtn:hover { background: #1b2534; }
+.boosterBtn:active { transform: translateY(1px); }
+.boosterBtn .bEmoji { font-size: 20px; }
+.boosterBtn .bName { font-size: 12px; font-weight: 600; color: #cdd7e3; }
+.boosterBtn .bCount { font-size: 12px; font-weight: 700; color: #69db7c; font-variant-numeric: tabular-nums; }
+.boosterBtn .bPrice { font-size: 10px; color: #ffd43b; min-height: 12px; }
+.boosterBtn.zero { opacity: 0.72; }
+.boosterBtn.zero .bCount { color: #7a8798; }
+.boosterBtn.armed {
+  border-color: #67e8f9;
+  background: #102530;
+  box-shadow: 0 0 0 1px #2c8ea3 inset;
+}
+
+/* ---- Мета-экран ---- */
+#metaScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: radial-gradient(120% 100% at 50% 0%, #16202e 0%, #0b0f16 70%);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#metaScreen.hidden { display: none; }
+.metaInner {
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 12px 12px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.metaHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px;
+  background: linear-gradient(180deg, #0d1420 70%, rgba(13, 20, 32, 0));
+}
+.metaClose {
+  font-size: 14px;
+  padding: 8px 16px;
+  background: #17233a;
+  border-color: #2c436b;
+}
+.metaTotals { display: flex; gap: 14px; font-size: 15px; }
+.metaTotals b { color: #ffd43b; font-variant-numeric: tabular-nums; }
+.metaTotals span:last-child b { color: #a5f3fc; }
+
+.metaSection {
+  background: #101823;
+  border: 1px solid #1e2a3b;
+  border-radius: 14px;
+  padding: 12px 12px 14px;
+}
+.metaSection h3 { font-size: 16px; margin-bottom: 2px; }
+.metaNote { font-size: 11.5px; color: #7d8b9f; line-height: 1.4; margin-bottom: 10px; }
+
+/* Карта */
+.mapList { display: flex; flex-direction: column; gap: 8px; }
+.mapNode {
+  border: 1px solid #24324a;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: #0e1622;
+}
+.mapNode .mnHead { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.mapNode .mnReq { font-size: 12px; color: #ffd43b; font-weight: 700; }
+.mapNode .mnRew { font-size: 12px; color: #b8c4d3; margin-top: 2px; }
+.mapNode.locked { opacity: 0.6; }
+.mapNode.ready { border-color: #2f7a5a; box-shadow: 0 0 0 1px #235c44 inset; }
+.mapNode.claimed { opacity: 0.8; border-color: #2a3a52; }
+.mapNode.boss { border-color: #8a5a1a; background: #171015; }
+.mapNode.boss.ready { border-color: #b8862a; }
+.mnClaim {
+  margin-top: 8px;
+  font-size: 13px;
+  padding: 6px 16px;
+  background: #1f4d3a;
+  border-color: #2f7a5a;
+}
+.mnClaim:hover { background: #256047; }
+.mnDone { margin-top: 6px; font-size: 12px; color: #69db7c; }
+.mnLock { margin-top: 6px; font-size: 12px; color: #7d8b9f; }
+
+/* Магазин */
+.shopList { display: flex; flex-direction: column; gap: 8px; }
+.shopItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #24324a;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #0e1622;
+}
+.shopItem .siEmoji { font-size: 22px; }
+.shopItem .siInfo { display: flex; flex-direction: column; flex: 1; }
+.shopItem .siInfo b { font-size: 13px; }
+.shopItem .siInfo span { font-size: 11px; color: #7d8b9f; }
+.shopItem .siOwned { font-size: 11px; color: #8b98a9; white-space: nowrap; }
+.siBuy {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 14px;
+  background: #2a2416;
+  border-color: #6b5518;
+  color: #ffd43b;
+  white-space: nowrap;
+}
+.siBuy:hover { background: #362f1c; }
+
+/* Миссии */
+.missionList { display: flex; flex-direction: column; gap: 9px; }
+.mission {
+  border: 1px solid #24324a;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: #0e1622;
+}
+.mission.done { border-color: #2f7a5a; opacity: 0.9; }
+.mission .msTop { display: flex; justify-content: space-between; font-size: 13px; }
+.mission .msTop b { color: #ffd43b; }
+.mission .msBar {
+  height: 8px;
+  border-radius: 999px;
+  background: #182130;
+  overflow: hidden;
+  margin: 6px 0 3px;
+}
+.mission .msFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22d3ee, #69db7c);
+  transition: width .3s ease;
+}
+.mission .msProg { font-size: 11px; color: #8b98a9; }
+.mission.done .msProg { color: #69db7c; }
+.missionBonus {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #b8c4d3;
+  text-align: center;
+  padding: 7px;
+  border: 1px dashed #3a5a48;
+  border-radius: 10px;
+}
+.missionBonus.done { color: #69db7c; border-color: #2f7a5a; }
+
+/* Стрик */
+.streakRow { display: flex; gap: 5px; }
+.streakDay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px;
+  border: 1px solid #24324a;
+  border-radius: 8px;
+  background: #0e1622;
+}
+.streakDay .sdNum { font-size: 11px; color: #8b98a9; }
+.streakDay .sdRew { font-size: 10.5px; color: #cdd7e3; text-align: center; }
+.streakDay.reached { border-color: #2f7a5a; background: #0f1c17; }
+.streakDay.current { border-color: #ffd43b; box-shadow: 0 0 0 1px #8a6d1a inset; }
+.streakBtns { display: flex; gap: 8px; margin-top: 10px; }
+.streakBtns button { flex: 1; font-size: 13px; }
+.streakBtns #streakClaimBtn { background: #1f4d3a; border-color: #2f7a5a; }
+.streakBtns #streakClaimBtn:disabled { opacity: 0.5; cursor: default; background: #17202c; border-color: #24324a; }
+.ghostBtn { background: #141b26; border-color: #2c3a50; color: #a9b6c6; }

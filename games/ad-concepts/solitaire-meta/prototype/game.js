@@ -1,32 +1,29 @@
 /* =====================================================================
- * Orchard Peaks — играбельный прототип ядра (Проход А)
+ * Orchard Peaks — играбельный прототип (Проход А ядро + Проход Б слои)
  * =====================================================================
- * Объём: TriPeaks-ядро по 03-core-gameplay.md пп. 3.2–3.3 в упрощении
- * Прохода А — без меты/рекламы/IAP/взносов. Правила: ход ±1 ранг от карты
- * сброса с зацикливанием A↔K, серия ×1 → +0.1/карта → кап ×3, карты
- * урожая (🍎) дают монеты, победа = чистый стол (+бонус за остаток
- * колоды, 25 монет/карта — глава 1), поражение = пустая колода без ходов.
+ * ПРОХОД А (ядро, СОХРАНЕНО без переписывания core loop): TriPeaks по
+ * 03-core-gameplay.md пп. 3.2–3.3 — расклад 3/6/9/10, вскрытие по графу
+ * перекрытий, ход ±1 ранг от карты сброса с зацикливанием A↔K, серия с
+ * растущим множителем, карты урожая (🍎), победа/поражение/рестарт.
+ * Генератор и раскладка не тронуты — только вокруг них добавлены слои.
  *
- * Технологии: чистый DOM + CSS, БЕЗ сборщиков, БЕЗ TypeScript.
- * Почему DOM, а не Phaser/CDN и не Canvas:
- *  - карточная игра — это ~30 прямоугольников с текстом; DOM даёт крупный
- *    чёткий текст (ЦА 45+, 07-ux-ui-ftue.md п. 7.4), простые зоны тапа,
- *    CSS-анимации «дыхания» и hover бесплатно;
- *  - нет зависимости от сети (CDN) — index.html открывается с любого
- *    статического сервера и даже с file://;
- *  - в проде по книге (10-production.md) будет TS + Capacitor; для
- *    Прохода А одиночный JS-файл — осознанное упрощение.
+ * ПРОХОД Б (эти слои поверх ядра), см. economy.js + meta.js:
+ *  - ВАЛЮТЫ (05 §5.1–5.2): монеты и урожай. Взнос E(n) за старт раздачи,
+ *    выигрыш W(n)=M(n)·E(n) + бонус за сток; карты 🍎 дают урожай (не монеты).
+ *  - САД/ЗАКАЗЫ/ЗОНЫ (04 §4.2): мета-экран, петля «урожай→заказ→прогресс».
+ *  - СТРИК + МИССИИ (04 §4.4).
+ *  - БУСТЕРЫ (05 §5.6): джокер, золотое лукошко, ундо — прямо в раздаче.
  *
- * Генератор — упрощённый по заданию Прохода А: случайный «безколодный»
- * расклад (ранги свободны, 11-algorithms.md п. 11.1) + перекладка, чтобы
- * нижний ряд имел ходы (инвариант I3), + отбор лучшего расклада по
- * случайным плейаутам (дешёвый суррогат beam-солвера из п. 11.4).
- * Урожай размещается оверлеем по упрощённым квотам Q1–Q3 (п. 11.8).
+ * Технологии: чистый DOM + CSS, БЕЗ сборщиков/CDN/TypeScript. Порядок
+ * подключения в index.html: economy.js → meta.js → game.js (глобалы
+ * window.Store/Economy/Meta уже готовы к вызовам отсюда).
  * ===================================================================== */
 
 'use strict';
 
-/* =====================  КОНФИГ (баланс и размеры)  ===================== */
+/* =====================  КОНФИГ ЯДРА (Проход А)  ===================== */
+/* Экономические номиналы (взносы, выигрыши, цены бустеров) вынесены в
+ * economy.js (ECON) по главе 05. Здесь — только константы core-геймплея. */
 
 const CFG = {
   STOCK_SIZE: 20,            // сток 18–24 по 03-core-gameplay.md п. 3.2
@@ -35,20 +32,16 @@ const CFG = {
   GEN_DEALS: 30,             // попыток генерации расклада
   GEN_PLAYOUTS: 40,          // случайных плейаутов на расклад (оценка живости)
   GEN_MIN_WIN_SHARE: 0.10,   // принять расклад: ≥10% случайных линий выигрышные
-                             // (живой игрок играет сильно лучше случайного —
-                             //  это даёт дружелюбие ранних уровней, п. 3.5)
   SCORE_BASE: 100,           // очки за карту (× множитель серии)
-  COINS_PER_HARVEST: 25,     // монеты за карту урожая (× множитель серии)
-  WIN_REWARD: 100,           // монеты за победу
-  STOCK_BONUS_PER_CARD: 25,  // бонус за карту остатка колоды: 25 × глава (тут глава 1)
   STREAK_STEP: 0.1,          // +0.1 к множителю за карту серии (п. 3.2)
   STREAK_MAX: 3.0,           // кап множителя ×3 (п. 3.2)
+  CHAIN_MISSION: 5,          // длина серии для миссии «серия из 5 карт» (04 §4.4)
   IDLE_HINT_MS: 12000,       // автоподсказка через 12 с бездействия (п. 3.3)
 };
 
-/* Состояние в localStorage — префикс имени игры */
+/* Рекорд/статистика — legacy-ключи Прохода А (совместимость сейва).
+   Монеты и урожай теперь ведёт Economy (economy.js), не эти ключи. */
 const LS = {
-  coins: 'orchardPeaks.coins',
   best: 'orchardPeaks.bestScore',
   wins: 'orchardPeaks.wins',
   games: 'orchardPeaks.games',
@@ -56,8 +49,6 @@ const LS = {
 
 /* Русские индексы карт: Т(уз), В(алет), Д(ама), К(ороль). Ранги 1..13. */
 const RANK_LABELS = ['', 'Т', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'В', 'Д', 'К'];
-/* Масти декоративны и на правила не влияют (11-algorithms.md п. 11.1);
-   различаются формой, не только цветом — требование дальтонизм-доступности. */
 const SUITS = [
   { sym: '♠', red: false },
   { sym: '♥', red: true },
@@ -65,10 +56,7 @@ const SUITS = [
   { sym: '♦', red: true },
 ];
 
-/* =====================  РАСКЛАДКА «3 ПИКА»  ===================== */
-/* 28 слотов, 4 ряда (3/6/9/10). col — в единицах ширины карты.
-   coveredBy — карты ряда ниже (row+1), физически лежащие поверх:
-   слот открыт, когда все его накрыватели убраны. */
+/* =====================  РАСКЛАДКА «3 ПИКА» (ядро)  ===================== */
 
 function buildLayout() {
   const rowCols = [
@@ -96,12 +84,11 @@ function buildLayout() {
 const SLOTS = buildLayout();
 const TABLE_SIZE = SLOTS.length; // 28
 
-/** Пик/секция слота — для равномерности урожая (Q3). */
 function peakOf(slot) {
   return slot.col < 3 ? 0 : slot.col < 6 ? 1 : 2;
 }
 
-/* =====================  УТИЛИТЫ  ===================== */
+/* =====================  УТИЛИТЫ (ядро)  ===================== */
 
 const randInt = (n) => Math.floor(Math.random() * n);
 const randRank = () => 1 + randInt(13);
@@ -143,9 +130,8 @@ function lsSet(key, value) {
   } catch (e) { /* приватный режим и т.п. — играем без сохранения */ }
 }
 
-/* =====================  ГЕНЕРАТОР РАСКЛАДА  ===================== */
+/* =====================  ГЕНЕРАТОР РАСКЛАДА (ядро, не тронут)  ===================== */
 
-/** Случайная «безколодная» раздача: ранги свободны (п. 11.1). */
 function randomDeal() {
   const tableRanks = [];
   const tableSuits = [];
@@ -167,9 +153,6 @@ function randomDeal() {
   };
 }
 
-/** Перекладка: гарантируем ≥ MIN_START_MOVES ходов в нижнем ряду (I3).
-    Сначала пытаемся ОБМЕНЯТЬ подходящую карту из верхних рядов с картой
-    нижнего ряда; если подходящих нет — переписываем ранг напрямую. */
 function ensureFirstMoves(deal) {
   const bottom = SLOTS.filter((s) => s.row === 3);
   const countMoves = () =>
@@ -196,8 +179,6 @@ function ensureFirstMoves(deal) {
   }
 }
 
-/** Один случайный плейаут: доля очищенного стола (0..1).
-    Дешёвый суррогат солвера из п. 11.4 — только для отбора раскладов. */
 function playoutClearRatio(deal) {
   const removed = new Set();
   let waste = deal.startWaste;
@@ -223,8 +204,6 @@ function playoutClearRatio(deal) {
   return removed.size / TABLE_SIZE;
 }
 
-/** Качество расклада: доля выигрышных плейаутов (главный критерий)
-    и лучшая доля очистки (тай-брейк для «безнадёжных» партий). */
 function dealQuality(deal) {
   let wins = 0;
   let bestClear = 0;
@@ -236,9 +215,6 @@ function dealQuality(deal) {
   return { winShare: wins / CFG.GEN_PLAYOUTS, bestClear };
 }
 
-/** Разметка урожая — оверлей слотов, ранги не трогаем (инвариант I5).
-    Упрощённые квоты 11.8: Q1 — половина меток на глубине 0–1 (ряды 2–3),
-    Q2 — не более одной на вершинах, Q3 — разброс по пикам ≤ 2. */
 function assignHarvest(deal) {
   let marks = new Set();
   for (let attempt = 0; attempt < 30; attempt++) {
@@ -262,7 +238,6 @@ function assignHarvest(deal) {
   deal.harvest = marks;
 }
 
-/** Итоговый генератор уровня Прохода А. */
 function generateLevel() {
   let bestDeal = null;
   let bestScoreQ = -1;
@@ -270,12 +245,12 @@ function generateLevel() {
     const deal = randomDeal();
     ensureFirstMoves(deal);
     const q = dealQuality(deal);
-    const scoreQ = q.winShare * 100 + q.bestClear; // winShare доминирует
+    const scoreQ = q.winShare * 100 + q.bestClear;
     if (scoreQ > bestScoreQ) {
       bestScoreQ = scoreQ;
       bestDeal = deal;
     }
-    if (q.winShare >= CFG.GEN_MIN_WIN_SHARE) break; // достаточно дружелюбен
+    if (q.winShare >= CFG.GEN_MIN_WIN_SHARE) break;
   }
   assignHarvest(bestDeal);
   return bestDeal;
@@ -283,9 +258,12 @@ function generateLevel() {
 
 /* =====================  СОСТОЯНИЕ ИГРЫ  ===================== */
 
+const Economy = window.Economy;
+const Meta = window.Meta;
+const ECFG = Economy.ECON;   // конфиг экономики (глобальный `var ECON` живёт в economy.js — не переобъявляем)
+
 let G = null;               // текущая партия
 let cardEls = [];           // DOM-элементы карт стола по id слота
-let coinBalance = lsGet(LS.coins, 0);
 let bestScore = lsGet(LS.best, 0);
 let winsCount = lsGet(LS.wins, 0);
 let gamesCount = lsGet(LS.games, 0);
@@ -293,11 +271,6 @@ let idleTimer = null;
 let hintEl = null;
 
 const $ = (id) => document.getElementById(id);
-
-function addCoins(n) {
-  coinBalance += n;
-  lsSet(LS.coins, coinBalance);
-}
 
 function stockLeft() {
   return G.deal.stockRanks.length - G.stockIdx;
@@ -328,6 +301,16 @@ function anyMoves() {
 
 function newGame() {
   clearHint();
+  hideOverlay();
+  disarmJoker();
+
+  // Взнос за старт раздачи (sink монет, 05 §5.2). Не хватает — раздача бесплатна
+  // (в Проходе Б нет rewarded/IAP; жёсткой стены не ставим, дефицит показываем).
+  Economy.resetEarnedThisLevel();
+  const level = Economy.getLevel();
+  const cost = Economy.entryCost(level);
+  const entryPaid = Economy.spendCoins(cost, 'entry') ? cost : 0;
+
   const deal = generateLevel();
   G = {
     deal,
@@ -338,16 +321,23 @@ function newGame() {
     chain: 0,
     score: 0,
     harvestGot: 0,
-    coinsThisLevel: 0,
+    harvestGained: 0,
+    harvestCommitted: false,
+    entryLevel: level,
+    entryCost: cost,
+    entryPaid,
+    history: [],
+    jokerArmed: false,
+    basketActive: false,
     over: false,
   };
   buildTableDom();
-  $('overlay').classList.add('hidden');
   render();
+  updateBoosterBar();
   armIdleTimer();
 }
 
-/* =====================  DOM СТОЛА  ===================== */
+/* =====================  DOM СТОЛА (ядро)  ===================== */
 
 function buildTableDom() {
   const peaks = $('peaks');
@@ -358,7 +348,7 @@ function buildTableDom() {
     el.className = 'card down';
     el.style.left = `calc(${s.col} * (var(--card-w) + var(--gap)))`;
     el.style.top = `calc(${s.row} * var(--row-step))`;
-    el.style.zIndex = String(s.row + 1); // нижний ряд лежит поверх
+    el.style.zIndex = String(s.row + 1);
     el.setAttribute('role', 'button');
 
     const rank = G.deal.tableRanks[s.id];
@@ -372,7 +362,6 @@ function buildTableDom() {
       `<span class="corner br">${label}</span>` +
       `</div>` +
       (G.deal.harvest.has(s.id) ? `<span class="apple-badge">🍎</span>` : '');
-    // aria-label ставится в render(): закрытые карты не должны выдавать ранг
     el.addEventListener('click', () => onCardClick(s.id));
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -396,10 +385,10 @@ function render() {
     el.classList.toggle('removed', removed);
     el.classList.toggle('down', !removed && !open);
     el.classList.toggle('up', !removed && open);
-    el.classList.toggle('playable', !G.over && !removed && open && isAdjacent(G.deal.tableRanks[s.id], G.waste));
+    const normalPlayable = !G.over && !removed && open && isAdjacent(G.deal.tableRanks[s.id], G.waste);
+    // В режиме джокера подсвечиваем как «взаимодействуемую» любую открытую карту.
+    el.classList.toggle('playable', normalPlayable || (G.jokerArmed && !G.over && !removed && open));
 
-    // Доступность: закрытые карты не выдают ранг, убранные — вне фокуса,
-    // открытые доступны с клавиатуры (у role="button" должен быть tabindex)
     if (removed) {
       el.setAttribute('aria-hidden', 'true');
       el.setAttribute('tabindex', '-1');
@@ -430,19 +419,31 @@ function render() {
     `<span class="corner br">${wl}</span>` +
     `</div>`;
 
-  // HUD и прогресс
-  $('hud-coins').textContent = String(coinBalance);
-  $('hud-score').textContent = String(G.score);
-  $('hud-chain').textContent = G.chain > 0
-    ? `${G.chain} (×${multiplierFor(G.chain).toFixed(1)})`
-    : '—';
-  $('hud-harvest').textContent = `${G.harvestGot}/${G.deal.harvest.size}`;
+  // Прогресс очистки стола
   $('progress-fill').style.width = `${(G.removed.size / TABLE_SIZE) * 100}%`;
+
+  syncHud();
+}
+
+/** Обновление всех числовых полей HUD (монеты/урожай/уровень + партия).
+    Вызывается из render() и как Game.syncHud() после закрытия мета-экрана. */
+function syncHud() {
+  $('hud-coins').textContent = Economy.fmt(Economy.getCoins());
+  $('hud-harvest-bank').textContent = Economy.fmt(Economy.getHarvest());
+  $('hud-level').textContent = String(Economy.getLevel());
+  if (G) {
+    $('hud-score').textContent = String(G.score);
+    $('hud-chain').textContent = G.chain > 0
+      ? `${G.chain} (×${multiplierFor(G.chain).toFixed(1)})`
+      : '—';
+    $('hud-harvest').textContent = `${G.harvestGot}/${G.deal.harvest.size}`;
+  }
+  updateBoosterBar();   // держим счётчики бустеров/ундо свежими (в т.ч. после лавки)
 }
 
 function shake(el) {
   el.classList.remove('shake');
-  void el.offsetWidth; // перезапуск CSS-анимации
+  void el.offsetWidth;
   el.classList.add('shake');
   setTimeout(() => el.classList.remove('shake'), 400);
 }
@@ -452,134 +453,334 @@ function shake(el) {
 function onCardClick(slotId) {
   if (!G || G.over) return;
   if (G.removed.has(slotId)) return;
-  if (!isOpen(slotId)) {
-    // Тап по закрытой карте: та же обратная связь, что и по неподходящей
+
+  const open = isOpen(slotId);
+  if (!open) {
+    if (G.jokerArmed) gToast('Джокер работает только по открытой карте');
     shake(cardEls[slotId]);
     armIdleTimer();
     return;
   }
 
   const rank = G.deal.tableRanks[slotId];
-  if (!isAdjacent(rank, G.waste)) {
+  const adjacent = isAdjacent(rank, G.waste);
+
+  if (G.jokerArmed) {
+    if (adjacent) {
+      // Соседняя карта — обычный ход, джокер сохраняем.
+      disarmJoker();
+      removeCard(slotId, false);
+    } else {
+      // Не соседняя — тратим джокер как «дикую карту».
+      if (!Economy.consumeBooster('joker', 'in')) { disarmJoker(); return; }
+      disarmJoker();
+      gToast('🃏 Джокер применён');
+      removeCard(slotId, true);
+    }
+    return;
+  }
+
+  if (!adjacent) {
     shake(cardEls[slotId]);
     armIdleTimer();
     return;
   }
+  removeCard(slotId, false);
+}
 
-  // Уборка карты: серия растёт, карта становится сбросом
+/** Уборка карты со стола (общий путь обычного хода и джокера). */
+function removeCard(slotId, viaJoker) {
+  pushHistory(!!viaJoker);
   G.removed.add(slotId);
   G.chain++;
   const mult = multiplierFor(G.chain);
   G.score += Math.round(CFG.SCORE_BASE * mult);
+
   if (G.deal.harvest.has(slotId)) {
-    G.harvestGot++;
-    const coins = Math.round(CFG.COINS_PER_HARVEST * mult);
-    G.coinsThisLevel += coins;
-    addCoins(coins); // урожай начисляется сразу и сохраняется даже при поражении (п. 3.6)
+    G.harvestGot++;                         // урожай копится, банкуется в конце уровня
+    Meta.track('harvest', 1);               // прогресс дневной миссии «собрать урожай»
   }
-  G.waste = rank;
+  if (G.chain === CFG.CHAIN_MISSION) Meta.track('chain5', 1);
+
+  G.waste = G.deal.tableRanks[slotId];
   G.wasteSuit = G.deal.tableSuits[slotId];
 
-  if (G.removed.size === TABLE_SIZE) {
-    finishWin();
-    return;
-  }
-  if (stockLeft() === 0 && !anyMoves()) {
-    finishLose();
-    return;
-  }
+  if (G.removed.size === TABLE_SIZE) { finishWin(); return; }
+  if (stockLeft() === 0 && !anyMoves()) { finishLose(); return; }
   render();
   armIdleTimer();
 }
 
 function onStockClick() {
   if (!G || G.over) return;
+  if (G.jokerArmed) disarmJoker();          // тап по колоде отменяет режим джокера
   if (stockLeft() === 0) {
     shake($('stock-card'));
     armIdleTimer();
     return;
   }
-  // Добор: верхняя карта стока в сброс, серия обнуляется (п. 3.2)
+  pushHistory(false);
   G.waste = G.deal.stockRanks[G.stockIdx];
   G.wasteSuit = G.deal.stockSuits[G.stockIdx];
   G.stockIdx++;
   G.chain = 0;
 
-  if (stockLeft() === 0 && !anyMoves()) {
-    finishLose();
-    return;
-  }
+  if (stockLeft() === 0 && !anyMoves()) { finishLose(); return; }
   render();
   armIdleTimer();
 }
 
+/* =====================  БУСТЕРЫ В РАЗДАЧЕ (05 §5.6)  ===================== */
+
+function pushHistory(jokerRefund) {
+  G.history.push({
+    removed: Array.from(G.removed),
+    stockIdx: G.stockIdx,
+    waste: G.waste, wasteSuit: G.wasteSuit,
+    chain: G.chain, score: G.score,
+    harvestGot: G.harvestGot,
+    jokerRefund: !!jokerRefund,
+  });
+  if (G.history.length > 80) G.history.shift();
+}
+
+/** Отмена хода. Бесплатные ундо (инвентарь) → затем 150 монет (05 §5.2). */
+function doUndo() {
+  if (!G || G.over) return;
+  if (G.history.length === 0) { gToast('Отменять нечего'); return; }
+  const kind = Economy.useUndo();
+  if (!kind) { gToast(`Нет монет на отмену (нужно ${ECFG.UNDO_PRICE})`); return; }
+
+  const snap = G.history.pop();
+  G.removed = new Set(snap.removed);
+  G.stockIdx = snap.stockIdx;
+  G.waste = snap.waste;
+  G.wasteSuit = snap.wasteSuit;
+  G.chain = snap.chain;
+  G.score = snap.score;
+  G.harvestGot = snap.harvestGot;
+  if (snap.jokerRefund) Economy.addBooster('joker', 1, 'undo_refund');  // вернуть потраченный джокер
+
+  gToast(kind === 'free' ? 'Ход отменён (бесплатно)' : `Ход отменён (−${ECFG.UNDO_PRICE} 💰)`);
+  render();
+  updateBoosterBar();
+  armIdleTimer();
+}
+
+function armJoker() {
+  if (!G || G.over) return;
+  if (Economy.getBooster('joker') <= 0) { openGarden('shop'); return; }
+  G.jokerArmed = true;
+  document.body.classList.add('joker-mode');
+  gToast('🃏 Выберите любую открытую карту');
+  render();
+  updateBoosterBar();
+}
+
+function disarmJoker() {
+  if (!G) return;
+  if (G.jokerArmed) {
+    G.jokerArmed = false;
+    document.body.classList.remove('joker-mode');
+    updateBoosterBar();
+  }
+}
+
+function toggleJoker() {
+  if (!G || G.over) return;
+  if (G.jokerArmed) { disarmJoker(); render(); }
+  else armJoker();
+}
+
+function activateBasket() {
+  if (!G || G.over) return;
+  if (G.basketActive) { gToast('Лукошко уже включено'); return; }
+  if (Economy.getBooster('basket') <= 0) { openGarden('shop'); return; }
+  if (!Economy.consumeBooster('basket', 'in')) return;
+  G.basketActive = true;
+  gToast(`🧺 Урожай этой раздачи ×${ECFG.BASKET_MULT}`);
+  updateBoosterBar();
+}
+
+function updateBoosterBar() {
+  const free = Economy.getFreeUndos();
+  const undoBtn = $('bst-undo');
+  if (undoBtn) {
+    undoBtn.textContent = free > 0 ? `↩ Отмена (${free})` : `↩ Отмена (💰${ECFG.UNDO_PRICE})`;
+    undoBtn.disabled = !G || G.over || G.history.length === 0;
+  }
+  const jokerBtn = $('bst-joker');
+  if (jokerBtn) {
+    const jn = Economy.getBooster('joker');
+    jokerBtn.textContent = `🃏 Джокер (${jn})`;
+    jokerBtn.classList.toggle('armed', !!(G && G.jokerArmed));
+    jokerBtn.disabled = !G || G.over;
+  }
+  const basketBtn = $('bst-basket');
+  if (basketBtn) {
+    const bn = Economy.getBooster('basket');
+    basketBtn.textContent = G && G.basketActive ? '🧺 ×2 активно' : `🧺 Лукошко (${bn})`;
+    basketBtn.classList.toggle('armed', !!(G && G.basketActive));
+    basketBtn.disabled = !G || G.over || (G && G.basketActive);
+  }
+}
+
 /* =====================  ФИНАЛЫ  ===================== */
+
+function commitHarvest() {
+  if (G.harvestCommitted) return 0;
+  const mult = G.basketActive ? ECFG.BASKET_MULT : 1;
+  const gained = G.harvestGot * ECFG.HARVEST_PER_CARD * mult;
+  if (gained > 0) Economy.addHarvest(gained, G.basketActive ? 'basket' : 'cards');
+  G.harvestCommitted = true;
+  G.harvestGained = gained;
+  return gained;
+}
 
 function finishWin() {
   G.over = true;
   clearHint();
+  disarmJoker();
 
-  const left = stockLeft();
-  const stockBonus = left * CFG.STOCK_BONUS_PER_CARD;
-  const winCoins = CFG.WIN_REWARD + stockBonus;
-  addCoins(winCoins);
-  G.coinsThisLevel += winCoins;
+  const n = G.entryLevel;                       // уровень только что сыгранной раздачи
+  const stockCards = stockLeft();
+  const stockB = Economy.stockBonus(stockCards);
+  const win = Economy.winReward(n);
 
-  winsCount++;
-  gamesCount++;
+  Economy.addCoins(win, 'win', true);
+  if (stockB > 0) Economy.addCoins(stockB, 'stock_bonus', true);
+  const gained = commitHarvest();
+  Economy.nextLevel();                          // прогресс к n+1
+  Meta.track('wins', 1);                        // недельная миссия «выиграй N уровней»
+
+  winsCount++; gamesCount++;
   lsSet(LS.wins, winsCount);
   lsSet(LS.games, gamesCount);
   const isRecord = G.score > bestScore;
-  if (isRecord) {
-    bestScore = G.score;
-    lsSet(LS.best, bestScore);
-  }
+  if (isRecord) { bestScore = G.score; lsSet(LS.best, bestScore); }
 
-  render();
+  window.Analytics.track('level_finish', { result: 'win', level: n, coins_won: win + stockB, harvest_earned: gained });
+
+  const earned = Economy.getEarnedThisLevel();
+  const net = earned - G.entryPaid;
+  syncHud();
+  updateBoosterBar();
+
   showOverlay(
     `<div class="emoji">🎉🍎</div>` +
     `<h2>Стол чист!</h2>` +
-    `<p>Отличная работа — сад благодарит вас.</p>` +
+    `<p>Сад благодарит вас. Уровень ${n} пройден.</p>` +
     `<table class="reward">` +
-    `<tr><td>Очки за уровень</td><td>${G.score}${isRecord ? ' — рекорд!' : ''}</td></tr>` +
-    `<tr><td>Монеты за победу</td><td>+${CFG.WIN_REWARD}</td></tr>` +
-    `<tr><td>Бонус колоды: ${left} × ${CFG.STOCK_BONUS_PER_CARD}</td><td>+${stockBonus}</td></tr>` +
-    `<tr><td>Урожай: ${G.harvestGot} 🍎</td><td>+${G.coinsThisLevel - winCoins}</td></tr>` +
-    `<tr class="total"><td>Всего монет за уровень</td><td>+${G.coinsThisLevel}</td></tr>` +
-    `<tr><td>Баланс</td><td>💰 ${coinBalance}</td></tr>` +
+    `<tr><td>Взнос за раздачу</td><td>${G.entryPaid > 0 ? '−' + Economy.fmt(G.entryPaid) : 'бесплатно'}</td></tr>` +
+    `<tr><td>Выигрыш W(${n})</td><td>+${Economy.fmt(win)}</td></tr>` +
+    `<tr><td>Бонус колоды: ${stockCards} карт</td><td>+${Economy.fmt(stockB)}</td></tr>` +
+    `<tr class="total"><td>Итог монет за уровень</td><td>${net >= 0 ? '+' : ''}${Economy.fmt(net)}</td></tr>` +
+    `<tr><td>Урожай: ${G.harvestGot} 🍎${G.basketActive ? ' ×2' : ''}</td><td>+${Economy.fmt(gained)} 🍎</td></tr>` +
+    `<tr><td>Баланс</td><td>💰 ${Economy.fmt(Economy.getCoins())}</td></tr>` +
+    `<tr><td>Урожай в саду</td><td>🍎 ${Economy.fmt(Economy.getHarvest())}</td></tr>` +
     `</table>` +
-    `<button id="btn-again" class="btn-main" type="button">Играть ещё раз</button>`
+    metaCtaWin() +
+    `<div class="btn-row">` +
+    `<button class="btn-main" data-ov="garden" type="button">🌳 В сад</button>` +
+    `<button class="btn-main" data-ov="again" type="button">Играть ещё</button>` +
+    `</div>`
   );
+}
+
+/** Мотиватор петли: пока сад не пройден целиком — зовём продвинуть заказ. */
+function metaCtaWin() {
+  const st = window.Store.state.garden;
+  if (st.completed < Meta.TOTAL_ORDERS) {
+    return `<p class="kept">Урожай растёт — загляните в сад, чтобы продвинуть заказ.</p>`;
+  }
+  return '';
 }
 
 function finishLose() {
   G.over = true;
   clearHint();
+  disarmJoker();
 
   gamesCount++;
   lsSet(LS.games, gamesCount);
+  const gained = commitHarvest();            // урожай сохраняется даже при поражении (п. 3.6)
+
+  window.Analytics.track('level_finish', { result: 'lose', level: G.entryLevel, harvest_earned: gained });
 
   const pct = Math.round((G.removed.size / TABLE_SIZE) * 100);
-  render();
-  // Тёплый тон поражения, урожай сохранён — 07-ux-ui-ftue.md и п. 3.6
+  syncHud();
+  updateBoosterBar();
   showOverlay(
     `<div class="emoji">🐶</div>` +
     `<h2>Почти получилось!</h2>` +
     `<p>Стол был чист на ${pct}%. Бисквит уверен: в следующий раз выйдет.</p>` +
-    (G.harvestGot > 0
-      ? `<p class="kept">Урожай сохранён: ${G.harvestGot} 🍎 (+${G.coinsThisLevel} монет уже в копилке)</p>`
-      : `<p class="kept">Монеты урожая не сгорают — попробуйте собрать 🍎 в новой партии.</p>`) +
-    `<p>Баланс: 💰 ${coinBalance}</p>` +
-    `<button id="btn-again" class="btn-main" type="button">Ещё раз</button>`
+    (gained > 0
+      ? `<p class="kept">Урожай сохранён: +${Economy.fmt(gained)} 🍎 (уже в саду)</p>`
+      : `<p class="kept">Урожай не сгорает — соберите 🍎 в новой раздаче.</p>`) +
+    `<p>Баланс: 💰 ${Economy.fmt(Economy.getCoins())} · 🍎 ${Economy.fmt(Economy.getHarvest())}</p>` +
+    `<div class="btn-row">` +
+    `<button class="btn-main" data-ov="garden" type="button">🌳 В сад</button>` +
+    `<button class="btn-main" data-ov="again" type="button">Ещё раз</button>` +
+    `</div>`
   );
 }
+
+/* =====================  ОВЕРЛЕЙ / МЕТА-ПЕРЕХОДЫ  ===================== */
 
 function showOverlay(html) {
   const overlay = $('overlay');
   overlay.querySelector('.panel').innerHTML = html;
   overlay.classList.remove('hidden');
-  const btn = overlay.querySelector('#btn-again');
-  if (btn) btn.addEventListener('click', newGame);
+}
+
+function hideOverlay() {
+  $('overlay').classList.add('hidden');
+}
+
+function openGarden(tab) {
+  Meta.open(tab || 'garden');
+}
+
+/* Делегированная обработка кнопок оверлея (data-ov). */
+function onOverlayClick(ev) {
+  const b = ev.target.closest('[data-ov]');
+  if (!b) return;
+  const act = b.getAttribute('data-ov');
+  if (act === 'again') newGame();
+  else if (act === 'garden') openGarden('garden');   // мета поверх оверлея; закрытие вернёт сюда
+  else if (act === 'close') hideOverlay();
+  else if (act === 'claim-streak') {
+    Meta.claimStreak && Meta.claimStreak();
+    hideOverlay();
+    syncHud();
+  }
+}
+
+/* Стрик-модалка на входе (ежедневный ритуал, 04 §4.4). */
+function maybeShowStreakModal() {
+  const s = Meta.streakStatus();
+  if (!s.claimable) return;
+  const rw = ECFG.STREAK_REWARDS[Math.max(1, Math.min(7, s.day))] || { coins: 0 };
+  const extra = (rw.undo ? ' +1 ундо' : '') + (rw.joker ? ' +джокер 🃏' : '') + (rw.basket ? ' +лукошко 🧺' : '');
+  showOverlay(
+    `<div class="emoji">🌅</div>` +
+    `<h2>Утренняя лейка</h2>` +
+    `<p>День ${s.day} подряд. Забирайте награду и продолжайте стрик.</p>` +
+    `<p class="kept">Награда: 💰 ${rw.coins}${extra}</p>` +
+    `<div class="btn-row">` +
+    `<button class="btn-main ghost" data-ov="close" type="button">Позже</button>` +
+    `<button class="btn-main" data-streak="1" type="button">Забрать</button>` +
+    `</div>`
+  );
+  // Отдельная привязка кнопки «Забрать» (грант + перерисовка HUD).
+  const claimBtn = $('overlay').querySelector('[data-streak]');
+  if (claimBtn) {
+    claimBtn.addEventListener('click', () => {
+      if (Meta.claimStreak()) gToast('Стрик засчитан!');
+      hideOverlay();
+      syncHud();
+    });
+  }
 }
 
 /* =====================  АВТОПОДСКАЗКА (12 с)  ===================== */
@@ -611,10 +812,34 @@ function showIdleHint() {
   if (hintEl) hintEl.classList.add('hint');
 }
 
+/* =====================  ЛЁГКИЙ ИГРОВОЙ ТОСТ  ===================== */
+
+let gToastTimer = null;
+function gToast(msg) {
+  const t = $('game-toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  if (gToastTimer) clearTimeout(gToastTimer);
+  gToastTimer = setTimeout(() => t.classList.remove('show'), 1900);
+}
+
 /* =====================  ЗАПУСК  ===================== */
 
+/* Публичный мост для meta.js (возврат из мета-экрана обновляет HUD). */
+window.Game = {
+  syncHud: syncHud,
+  newGame: newGame,
+  openGarden: openGarden,
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+  Meta.init();                                   // мета-экран: делегирование, вкладки
+  Economy.subscribe(syncHud);                    // изменения валют → обновление HUD
+
   $('btn-restart').addEventListener('click', newGame);
+  $('btn-garden').addEventListener('click', () => openGarden('garden'));
+
   $('stock-card').addEventListener('click', onStockClick);
   $('stock-card').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -622,5 +847,13 @@ document.addEventListener('DOMContentLoaded', () => {
       onStockClick();
     }
   });
+
+  $('bst-undo').addEventListener('click', doUndo);
+  $('bst-joker').addEventListener('click', toggleJoker);
+  $('bst-basket').addEventListener('click', activateBasket);
+
+  $('overlay').addEventListener('click', onOverlayClick);
+
   newGame();
+  maybeShowStreakModal();                         // ежедневный стрик поверх стартовой раздачи
 });

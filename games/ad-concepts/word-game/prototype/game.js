@@ -29,11 +29,13 @@
 
   var CFG = {
     SAVE_KEY: 'wordgrove.save.v1',   // префикс имени игры в localStorage
-    START_COINS: 200,                // стартовый баланс монет
-    HINT_COST: 100,                  // «Лампа» — цена в монетах (03 §2.4)
-    WIN_REWARD: 22,                  // награда за уровень, монет (03 §2.5: 20–25)
-    PERFECT_BONUS: 5,                // «блестящий проход» без подсказок (03 §2.5)
-    BONUS_WORD_REWARD: 2,            // за бонусное слово (03 §2.1: 2 жёлудя -> тут монеты)
+    START_COINS: 300,                // стартовый баланс монет (05 §3: 300 — хватает на ~3 Лампы)
+    HINT_COST: 100,                  // «Лампа» — цена в монетах (05 §2.1: Лампа = 100)
+    WIN_REWARD: 20,                  // базовая награда за уровень, монет (05 §2.1 и 12 §141: levelBase = 20;
+                                     // среднее ~22/уровень из 05 §4 — это база 20 + 0.4×5 блестящих, а не база)
+    PERFECT_BONUS: 5,                // «блестящий проход» без подсказок (05 §2.1)
+    // Бонусное слово теперь даёт ЖЁЛУДИ (ECON.ACORN_PER_BONUS через economy.js),
+    // а не монеты — так работает петля «копилка → rewarded → монеты» (05 §2.2, 04 §3.4).
     MIN_WORD_LEN: 3,                 // минимальная длина слова (03 §2.3)
     MAX_CELL_PX: 56,                 // максимальный размер клетки сетки
     MIN_CELL_PX: 26,                 // минимальный размер клетки сетки
@@ -74,6 +76,15 @@
   var flashTimer = null;
   var firstRunToastShown = false;
 
+  // Проход Б: режим «дневной кроссворд». В нём ядро играет уровень из пула по сид-дате,
+  // не затрагивая прогресс кампании. campaignSnapshot хранит состояние кампании,
+  // пока идёт дневной, чтобы save() не перезаписал кампанийный сейв дневными клетками.
+  var dailyMode = false;
+  var campaignSnapshot = null;
+
+  // Ссылки на HUD жёлудей и кнопку меты добавлены в Проходе Б.
+  var elAcorns = null;
+
   // ============================== DOM ==============================
 
   var $ = function (id) { return document.getElementById(id); };
@@ -82,6 +93,7 @@
   var elToast = $('toast');
   var elWord = $('current-word');
   var elCoins = $('coins-value');
+  elAcorns = $('acorns-value');   // жёлуди в HUD (Проход Б)
   var elLevel = $('hud-level');
   var elBonusCount = $('bonus-count');
   var elHintBtn = $('btn-hint');
@@ -94,14 +106,24 @@
 
   function save() {
     try {
-      localStorage.setItem(CFG.SAVE_KEY, JSON.stringify({
+      // В дневном режиме кампанийные поля берём из снимка (дневные клетки не должны
+      // попасть в сейв кампании), а монеты — актуальные (их дневной мог начислить).
+      var payload = (dailyMode && campaignSnapshot) ? {
+        level: campaignSnapshot.level,
+        coins: state.coins,
+        revealed: campaignSnapshot.revealed,
+        foundBonus: campaignSnapshot.foundBonus,
+        usedHint: campaignSnapshot.usedHint,
+        rewardGiven: campaignSnapshot.rewardGiven
+      } : {
         level: state.level,
         coins: state.coins,
         revealed: state.revealed,
         foundBonus: state.foundBonus,
         usedHint: state.usedHint,
         rewardGiven: state.rewardGiven
-      }));
+      };
+      localStorage.setItem(CFG.SAVE_KEY, JSON.stringify(payload));
     } catch (e) { /* приватный режим/квота — играем без сохранения */ }
   }
 
@@ -456,9 +478,13 @@
 
     if (bonusSet[word]) {                 // BONUS: валидное слово не из сетки
       state.foundBonus[word] = true;
-      addCoins(CFG.BONUS_WORD_REWARD);
+      // Жёлуди в копилку (05 §2.2, 04 §3.4). Переполнение капа — сгорает.
+      var acorn = { added: 0, burned: 0 };
+      if (window.Economy) acorn = window.Economy.addAcorns(ECON.ACORN_PER_BONUS);
+      if (window.Meta) window.Meta.emit('bonus_word', { word: word });
       flashWord(word, 'bonus');
-      toast('⭐ Бонусное слово! +' + CFG.BONUS_WORD_REWARD + ' 🪙');
+      if (acorn.burned > 0) toast('⭐ Копилка полна — жёлуди сгорают! Открой копилку 🐿️');
+      else toast('⭐ Бонусное слово! +' + ECON.ACORN_PER_BONUS + ' 🌰');
       updateHud();
       save();
       return;
@@ -484,7 +510,7 @@
   function useHint() {
     if (allCompleted()) return;
     if (state.coins < CFG.HINT_COST) {
-      toast('Не хватает монет — ищи бонусные слова! ⭐');
+      toast('Не хватает монет — открой копилку 🐿️ или пройди уровень');
       return;
     }
     var hidden = cellKeys.filter(function (k) { return !state.revealed[k]; });
@@ -503,6 +529,15 @@
 
   function checkWin() {
     if (!allCompleted()) return;
+    if (dailyMode) {
+      // Дневной кроссворд: награда (монеты дня + веха стрика) выдаётся Meta
+      // на экране победы, кампанийная награда за уровень НЕ начисляется.
+      if (!state.rewardGiven) { state.rewardGiven = true; }
+      setTimeout(function () {
+        if (dailyMode && allCompleted()) showDailyWinOverlay();
+      }, CFG.WIN_DELAY_MS);
+      return;
+    }
     var reward = CFG.WIN_REWARD + (state.usedHint ? 0 : CFG.PERFECT_BONUS);
     if (!state.rewardGiven) {
       state.rewardGiven = true;
@@ -512,7 +547,7 @@
     var levelAtWin = state.level;
     setTimeout(function () {
       // Рестарт (или иная смена состояния) в паузе анимации отменяет показ победы.
-      if (state.level === levelAtWin && allCompleted()) showWinOverlay(reward);
+      if (!dailyMode && state.level === levelAtWin && allCompleted()) showWinOverlay(reward);
     }, CFG.WIN_DELAY_MS);
   }
 
@@ -534,9 +569,14 @@
 
   function nextLevel() {
     hideOverlay();
+    var completedIndex = state.level;
+    var wasPerfect = !state.usedHint;   // «блестящий проход» = без подсказки
     state.level++;
     resetLevelState();
     save();
+    // Событие для меты: миссии («пройди N уровней», «без подсказок») и награды регионов
+    // атласа. Эмитим ПОСЛЕ инкремента, чтобы Meta увидела актуальный прогресс.
+    if (window.Meta) window.Meta.emit('level_complete', { index: completedIndex, perfect: wasPerfect });
     if (state.level >= WORDGROVE_LEVELS.length) {
       showFinalOverlay();
     } else {
@@ -544,12 +584,87 @@
     }
   }
 
+  // ============================== ДНЕВНОЙ КРОССВОРД (Проход Б, 04 §3.3) ==============================
+
+  // Войти в дневной режим: играем уровень idx из пула, не трогая прогресс кампании.
+  function startDaily(idx) {
+    if (dailyMode) return;
+    if (typeof idx !== 'number' || idx < 0 || idx >= WORDGROVE_LEVELS.length) idx = 0;
+    hideOverlay();
+    dailyMode = true;
+    campaignSnapshot = {
+      level: state.level,
+      revealed: state.revealed,
+      foundBonus: state.foundBonus,
+      usedHint: state.usedHint,
+      rewardGiven: state.rewardGiven
+    };
+    // Эфемерное состояние дневного уровня (в сейв кампании не попадёт — см. save()).
+    state.level = idx;
+    state.revealed = {};
+    state.foundBonus = {};
+    state.usedHint = false;
+    state.rewardGiven = false;
+    buildLevel();
+    updateHud();
+    toast('📅 Дневной кроссворд: тема «' + (window.Meta ? window.Meta.todayTheme() : '') + '»');
+  }
+
+  // Выйти из дневного режима: восстановить кампанию.
+  function exitDaily() {
+    if (!dailyMode || !campaignSnapshot) { dailyMode = false; return; }
+    dailyMode = false;
+    state.level = campaignSnapshot.level;
+    state.revealed = campaignSnapshot.revealed;
+    state.foundBonus = campaignSnapshot.foundBonus;
+    state.usedHint = campaignSnapshot.usedHint;
+    state.rewardGiven = campaignSnapshot.rewardGiven;
+    campaignSnapshot = null;
+    if (state.level >= WORDGROVE_LEVELS.length) {
+      // Кампания была пройдена целиком: показываем последний уровень фоном + финал.
+      state.level = WORDGROVE_LEVELS.length - 1;
+      buildLevel();
+      state.level = WORDGROVE_LEVELS.length;
+      updateHud();
+      showFinalOverlay();
+    } else {
+      buildLevel();
+      updateHud();
+    }
+  }
+
+  function showDailyWinOverlay() {
+    var res = window.Meta
+      ? window.Meta.onDailyComplete()
+      : { already: true, coins: 0, streak: 0, milestone: 0 };
+    var bonusFound = Object.keys(state.foundBonus).length;
+    var html = '<h2>📅 Дневной кроссворд пройден!</h2>';
+    if (res.already) {
+      html += '<p>Сегодня ты его уже проходил — награда даётся раз в день.</p>' +
+              '<p>Текущий стрик: 🔥 ' + res.streak + '</p>';
+    } else {
+      html += '<p class="reward-line">+' + ECON.DAILY_COINS + ' 🪙 за день</p>';
+      if (res.milestone > 0) {
+        html += '<p class="reward-line">🔥 Веха стрика ' + res.streak + ' дн.: +' + res.milestone + ' 🪙</p>';
+      }
+      html += '<p>Стрик: 🔥 ' + res.streak + ' подряд</p>';
+    }
+    if (bonusFound > 0) html += '<p>Бонусных слов: ' + bonusFound + ' → жёлуди в копилке 🌰</p>';
+    html += '<button class="primary" id="ov-daily-done">В меню меты</button>';
+    showOverlay(html);
+    $('ov-daily-done').addEventListener('click', function () {
+      hideOverlay();
+      exitDaily();
+      if (window.Meta) window.Meta.open('daily');
+    });
+  }
+
   function showFinalOverlay() {
     var html =
       '<h2>🌳 Роща пройдена!</h2>' +
       '<p>Все ' + WORDGROVE_LEVELS.length + ' уровней позади. Монет накоплено: ' +
       state.coins + ' 🪙</p>' +
-      '<p>В полной версии дальше — атлас регионов, открытки и ежедневные кроссворды.</p>' +
+      '<p>Открой 🗺️ Мету: атлас регионов, дневной кроссворд со стриком, копилка жёлудей и миссии.</p>' +
       '<button class="primary" id="ov-replay">Играть с начала</button>' +
       '<button class="secondary" id="ov-wipe">Сбросить всё</button>';
     showOverlay(html);
@@ -565,6 +680,8 @@
       state.level = 0;
       state.coins = CFG.START_COINS;
       resetLevelState();
+      if (window.Economy) window.Economy.reset();   // жёлуди/копилка
+      if (window.Meta) window.Meta.reset();          // атлас/дневной/миссии/стрик
       save();
       buildLevel();
       toast('Прогресс сброшен');
@@ -591,7 +708,7 @@
           return '<span>' + w + '</span>';
         }).join('') + '</div>'
       : '<p>Пока пусто. Составляй валидные слова, которых нет в сетке, — за каждое +' +
-        CFG.BONUS_WORD_REWARD + ' 🪙</p>';
+        ECON.ACORN_PER_BONUS + ' 🌰 в копилку</p>';
     var html =
       '<h2>⭐ Бонусные слова</h2>' +
       '<p>Найдено на уровне: ' + found.length + ' из ' + L.bonus.length + '</p>' +
@@ -604,10 +721,13 @@
   // ============================== UI-МЕЛОЧИ ==============================
 
   function updateHud() {
-    elLevel.textContent = state.level < WORDGROVE_LEVELS.length
-      ? 'Уровень ' + (state.level + 1) + '/' + WORDGROVE_LEVELS.length
-      : 'Роща пройдена';
+    elLevel.textContent = dailyMode
+      ? '📅 Дневной кроссворд'
+      : (state.level < WORDGROVE_LEVELS.length
+          ? 'Уровень ' + (state.level + 1) + '/' + WORDGROVE_LEVELS.length
+          : 'Роща пройдена');
     elCoins.textContent = state.coins;
+    if (elAcorns) elAcorns.textContent = window.Economy ? window.Economy.getAcorns() : 0;
     elBonusCount.textContent = Object.keys(state.foundBonus).length;
     $('hint-cost').textContent = CFG.HINT_COST;
     elHintBtn.classList.toggle('poor', state.coins < CFG.HINT_COST);
@@ -671,12 +791,52 @@
     elPanel.innerHTML = '';
   }
 
+  // ============================== МОСТ К СЛОЯМ МЕТЫ (Проход Б) ==============================
+  // Единая точка интеграции: economy.js и meta.js работают с монетами и ядром только
+  // через window.WG. Монеты остаются во владении ядра (сейв `wordgrove.save.v1`).
+  window.WG = {
+    getCoins: function () { return state.coins; },
+    // Внешние начисления (дневной, стрик, миссии, регион, копилка) — с персистом.
+    addCoins: function (n, source) {
+      n = Math.floor(n || 0);
+      if (!n) return;
+      addCoins(n);          // общий инкремент + пульс HUD
+      save();               // персистим (внутренний addCoins ядра не сохраняет сам)
+      if (window.Economy) window.Economy.track('currency_earn',
+        { currency: 'coin', amount: n, source: source || 'meta', balance_after: state.coins });
+    },
+    spendCoins: function (n) {
+      n = Math.floor(n || 0);
+      if (n < 0 || state.coins < n) return false;
+      state.coins -= n;
+      updateHud();
+      save();
+      if (window.Economy) window.Economy.track('currency_spend',
+        { currency: 'coin', amount: n, sink: 'meta', balance_after: state.coins });
+      return true;
+    },
+    // Прогресс кампании (в дневном режиме — из снимка, а не из подменённого state.level).
+    getLevel: function () {
+      var lv = (dailyMode && campaignSnapshot) ? campaignSnapshot.level : state.level;
+      return Math.min(lv, WORDGROVE_LEVELS.length);
+    },
+    getTotalLevels: function () { return WORDGROVE_LEVELS.length; },
+    refreshHud: updateHud,
+    toast: toast,
+    startDaily: startDaily,
+    isDailyMode: function () { return dailyMode; }
+  };
+
   // ============================== СТАРТ ==============================
 
   $('btn-shuffle').addEventListener('click', shuffleWheel);
   elHintBtn.addEventListener('click', useHint);
   $('btn-restart').addEventListener('click', restartLevel);
   $('btn-bonus').addEventListener('click', showBonusOverlay);
+  var metaBtn = $('btn-meta');
+  if (metaBtn) metaBtn.addEventListener('click', function () {
+    if (window.Meta) window.Meta.open('atlas');
+  });
 
   var resizeRaf = null;
   window.addEventListener('resize', function () {
@@ -691,6 +851,9 @@
   });
 
   load();
+  // Инициализация меты после load(): атлас/миссии видят актуальный прогресс кампании,
+  // выдаются награды за уже пройденные регионы (миграция игрока Прохода А).
+  if (window.Meta) window.Meta.init();
   if (state.level >= WORDGROVE_LEVELS.length) {
     // Всё пройдено: показываем последний уровень фоном и финальный экран.
     state.level = WORDGROVE_LEVELS.length - 1;

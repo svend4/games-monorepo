@@ -24,6 +24,7 @@ body {
   height: 100dvh;
   display: flex;
   flex-direction: column;
+  position: relative;   /* якорь для мета-экрана (Проход Б) */
 }
 
 /* ---------- HUD ---------- */
@@ -37,21 +38,20 @@ body {
   font-size: 15px;
 }
 
-#hud-title { opacity: 0.85; font-size: 14px; }
+#hud-right { display: flex; align-items: center; gap: 7px; }
 
-#hud-right { display: flex; align-items: center; gap: 10px; }
-
-#hud-coins {
+#hud-coins, #hud-acorns {
   background: rgba(255, 255, 255, 0.65);
   border-radius: 14px;
-  padding: 4px 12px;
+  padding: 4px 10px;
   transition: transform 0.15s;
+  white-space: nowrap;
 }
 #hud-coins.pulse { transform: scale(1.18); }
 
-#btn-restart {
-  width: 32px;
-  height: 32px;
+#btn-restart, #btn-meta {
+  width: 34px;
+  height: 34px;
   border: none;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.65);
@@ -59,8 +59,23 @@ body {
   font-size: 17px;
   font-weight: 700;
   cursor: pointer;
+  position: relative;
+  flex: 0 0 auto;
 }
-#btn-restart:hover { background: #fff; }
+#btn-restart:hover, #btn-meta:hover { background: #fff; }
+
+/* Бейдж «есть что забрать» на кнопке меты (миссия/дневной/полная копилка). */
+#btn-meta.has-badge::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #e53935;
+  border: 2px solid #dcedc8;
+}
 
 /* ---------- Игровое поле ---------- */
 
@@ -284,3 +299,223 @@ body {
   font-size: 14px;
   padding: 10px 18px;
 }
+
+/* ============================================================
+   МЕТА-ЭКРАН (Проход Б): атлас, дневной, копилка, миссии.
+   ============================================================ */
+
+#meta-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(175deg, #e8f5e9 0%, #c8e6c9 55%, #a5d6a7 100%);
+}
+#meta-screen.hidden { display: none; }
+
+.meta-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+  flex: 0 0 auto;
+}
+.meta-cur { display: flex; gap: 8px; font-weight: 700; font-size: 15px; }
+.meta-cur span {
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 14px;
+  padding: 5px 12px;
+}
+.meta-close {
+  border: none;
+  border-radius: 20px;
+  background: #43a047;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 16px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #2e7d32;
+}
+.meta-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e7d32; }
+
+.meta-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 8px;
+  flex: 0 0 auto;
+}
+.meta-tabs button {
+  flex: 1 1 0;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  color: #2e7d32;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 9px 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.meta-tabs button.active {
+  background: #ffffff;
+  color: #1b5e20;
+  box-shadow: 0 2px 6px rgba(27, 94, 32, 0.2);
+}
+
+#meta-content {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 12px 20px;
+}
+
+.meta-pane { display: flex; flex-direction: column; gap: 12px; }
+.pane-sub { color: #33691e; font-size: 14px; text-align: center; }
+.pane-note { color: #7a8b6a; font-size: 12px; text-align: center; font-style: italic; }
+.pane-warn { color: #c62828; font-size: 14px; font-weight: 700; text-align: center; }
+
+.meta-primary {
+  border: none;
+  border-radius: 24px;
+  background: #43a047;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 13px 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #2e7d32;
+  margin-top: 4px;
+}
+.meta-primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
+
+/* ---------- Атлас ---------- */
+.region-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(27, 94, 32, 0.12);
+}
+.region-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.region-emoji { font-size: 22px; }
+.region-name { font-weight: 800; color: #1b5e20; font-size: 16px; flex: 1 1 auto; }
+.region-pct { font-weight: 700; color: #558b2f; font-size: 14px; }
+.region-nodes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.node {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+}
+.node-done { background: #43a047; color: #fff; }
+.node-current {
+  background: #fff3c4;
+  color: #7a5c00;
+  box-shadow: 0 0 0 3px #ffd54f;
+  cursor: pointer;
+  animation: node-pulse 1.2s ease-in-out infinite;
+}
+.node-locked { background: #e0e6dd; color: #9aa899; }
+@keyframes node-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+.region-reward { font-size: 13.5px; font-weight: 700; color: #33691e; }
+
+/* ---------- Дневной ---------- */
+.daily-hero {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(27, 94, 32, 0.12);
+}
+.daily-theme { font-size: 15px; color: #33691e; margin-bottom: 6px; }
+.daily-streak { font-size: 26px; font-weight: 800; color: #ef6c00; }
+.daily-longest { font-size: 13px; color: #7a8b6a; margin-top: 4px; }
+.milestones { display: flex; gap: 6px; justify-content: space-between; }
+.ms-node {
+  flex: 1 1 0;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 10px 2px;
+  text-align: center;
+  opacity: 0.6;
+}
+.ms-node.ms-reached {
+  background: #fff3c4;
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px #ffd54f;
+}
+.ms-day { font-weight: 800; color: #1b5e20; font-size: 14px; }
+.ms-rew { font-size: 11.5px; color: #558b2f; font-weight: 700; }
+.daily-done {
+  text-align: center;
+  font-weight: 700;
+  color: #2e7d32;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+/* ---------- Копилка ---------- */
+.piggy-emoji { font-size: 46px; text-align: center; }
+.piggy-count { text-align: center; font-size: 20px; font-weight: 800; color: #7a5c00; }
+.piggy-bar {
+  height: 18px;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.piggy-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffb300, #ff8f00);
+  border-radius: 10px;
+  transition: width 0.3s;
+}
+
+/* ---------- Миссии ---------- */
+.mission-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 8px rgba(27, 94, 32, 0.12);
+}
+.mission-card.mission-claimed { opacity: 0.6; }
+.mission-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.mission-emoji { font-size: 18px; }
+.mission-text { font-weight: 700; color: #1b5e20; font-size: 14.5px; }
+.mission-bar {
+  height: 10px;
+  background: #e8f0e2;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.mission-fill {
+  height: 100%;
+  background: #66bb6a;
+  border-radius: 6px;
+  transition: width 0.3s;
+}
+.mission-foot { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.mission-prog { font-weight: 700; color: #558b2f; }
+.mission-rew { color: #7a5c00; font-weight: 700; flex: 1 1 auto; }
+.mission-state { color: #7a8b6a; font-weight: 700; }
+.mission-claim {
+  border: none;
+  border-radius: 16px;
+  background: #43a047;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 7px 16px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #2e7d32;
+}
+.mission-claim:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e7d32; }
