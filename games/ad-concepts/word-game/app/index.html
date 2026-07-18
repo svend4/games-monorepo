@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>WordGrove — прод-порт (TS + Phaser 3)</title>
+  <style>
+    /* WordGrove — стили 1:1 из прототипа (style.css), объём Прохода Е.1.
+       Колесо — Phaser-канвас в #wheel-host; сетка/HUD/оверлеи — DOM. */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overscroll-behavior: none; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+      background: linear-gradient(170deg, #dcedc8 0%, #a5d6a7 60%, #81c784 100%);
+      color: #1b5e20;
+      display: flex;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 540px;
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      position: relative; /* якорь для мета-экрана */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .hidden { display: none !important; }
+
+    /* ---------- HUD ---------- */
+    #hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px 6px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    #hud-right { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+    #hud-coins, #hud-acorns {
+      background: rgba(255, 255, 255, 0.65);
+      border-radius: 14px;
+      padding: 4px 10px;
+      transition: transform 0.15s;
+      white-space: nowrap;
+    }
+    #hud-coins.pulse { transform: scale(1.18); }
+    #btn-restart, #btn-meta {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.65);
+      color: #1b5e20;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      flex: 0 0 auto;
+    }
+    #btn-restart:hover, #btn-meta:hover { background: #fff; }
+    #btn-meta.has-badge::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #e53935;
+      border: 2px solid #dcedc8;
+    }
+
+    /* ---------- Игровое поле ---------- */
+    #playfield { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+    #grid-area {
+      flex: 1 1 auto;
+      min-height: 120px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+    }
+    #grid { position: relative; }
+    .cell {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.42);
+      border-radius: 6px;
+      font-weight: 800;
+      color: transparent;
+      box-shadow: inset 0 0 0 1px rgba(27, 94, 32, 0.12);
+    }
+    .cell.revealed {
+      background: #ffffff;
+      color: #33691e;
+      animation: cell-pop 0.28s ease-out;
+      box-shadow: 0 1px 3px rgba(27, 94, 32, 0.25);
+    }
+    .cell.hint-revealed { background: #fff3c4; color: #7a5c00; }
+    @keyframes cell-pop {
+      0% { transform: scale(0.3); }
+      70% { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    /* ---------- Тост ---------- */
+    #toast {
+      position: absolute;
+      left: 50%;
+      bottom: 4px;
+      transform: translateX(-50%);
+      background: rgba(27, 94, 32, 0.92);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.25s;
+      pointer-events: none;
+      z-index: 5;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ---------- Текущее слово ---------- */
+    #current-word {
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 27px;
+      font-weight: 800;
+      letter-spacing: 5px;
+      color: #1b5e20;
+      transition: color 0.15s;
+    }
+    #current-word.ok    { color: #2e7d32; }
+    #current-word.bonus { color: #b8860b; }
+    #current-word.bad   { color: #c62828; animation: word-shake 0.35s; }
+    #current-word.dup   { color: #78909c; }
+    @keyframes word-shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+
+    /* ---------- Колесо (Phaser) и кнопки ---------- */
+    #wheel-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 2px 10px 16px;
+    }
+    #wheel-area.shake { animation: word-shake 0.35s; }
+    #wheel-host {
+      width: min(46vw, 40vh, 330px);
+      aspect-ratio: 1 / 1;
+      touch-action: none;
+      cursor: pointer;
+    }
+    #wheel-host canvas { display: block; }
+    .side-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 62px;
+      align-items: center;
+    }
+    .side-col button {
+      width: 58px;
+      height: 58px;
+      border: 2px solid #66bb6a;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.05;
+      transition: transform 0.1s, background 0.15s;
+    }
+    .side-col button:hover { background: #f1f8e9; }
+    .side-col button:active { transform: scale(0.92); }
+    .side-col button .icon { font-size: 20px; }
+    .side-col button .cost { font-size: 11px; font-weight: 700; color: #558b2f; }
+    .side-col button.poor .cost { color: #c62828; }
+
+    /* ---------- Оверлей ---------- */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 40, 18, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+    #overlay.hidden { display: none; }
+    #overlay-panel {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 26px 22px;
+      width: 88%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      animation: panel-in 0.25s ease-out;
+    }
+    @keyframes panel-in {
+      from { transform: scale(0.85); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    #overlay-panel h2 { color: #2e7d32; margin-bottom: 12px; font-size: 24px; }
+    #overlay-panel p  { color: #33691e; margin-bottom: 10px; font-size: 15px; }
+    #overlay-panel .reward-line { font-size: 17px; font-weight: 700; margin: 6px 0; }
+    #overlay-panel .bonus-list {
+      max-height: 180px;
+      overflow-y: auto;
+      margin: 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+    }
+    #overlay-panel .bonus-list span {
+      background: #fff3c4;
+      color: #7a5c00;
+      border-radius: 10px;
+      padding: 3px 10px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    #overlay-panel button {
+      margin-top: 14px;
+      padding: 12px 26px;
+      border: none;
+      border-radius: 24px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-block;
+    }
+    #overlay-panel button.primary {
+      background: #43a047;
+      color: #fff;
+      box-shadow: 0 4px 0 #2e7d32;
+    }
+    #overlay-panel button.primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
+    #overlay-panel button.secondary {
+      background: #eeeeee;
+      color: #455a64;
+      margin-left: 8px;
+      font-size: 14px;
+      padding: 10px 18px;
+    }
+
+    /* ---------- Мета-экран (Проход Б) ---------- */
+    #meta-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(175deg, #e8f5e9 0%, #c8e6c9 55%, #a5d6a7 100%);
+    }
+    #meta-screen.hidden { display: none; }
+    .meta-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px 8px;
+      flex: 0 0 auto;
+    }
+    .meta-cur { display: flex; gap: 8px; font-weight: 700; font-size: 15px; }
+    .meta-cur span { background: rgba(255, 255, 255, 0.75); border-radius: 14px; padding: 5px 12px; }
+    .meta-close {
+      border: none;
+      border-radius: 20px;
+      background: #43a047;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 8px 16px;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #2e7d32;
+    }
+    .meta-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e7d32; }
+    .meta-tabs { display: flex; gap: 6px; padding: 0 12px 8px; flex: 0 0 auto; }
+    .meta-tabs button {
+      flex: 1 1 0;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.55);
+      color: #2e7d32;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 9px 2px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .meta-tabs button.active {
+      background: #ffffff;
+      color: #1b5e20;
+      box-shadow: 0 2px 6px rgba(27, 94, 32, 0.2);
+    }
+    #meta-content {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 12px 20px;
+    }
+    .meta-pane { display: flex; flex-direction: column; gap: 12px; }
+    .pane-sub { color: #33691e; font-size: 14px; text-align: center; }
+    .pane-note { color: #7a8b6a; font-size: 12px; text-align: center; font-style: italic; }
+    .pane-warn { color: #c62828; font-size: 14px; font-weight: 700; text-align: center; }
+    .meta-primary {
+      border: none;
+      border-radius: 24px;
+      background: #43a047;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 13px 18px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #2e7d32;
+      margin-top: 4px;
+    }
+    .meta-primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
+
+    /* Атлас */
+    .region-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(27, 94, 32, 0.12);
+    }
+    .region-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .region-emoji { font-size: 22px; }
+    .region-name { font-weight: 800; color: #1b5e20; font-size: 16px; flex: 1 1 auto; }
+    .region-pct { font-weight: 700; color: #558b2f; font-size: 14px; }
+    .region-nodes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .node {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+    }
+    .node-done { background: #43a047; color: #fff; }
+    .node-current {
+      background: #fff3c4;
+      color: #7a5c00;
+      box-shadow: 0 0 0 3px #ffd54f;
+      cursor: pointer;
+      animation: node-pulse 1.2s ease-in-out infinite;
+    }
+    .node-locked { background: #e0e6dd; color: #9aa899; }
+    @keyframes node-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+    .region-reward { font-size: 13.5px; font-weight: 700; color: #33691e; }
+
+    /* Дневной */
+    .daily-hero {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(27, 94, 32, 0.12);
+    }
+    .daily-theme { font-size: 15px; color: #33691e; margin-bottom: 6px; }
+    .daily-streak { font-size: 26px; font-weight: 800; color: #ef6c00; }
+    .daily-longest { font-size: 13px; color: #7a8b6a; margin-top: 4px; }
+    .milestones { display: flex; gap: 6px; justify-content: space-between; }
+    .ms-node {
+      flex: 1 1 0;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
+      padding: 10px 2px;
+      text-align: center;
+      opacity: 0.6;
+    }
+    .ms-node.ms-reached { background: #fff3c4; opacity: 1; box-shadow: inset 0 0 0 2px #ffd54f; }
+    .ms-day { font-weight: 800; color: #1b5e20; font-size: 14px; }
+    .ms-rew { font-size: 11.5px; color: #558b2f; font-weight: 700; }
+    .daily-done {
+      text-align: center;
+      font-weight: 700;
+      color: #2e7d32;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    /* Копилка */
+    .piggy-emoji { font-size: 46px; text-align: center; }
+    .piggy-count { text-align: center; font-size: 20px; font-weight: 800; color: #7a5c00; }
+    .piggy-bar { height: 18px; background: rgba(255, 255, 255, 0.65); border-radius: 10px; overflow: hidden; }
+    .piggy-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ffb300, #ff8f00);
+      border-radius: 10px;
+      transition: width 0.3s;
+    }
+
+    /* Миссии */
+    .mission-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 8px rgba(27, 94, 32, 0.12);
+    }
+    .mission-card.mission-claimed { opacity: 0.6; }
+    .mission-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .mission-emoji { font-size: 18px; }
+    .mission-text { font-weight: 700; color: #1b5e20; font-size: 14.5px; }
+    .mission-bar { height: 10px; background: #e8f0e2; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+    .mission-fill { height: 100%; background: #66bb6a; border-radius: 6px; transition: width 0.3s; }
+    .mission-foot { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .mission-prog { font-weight: 700; color: #558b2f; }
+    .mission-rew { color: #7a5c00; font-weight: 700; flex: 1 1 auto; }
+    .mission-state { color: #7a8b6a; font-weight: 700; }
+    .mission-claim {
+      border: none;
+      border-radius: 16px;
+      background: #43a047;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 7px 16px;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #2e7d32;
+    }
+    .mission-claim:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e7d32; }
+
+    /* ============================================================
+       ПРОХОДЫ Е.2 + Е.3 — монетизация и кокпит (стили 1:1 из
+       прототипа style.css). Реклама/покупки — СИМУЛЯЦИЯ.
+       ============================================================ */
+
+    /* HUD: кнопки магазина/дашборда/кокпита (в один стиль с 🗺️/↻). */
+    #btn-shop, #btn-dash, #btn-cockpit {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.65);
+      color: #1b5e20;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    #btn-shop:hover, #btn-dash:hover, #btn-cockpit:hover { background: #fff; }
+
+    /* Кнопка RV-1 в колонке колеса — золотая (реклама за награду). */
+    #btn-rv1 { border-color: #ffb300; }
+    #btn-rv1:hover { background: #fff8e1; }
+    #btn-rv1 .cost { color: #b8860b; }
+    #btn-rv1.poor { opacity: 0.55; }
+
+    /* Когда виден баннер — резервируем место снизу, чтобы не перекрывать колесо. */
+    #app.has-banner { padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px)); }
+
+    /* ---------- Баннер B-1 (фиксированный низ, safe-area Е.3) ---------- */
+    #adBanner {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 12;
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: repeating-linear-gradient(135deg, #eef6e6, #eef6e6 12px, #e3efd6 12px, #e3efd6 24px);
+      border-top: 1px solid #a5d6a7;
+      font-size: 12px;
+      color: #558b2f;
+    }
+    .adBannerTag {
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      color: #b8860b;
+      border: 1px solid #e0b64a;
+      border-radius: 5px;
+      padding: 2px 6px;
+      background: #fff8e1;
+    }
+    .adBannerText b { color: #33691e; font-variant-numeric: tabular-nums; }
+    .adBannerNet { font-size: 10px; color: #8aa07a; }
+
+    /* ---------- Оверлей-симуляция показа рекламы ---------- */
+    #adOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(15, 40, 18, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .adSim {
+      width: 100%;
+      max-width: 340px;
+      background: #ffffff;
+      border: 2px solid #66bb6a;
+      border-radius: 18px;
+      padding: 18px 20px 22px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+    }
+    .adSimTag {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      color: #b8860b;
+      text-transform: uppercase;
+    }
+    .adSimFormat { font-size: 15px; font-weight: 800; color: #2e7d32; }
+    .adSimBox {
+      background: linear-gradient(160deg, #f1f8e9, #e8f5e9);
+      border: 1px dashed #81c784;
+      border-radius: 14px;
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .adSimLogo { font-size: 46px; line-height: 1; animation: ad-pulse 1.4s ease-in-out infinite; }
+    @keyframes ad-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+    .adSimPitch { font-size: 12.5px; color: #558b2f; line-height: 1.4; }
+    .adSimEcpm { font-size: 11.5px; color: #00897b; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .adSimTimerWrap { font-size: 13px; color: #7a8b6a; }
+    .adSimTimer { font-size: 22px; font-weight: 800; color: #ef6c00; font-variant-numeric: tabular-nums; }
+    .adSimSkip, .adSimClaim {
+      border: none;
+      border-radius: 22px;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 11px 20px;
+      cursor: pointer;
+      align-self: center;
+    }
+    .adSimSkip { background: #eeeeee; color: #455a64; }
+    .adSimClaim { background: #43a047; color: #fff; box-shadow: 0 4px 0 #2e7d32; }
+    .adSimClaim:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
+
+    /* ---------- Общий контейнер экранов монетизации ---------- */
+    #shopScreen, #dashboardScreen, #cockpitScreen {
+      position: fixed;
+      inset: 0;
+      z-index: 45;
+      background: linear-gradient(175deg, #e8f5e9 0%, #c8e6c9 55%, #a5d6a7 100%);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .monInner {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 10px 12px 40px;
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .monHeader {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 2px;
+      background: linear-gradient(180deg, #e8f5e9 72%, rgba(232, 245, 233, 0));
+    }
+    .mon-close {
+      border: none;
+      border-radius: 20px;
+      background: #43a047;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 8px 16px;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #2e7d32;
+    }
+    .mon-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e7d32; }
+    .monTotals { display: flex; gap: 8px; font-weight: 700; font-size: 15px; }
+    .monTotals span { background: rgba(255, 255, 255, 0.8); border-radius: 14px; padding: 5px 12px; }
+    .monTitle { font-size: 18px; color: #1b5e20; }
+    .simTag {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      color: #b8860b;
+      background: #fff8e1;
+      border: 1px solid #e0b64a;
+      border-radius: 6px;
+      padding: 2px 6px;
+      vertical-align: middle;
+    }
+    .monNote { font-size: 12px; color: #5c7a4a; line-height: 1.45; }
+    .mon-ghost {
+      border: 1px solid #a5d6a7;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.6);
+      color: #558b2f;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 10px 16px;
+      cursor: pointer;
+      align-self: center;
+    }
+
+    /* ---------- Подписка WordGrove Club (герой) ---------- */
+    .subCard {
+      background: linear-gradient(160deg, #ffffff, #f1f8e9);
+      border: 2px solid #ffd54f;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 4px 14px rgba(184, 134, 11, 0.18);
+    }
+    .sub-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      color: #b8860b;
+      background: #fff8e1;
+      border: 1px solid #e0b64a;
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-bottom: 8px;
+    }
+    .sub-title { font-size: 22px; color: #1b5e20; margin-bottom: 8px; }
+    .sub-perks { list-style: none; margin: 0 0 12px; padding: 0; }
+    .sub-perks li {
+      font-size: 13px;
+      color: #33691e;
+      padding: 3px 0 3px 22px;
+      position: relative;
+    }
+    .sub-perks li::before { content: '✓'; position: absolute; left: 2px; color: #43a047; font-weight: 800; }
+    .sub-prices { display: flex; gap: 10px; }
+    .sub-buy {
+      flex: 1 1 0;
+      border: none;
+      border-radius: 16px;
+      padding: 12px 10px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      align-items: center;
+    }
+    .sub-buy.trial { background: #43a047; color: #fff; box-shadow: 0 4px 0 #2e7d32; }
+    .sub-buy.year { background: #ffb300; color: #4e342e; box-shadow: 0 4px 0 #c68400; }
+    .sub-buy:active { transform: translateY(2px); }
+    .sub-sub { font-size: 10.5px; font-weight: 600; opacity: 0.92; }
+    .sub-active {
+      font-size: 15px;
+      font-weight: 800;
+      color: #2e7d32;
+      background: rgba(67, 160, 71, 0.12);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .sub-cancel {
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      background: #f5f5f5;
+      color: #78909c;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 9px;
+      cursor: pointer;
+    }
+
+    /* ---------- Remove Ads ---------- */
+    .removeAdsCard {
+      background: #ffffff;
+      border: 1px solid #cfe0c4;
+      border-radius: 14px;
+      padding: 13px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .ra-top { display: flex; flex-direction: column; gap: 3px; }
+    .ra-title { font-size: 14px; font-weight: 800; color: #1b5e20; }
+    .ra-sub { font-size: 11px; color: #7a8b6a; line-height: 1.3; }
+    .ra-buy {
+      flex: 0 0 auto;
+      border-radius: 14px;
+      background: #fff8e1;
+      border: 1.5px solid #e0b64a;
+      color: #b8860b;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    .ra-buy.done { background: #e8f5e9; border-color: #81c784; color: #2e7d32; cursor: default; }
+
+    /* ---------- RV-6 showcase / полка ---------- */
+    .rvShowcase, .shelfSection {
+      background: rgba(255, 255, 255, 0.66);
+      border-radius: 14px;
+      padding: 13px 14px;
+    }
+    .rvShowcase h4, .shelfSection h4 { font-size: 14px; color: #1b5e20; margin-bottom: 6px; }
+    .rvBtn {
+      width: 100%;
+      border: 2px solid #ffb300;
+      border-radius: 16px;
+      background: #fff8e1;
+      color: #6d4c00;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: center;
+      margin-top: 6px;
+    }
+    .rvBtn:active { transform: scale(0.98); }
+    .rvBtn:disabled { opacity: 0.5; cursor: default; }
+    .rvSub { font-size: 10.5px; font-weight: 600; color: #b8860b; }
+    .rvStatus { font-size: 12px; color: #558b2f; text-align: center; margin-top: 8px; }
+    .rvStatus b { color: #33691e; }
+
+    /* ---------- Полка монет (IAP) ---------- */
+    .shopStatus {
+      font-size: 12px;
+      color: #2e7d32;
+      background: #ffffff;
+      border: 1px solid #cfe0c4;
+      border-radius: 10px;
+      padding: 8px 10px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .iapList { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .iapCard {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border: 1px solid #cfe0c4;
+      border-radius: 12px;
+      padding: 10px 11px;
+      background: #ffffff;
+    }
+    .iapCard.hot { border-color: #ffb300; box-shadow: 0 0 0 1px #ffd54f inset; }
+    .iapCard.owned { opacity: 0.66; }
+    .iapTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+    .iapTitle { font-size: 13px; font-weight: 800; color: #1b5e20; line-height: 1.2; }
+    .iapBadge {
+      font-size: 8.5px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      color: #b8860b;
+      border: 1px solid #e0b64a;
+      border-radius: 5px;
+      padding: 2px 5px;
+      white-space: nowrap;
+      background: #fff8e1;
+    }
+    .iapDesc { font-size: 11px; color: #6b7d5a; line-height: 1.35; flex: 1; }
+    .iapBuy {
+      font-size: 14px;
+      font-weight: 800;
+      padding: 8px 10px;
+      background: #43a047;
+      border: none;
+      color: #fff;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #2e7d32;
+    }
+    .iapBuy:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e7d32; }
+    .iapBuy.done { background: #e8f5e9; color: #2e7d32; box-shadow: none; cursor: default; }
+
+    /* ---------- Инъекция RV-2 в оверлей победы ---------- */
+    .rv2-inject {
+      margin-top: 12px !important;
+      padding: 11px 20px !important;
+      border: none;
+      border-radius: 22px;
+      background: #ffb300 !important;
+      color: #4e342e !important;
+      box-shadow: 0 4px 0 #c68400 !important;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: center;
+      width: 100%;
+    }
+    .rv2-inject:active { transform: translateY(2px); box-shadow: 0 2px 0 #c68400 !important; }
+    .rv2-inject.rv-used { background: #e8f5e9 !important; color: #2e7d32 !important; box-shadow: none !important; cursor: default; }
+    .rv2-sub { font-size: 10.5px; font-weight: 600; opacity: 0.85; }
+
+    /* ---------- Дашборд KPI ---------- */
+    .dashGeo { flex: 1; }
+    .geoSwitch { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; justify-content: flex-end; }
+    .geoCap { font-size: 11px; color: #7a8b6a; margin-right: 2px; }
+    .geoBtn {
+      font-size: 11px;
+      padding: 5px 9px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid #b5d4a6;
+      border-radius: 8px;
+      color: #558b2f;
+      cursor: pointer;
+    }
+    .geoBtn.active { border-color: #2e7d32; color: #fff; background: #43a047; }
+
+    .kSection {
+      background: #ffffff;
+      border: 1px solid #d3e4c6;
+      border-radius: 14px;
+      padding: 11px 12px 13px;
+    }
+    .kSection h4 { font-size: 13px; color: #1b5e20; margin-bottom: 8px; }
+    .kHead, .kRow {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .kHead {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #8aa07a;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #e4eeda;
+      margin-bottom: 4px;
+    }
+    .kHead span:nth-child(2), .kHead span:nth-child(3) { text-align: right; }
+    .kRow { padding: 4px 0; border-bottom: 1px solid #eef4e7; }
+    .kRow:last-child { border-bottom: none; }
+    .kLabel { font-size: 12px; color: #33691e; display: flex; flex-direction: column; }
+    .kNote { font-size: 9.5px; color: #9aad8a; }
+    .kVal { font-size: 13px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; color: #1b5e20; }
+    .kTgt { font-size: 11px; text-align: right; color: #7a8b6a; font-variant-numeric: tabular-nums; min-width: 42px; }
+    .kStat { text-align: right; min-width: 54px; }
+    .kchip {
+      font-size: 10px;
+      font-weight: 800;
+      border-radius: 6px;
+      padding: 2px 6px;
+      white-space: nowrap;
+    }
+    .kchip.hit { color: #2e7d32; background: #e8f5e9; border: 1px solid #81c784; }
+    .kchip.near { color: #b8860b; background: #fff8e1; border: 1px solid #e0b64a; }
+    .kchip.low { color: #c62828; background: #fdecea; border: 1px solid #ef9a9a; }
+    .kMini { font-size: 10.5px; color: #6b7d5a; margin-top: 7px; line-height: 1.4; }
+    .kMini b { color: #33691e; }
+    .kMini.kDis { color: #b8860b; }
+
+    .shareCap { font-size: 11px; color: #7a8b6a; margin: 4px 0 3px; }
+    .shareBar {
+      display: flex;
+      height: 26px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #cfe0c4;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .shareBar div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      min-width: 0;
+      overflow: hidden;
+      transition: width .3s ease;
+    }
+    .shareBar .shareAd { background: linear-gradient(90deg, #66bb6a, #43a047); color: #ffffff; }
+    .shareBar .shareSub { background: linear-gradient(90deg, #ffca28, #ffb300); color: #4e342e; }
+    .shareBar .shareIap { background: linear-gradient(90deg, #4dd0c4, #00897b); color: #ffffff; }
+
+    /* ---------- Кокпит (Проход Е.3) ---------- */
+    .monInner code {
+      font-family: "SF Mono", "Consolas", monospace;
+      font-size: 11px;
+      color: #2e7d32;
+      background: #eef4e7;
+      border: 1px solid #cfe0c4;
+      border-radius: 5px;
+      padding: 1px 5px;
+    }
+    .cockpitSess { font-size: 11px; color: #5c7a4a; text-align: right; flex: 1; }
+    .cockpitSess code { font-size: 10px; }
+
+    .ckSection {
+      background: #ffffff;
+      border: 1px solid #d3e4c6;
+      border-radius: 14px;
+      padding: 12px 13px 14px;
+      margin-bottom: 12px;
+    }
+    .ckSection h4 { font-size: 14px; color: #1b5e20; margin-bottom: 6px; }
+    .ckNote { font-size: 11px; color: #5c7a4a; line-height: 1.45; margin-bottom: 10px; }
+    .ckNote.ckWarn, .ckVerdictWhy.ckWarn { color: #c77800; }
+    .ckMini { font-size: 10.5px; color: #6b7d5a; margin-top: 8px; line-height: 1.45; }
+    .ckMini b { color: #33691e; }
+    .ckMini.ckOk { color: #2e7d32; }
+
+    .ckGhost {
+      border: 1px solid #a5d6a7;
+      border-radius: 16px;
+      background: #f1f8e9;
+      color: #558b2f;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 13px;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+    .ckGhost:hover { background: #e8f5e9; }
+    .ckGhost:disabled { opacity: 0.45; cursor: default; }
+
+    .ckExp {
+      border: 1px solid #d8e8cc;
+      border-radius: 10px;
+      padding: 9px 11px;
+      background: #fbfdf8;
+      margin-bottom: 8px;
+    }
+    .ckExpTop { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #1b5e20; }
+    .ckExpId { font-size: 10px; color: #9aad8a; font-family: monospace; }
+    .ckExpMeta { font-size: 10.5px; color: #7a8b6a; margin: 3px 0 7px; }
+    .ckVariants { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ckVar {
+      font-size: 11.5px;
+      padding: 4px 9px;
+      border-radius: 8px;
+      border: 1px solid #d8e8cc;
+      background: #f1f8e9;
+      color: #7a8b6a;
+    }
+    .ckVar.active { border-color: #43a047; color: #1b5e20; background: #e8f5e9; font-weight: 700; }
+    .ckCompareBtn { margin-top: 8px; }
+    .ckCompareOut { margin-top: 8px; }
+
+    .ckGroup { margin-bottom: 10px; }
+    .ckGroupName {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #2e7d32;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #e4eeda;
+      padding-bottom: 3px;
+    }
+    .ckKnob { padding: 6px 8px; border-radius: 8px; border: 1px solid transparent; margin-bottom: 4px; }
+    .ckKnob.edited { border-color: #e0b64a; background: #fff8e1; }
+    .ckKnobLbl { font-size: 12px; color: #33691e; display: flex; flex-direction: column; }
+    .ckKnobHint { font-size: 9.5px; color: #9aad8a; }
+    .ckKnobCtl { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+    .ckRange { flex: 1; min-width: 110px; accent-color: #43a047; }
+    .ckNum {
+      width: 66px;
+      font: inherit;
+      font-size: 12px;
+      color: #b8860b;
+      background: #fffdf5;
+      border: 1px solid #e0b64a;
+      border-radius: 7px;
+      padding: 4px 6px;
+      font-variant-numeric: tabular-nums;
+    }
+    .ckBook { font-size: 10px; color: #9aad8a; white-space: nowrap; }
+    .ckResetOne {
+      font-size: 12px;
+      padding: 3px 8px;
+      background: #f1f8e9;
+      border: 1px solid #a5d6a7;
+      color: #558b2f;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+    .ckResetOne:disabled { opacity: 0.4; cursor: default; }
+
+    .ckRunRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .ckNlabel { font-size: 12px; color: #33691e; display: flex; align-items: center; gap: 8px; }
+    .ckNlabel input { accent-color: #43a047; }
+    .ckNlabel b { color: #b8860b; font-variant-numeric: tabular-nums; min-width: 34px; }
+    .ckRunBtn {
+      font-size: 14px;
+      font-weight: 800;
+      padding: 9px 20px;
+      background: #43a047;
+      border: none;
+      color: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 0 #2e7d32;
+      cursor: pointer;
+    }
+    .ckRunBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
+    .ckRunBtn:disabled { opacity: 0.6; cursor: default; box-shadow: none; }
+    .ckAbToggle { margin-top: 10px; }
+    .ckAbToggle input { accent-color: #43a047; margin-right: 4px; }
+
+    .ckTableWrap { overflow-x: auto; margin: 6px 0; }
+    .ckTable { width: 100%; border-collapse: collapse; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+    .ckTable th {
+      font-size: 10px; text-transform: uppercase; letter-spacing: .03em; color: #8aa07a;
+      text-align: right; padding: 4px 6px; border-bottom: 1px solid #d8e8cc;
+    }
+    .ckTable th:first-child { text-align: left; }
+    .ckTable td { text-align: right; padding: 3px 6px; border-bottom: 1px solid #eef4e7; color: #33691e; }
+    .ckTable td:first-child { text-align: left; color: #5c7a4a; }
+    .ckTable td.ok { color: #2e7d32; font-weight: 700; }
+    .ckTable td.near { color: #b8860b; font-weight: 700; }
+    .ckTable td.off { color: #c62828; font-weight: 700; }
+
+    .ckKpiGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+    .ckKpi { border: 1px solid #d8e8cc; border-radius: 10px; padding: 8px 10px; background: #fbfdf8; }
+    .ckKpi.ok { border-color: #81c784; background: #f1f8e9; }
+    .ckKpi.near { border-color: #e0b64a; background: #fff8e1; }
+    .ckKpi.off { border-color: #ef9a9a; background: #fdecea; }
+    .ckKpiV { font-size: 15px; font-weight: 800; color: #1b5e20; font-variant-numeric: tabular-nums; }
+    .ckKpi.ok .ckKpiV { color: #2e7d32; }
+    .ckKpi.near .ckKpiV { color: #b8860b; }
+    .ckKpi.off .ckKpiV { color: #c62828; }
+    .ckKpiL { font-size: 11px; color: #33691e; margin-top: 2px; }
+    .ckKpiS { font-size: 9.5px; color: #9aad8a; }
+
+    .ckFlags {
+      margin-top: 10px; border: 1px solid #e0b64a; border-radius: 10px;
+      padding: 8px 10px 8px 12px; background: #fff8e1; font-size: 11px; color: #7a5c00;
+    }
+    .ckFlags b { color: #b8860b; }
+    .ckFlags ul { margin: 5px 0 0 14px; }
+    .ckFlags li { margin-bottom: 4px; line-height: 1.45; }
+
+    .ckGateCtl { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center; }
+    .ckGateCtl label { font-size: 11.5px; color: #33691e; display: flex; align-items: center; gap: 5px; }
+    .ckGateCtl select, .ckGateCtl input {
+      font: inherit; font-size: 12px; color: #1b5e20;
+      background: #fffdf5; border: 1px solid #cfe0c4; border-radius: 7px; padding: 4px 7px;
+    }
+    .ckGateCtl input { width: 76px; color: #b8860b; }
+    .ckBand { font-weight: 800; }
+    .ckBand.kill { color: #c62828; }
+    .ckBand.iterate { color: #b8860b; }
+    .ckBand.scale { color: #2e7d32; }
+    .ckKillTxt { color: #c62828; }
+
+    .ckVerdict { margin-top: 12px; border-radius: 12px; padding: 12px 14px; border: 1px solid #cfe0c4; background: #fbfdf8; }
+    .ckVerdict.kill { border-color: #ef9a9a; background: #fdecea; }
+    .ckVerdict.iterate { border-color: #e0b64a; background: #fff8e1; }
+    .ckVerdict.scale { border-color: #81c784; background: #f1f8e9; }
+    .ckVerdictTop { font-size: 15px; color: #1b5e20; margin-bottom: 5px; }
+    .ckVerdict.kill .ckVerdictTop b { color: #c62828; }
+    .ckVerdict.iterate .ckVerdictTop b { color: #b8860b; }
+    .ckVerdict.scale .ckVerdictTop b { color: #2e7d32; }
+    .ckVerdictWhy { font-size: 11.5px; color: #5c7a4a; line-height: 1.5; margin-top: 4px; }
+    .ckVerdict .ckGhost { margin-top: 8px; margin-right: 6px; }
+
+    .ckSens { margin-top: 12px; border: 1px solid #b39ddb; border-radius: 12px; padding: 10px 12px; background: #f6f3fb; }
+    .ckSensTitle { font-size: 13px; font-weight: 800; color: #5e35b1; margin-bottom: 4px; }
+    .ckSensNote { font-size: 10.5px; color: #6a5a8a; line-height: 1.45; margin: 4px 0; }
+    .ckSensNote b { color: #4527a0; }
+    .ckSensTable { margin: 6px 0; }
+
+    /* ---- A/B-группы в дашборде монетизации ---- */
+    .abStrip { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+    .abChip {
+      font-size: 11px; font-weight: 700; color: #1b5e20;
+      background: #e8f5e9; border: 1px solid #81c784; border-radius: 8px;
+      padding: 4px 9px; display: flex; flex-direction: column; line-height: 1.25;
+    }
+    .abChip b { color: #2e7d32; font-family: monospace; }
+    .abChipLbl { font-size: 9.5px; font-weight: 600; color: #6b7d5a; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <div id="hud-level">Уровень 1/10</div>
+      <div id="hud-right">
+        <div id="hud-coins" title="Монеты">🪙 <span id="coins-value">0</span></div>
+        <div id="hud-acorns" title="Жёлуди (копилка)">🌰 <span id="acorns-value">0</span></div>
+        <button id="btn-shop" title="Магазин: подписка WordGrove Club, Remove Ads, монеты (СИМУЛЯЦИЯ)">🛒</button>
+        <button id="btn-dash" title="Дашборд монетизации (KPI сессии)">📊</button>
+        <button id="btn-cockpit" title="Soft-launch cockpit (Проход Е.3): симулятор экономики + A/B + тюнинг + гейты">🚀</button>
+        <button id="btn-meta" title="Мета: атлас, дневной, копилка, миссии">🗺️</button>
+        <button id="btn-restart" title="Начать уровень заново">↻</button>
+      </div>
+    </header>
+
+    <main id="playfield">
+      <div id="grid-area">
+        <div id="grid"></div>
+        <div id="toast"></div>
+      </div>
+
+      <div id="current-word">&nbsp;</div>
+
+      <div id="wheel-area">
+        <div class="side-col">
+          <button id="btn-hint" title="Лампа: открыть случайную букву сетки">
+            <span class="icon">💡</span><span class="cost" id="hint-cost">100</span>
+          </button>
+          <button id="btn-rv1" class="hidden" title="Бесплатная Лампа за просмотр рекламы (RV-1, СИМУЛЯЦИЯ)">
+            <span class="icon">📺</span><span class="cost">беспл.</span>
+          </button>
+        </div>
+        <div id="wheel-host"></div>
+        <div class="side-col">
+          <button id="btn-shuffle" title="Перемешать буквы (бесплатно)">
+            <span class="icon">🔀</span>
+          </button>
+          <button id="btn-bonus" title="Найденные бонусные слова">
+            <span class="icon">⭐</span><span class="cost" id="bonus-count">0</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <div id="overlay" class="hidden">
+      <div id="overlay-panel"></div>
+    </div>
+  </div>
+
+  <!-- ============ ПРОХОДЫ Е.2 + Е.3: монетизация (СИМУЛЯЦИЯ) ============ -->
+
+  <!-- Симулированный баннер B-1 (06 §3.3). Прячется при подписке / Remove Ads / на дневном. -->
+  <div id="adBanner" class="hidden">
+    <span class="adBannerTag">СИМУЛЯЦИЯ</span>
+    <span class="adBannerText">Adaptive banner 320×50 · eCPM <b id="adBannerEcpm">…</b></span>
+    <span class="adBannerNet">AppLovin MAX</span>
+  </div>
+
+  <!-- Оверлей-симуляция показа рекламы (наполняет SimAdProvider). -->
+  <div id="adOverlay" class="hidden"></div>
+
+  <!-- Магазин 🛒 (ShopUi), дашборд 📊 (DashboardUi), кокпит 🚀 (CockpitUi). -->
+  <div id="shopScreen" class="hidden"></div>
+  <div id="dashboardScreen" class="hidden"></div>
+  <div id="cockpitScreen" class="hidden"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

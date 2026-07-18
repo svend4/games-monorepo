@@ -12,6 +12,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "games/ad-concepts/block-puzzle/app"],
       "port": 5173
+    },
+    {
+      "name": "orchardpeaks-app-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "games/ad-concepts/solitaire-meta/app"],
+      "port": 5175
+    },
+    {
+      "name": "wordgrove-app-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "games/ad-concepts/word-game/app"],
+      "port": 5176
     }
   ]
 }
