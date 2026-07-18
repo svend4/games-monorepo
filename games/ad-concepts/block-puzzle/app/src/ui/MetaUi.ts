@@ -15,9 +15,31 @@ import type { BoosterController } from '../meta/boosters';
 import { MAP_NODES, MISSION_BONUS, STREAK_REWARDS, type NodeReward } from '../meta/config';
 import { missionDef } from '../meta/missions';
 
+/**
+ * Панель rewarded-офферов мета-экрана (Проход Е.2: RW-3/RW-4, 06 §2.2).
+ * MetaUi владеет DOM, состояние и действия отдаёт монетизация (main.ts).
+ */
+export interface MetaAdPanel {
+  /** Строка статуса «Сегодня rewarded: RW-3 x/2 · RW-4 y/2 …». */
+  statusLine(): string;
+  rw3Enabled(): boolean;
+  rw4Enabled(): boolean;
+  /** RW-3 «Бесплатный бустер (Молот)». */
+  onRw3(): void;
+  /** RW-4 «×2 награда дня (+100🪙)». */
+  onRw4(): void;
+  /** Мета-экран открыт: офферы «показаны» (воронка rewarded, 09 §3). */
+  onShown(): void;
+}
+
 export class MetaUi {
   /** Клик по бустеру в партии — обрабатывает сцена (нужен GameState). */
   onBoosterClick: ((id: BoosterId) => void) | null = null;
+  /** Проход Е.2: клики по бейджам топбара (магазин 🛒 / дашборд 📊). */
+  onShopClick: (() => void) | null = null;
+  onDashClick: (() => void) | null = null;
+  /** Проход Е.2: rewarded-панель мета-экрана (null — секция скрыта). */
+  adPanel: MetaAdPanel | null = null;
 
   private toastTimer: number | null = null;
 
@@ -36,12 +58,18 @@ export class MetaUi {
   /* ============================ МОНТАЖ ============================ */
 
   mount(): void {
-    // Топбар: баланс монет + вход в мету.
+    // Топбар: баланс монет + бейджи магазина/дашборда (Е.2) + вход в мету.
     this.el('metaTopbar').innerHTML =
       '<div class="coinBox"><span class="coinIcon">🪙</span>' +
       '<span class="value" id="coinBal">0</span></div>' +
-      '<button id="openMetaBtn" type="button" class="metaBtn">🗺️ Мета</button>';
+      '<div class="topbarBtns">' +
+      '<button id="openShopBtn" type="button" class="metaBtn" title="Магазин (СИМУЛЯЦИЯ)">🛒</button>' +
+      '<button id="openDashBtn" type="button" class="metaBtn" title="Дашборд монетизации">📊</button>' +
+      '<button id="openMetaBtn" type="button" class="metaBtn">🗺️ Мета</button>' +
+      '</div>';
     this.el('openMetaBtn').addEventListener('click', () => this.openMeta());
+    this.el('openShopBtn').addEventListener('click', () => this.onShopClick?.());
+    this.el('openDashBtn').addEventListener('click', () => this.onDashClick?.());
 
     // Бустер-бар: делегирование кликов по кнопкам.
     this.el('boosterBar').addEventListener('click', (e) => {
@@ -75,11 +103,22 @@ export class MetaUi {
       '<button id="streakClaimBtn" type="button">Получить награду дня</button>' +
       '<button id="simDayBtn" type="button" class="ghostBtn">⏭ Новый день (тест)</button>' +
       '</div></section>' +
+      // Проход Е.2: rewarded-офферы RW-3/RW-4 (06 §2.2) — секция видима,
+      // только если подключена панель монетизации (adPanel).
+      '<section class="metaSection hidden" id="adSection">' +
+      '<h3>📺 Реклама (СИМУЛЯЦИЯ)</h3>' +
+      '<p class="metaNote" id="metaAdStatus"></p>' +
+      '<div class="streakBtns">' +
+      '<button id="rwBoosterBtn" type="button" class="rwBtn">🔨 Бустер за рекламу (RW-3)</button>' +
+      '<button id="rwStreakBtn" type="button" class="rwBtn">🔥 ×2 награда дня (RW-4)</button>' +
+      '</div></section>' +
       '</div>';
 
     this.el('metaCloseBtn').addEventListener('click', () => this.closeMeta());
     this.el('streakClaimBtn').addEventListener('click', () => this.meta.claimStreak());
     this.el('simDayBtn').addEventListener('click', () => this.meta.simNextDay());
+    this.el('rwBoosterBtn').addEventListener('click', () => this.adPanel?.onRw3());
+    this.el('rwStreakBtn').addEventListener('click', () => this.adPanel?.onRw4());
 
     // Делегирование кликов по спискам меты (забрать узел / купить бустер).
     this.el('metaScreen').addEventListener('click', (e) => {
@@ -162,6 +201,8 @@ export class MetaUi {
     this.el('metaScreen').classList.remove('hidden');
     this.meta.ensureMissions();
     this.renderMeta();
+    // Проход Е.2: офферы RW-3/RW-4 «показаны» (воронка rewarded, 09 §3).
+    this.adPanel?.onShown();
   }
 
   closeMeta(): void {
@@ -265,5 +306,16 @@ export class MetaUi {
     claimBtn.textContent = this.meta.streakClaimable()
       ? 'Получить награду дня'
       : 'Награда дня получена';
+
+    // --- Rewarded-панель (Проход Е.2) ---
+    const adSection = this.el('adSection');
+    if (this.adPanel === null) {
+      adSection.classList.add('hidden');
+    } else {
+      adSection.classList.remove('hidden');
+      this.el('metaAdStatus').textContent = this.adPanel.statusLine();
+      (this.el('rwBoosterBtn') as HTMLButtonElement).disabled = !this.adPanel.rw3Enabled();
+      (this.el('rwStreakBtn') as HTMLButtonElement).disabled = !this.adPanel.rw4Enabled();
+    }
   }
 }

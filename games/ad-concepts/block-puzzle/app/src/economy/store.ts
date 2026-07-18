@@ -15,8 +15,9 @@ export interface KeyValueStorage {
   setItem(key: string, value: string): void;
 }
 
-/** localStorage, если доступен; иначе — in-memory заглушка (SSR/тесты/приватный режим). */
-function defaultStorage(): KeyValueStorage {
+/** localStorage, если доступен; иначе — in-memory заглушка (SSR/тесты/приватный режим).
+ * Экспортируется: MonetizeStore (Проход Е.2) использует тот же backend. */
+export function defaultStorage(): KeyValueStorage {
   try {
     if (typeof localStorage !== 'undefined' && localStorage !== null) return localStorage;
   } catch {

@@ -135,6 +135,93 @@
     #streakClaimBtn:disabled { opacity: 0.55; cursor: default; }
     .ghostBtn { font-size: 12px; padding: 9px 12px; border-radius: 10px; background: transparent; border: 1px solid #24324a; color: #8b98a9; }
     .ghostBtn:hover { background: #141a24; }
+
+    /* ==================== ПРОХОД Е.2: ТОПБАР-БЕЙДЖИ ==================== */
+    .topbarBtns { display: flex; gap: 6px; }
+
+    /* Rewarded-кнопки мета-экрана (RW-3/RW-4) */
+    .rwBtn { flex: 1; font-size: 12.5px; font-weight: 700; padding: 9px 10px; border-radius: 10px; background: #1f4d3a; border: 1px solid #2f7a5a; }
+    .rwBtn:hover:not(:disabled) { background: #256047; }
+    .rwBtn:disabled { opacity: 0.5; cursor: default; }
+
+    /* ==================== БАННЕР BAN-1 (СИМУЛЯЦИЯ) ==================== */
+    #adBanner {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      max-width: 430px; width: 100%; margin: 0 auto; box-sizing: border-box;
+      padding: 7px 10px; background: #182130; border-top: 1px solid #24324a;
+      font-size: 11px; color: #8b98a9; white-space: nowrap;
+    }
+    #adBanner .simTag { background: #4a3a10; color: #ffd43b; border: 1px solid #8a5a1a; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+
+    /* ==================== ОВЕРЛЕЙ ПОКАЗА РЕКЛАМЫ (СИМУЛЯЦИЯ) ============ */
+    #adOverlay {
+      position: fixed; inset: 0; z-index: 80; background: rgba(4, 7, 12, 0.94);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .adSimBox {
+      max-width: 340px; width: calc(100% - 40px); text-align: center;
+      background: #101823; border: 1px solid #2c436b; border-radius: 16px;
+      padding: 22px 18px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .adSimBadge { align-self: center; background: #4a3a10; color: #ffd43b; border: 1px solid #8a5a1a; border-radius: 8px; padding: 3px 10px; font-size: 11px; font-weight: 700; }
+    .adSimFormat { font-size: 16px; font-weight: 700; }
+    .adSimTimerWrap { font-size: 26px; font-weight: 700; color: #67e8f9; font-variant-numeric: tabular-nums; }
+    .adSimPitch { font-size: 12px; color: #b8c4d3; line-height: 1.4; }
+    .adSimEcpm { font-size: 11px; color: #7d8b9f; }
+    .adSimBtns { display: flex; gap: 8px; justify-content: center; }
+    #adSimSkip { font-size: 13px; padding: 8px 16px; border-radius: 10px; background: transparent; border: 1px solid #24324a; color: #8b98a9; }
+    #adSimSkip:hover { background: #141a24; }
+    #adSimClaim { font-size: 14px; font-weight: 700; padding: 9px 18px; border-radius: 10px; background: #1f4d3a; border: 1px solid #2f7a5a; }
+    #adSimClaim:hover { background: #256047; }
+
+    /* ==================== МАГАЗИН (🛒) И ДАШБОРД (📊) ==================== */
+    #shopScreen, #dashboardScreen {
+      position: fixed; inset: 0; z-index: 50;
+      background: radial-gradient(120% 100% at 50% 0%, #16202e 0%, #0b0f16 70%);
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
+
+    /* Полка IAP */
+    .iapList { display: flex; flex-direction: column; gap: 8px; }
+    .iapCard { border: 1px solid #24324a; border-radius: 10px; padding: 9px 11px; background: #0e1622; }
+    .iapCard.hot { border-color: #8a5a1a; box-shadow: 0 0 0 1px #6b4413 inset; }
+    .iapCard.owned { opacity: 0.75; border-color: #2f7a5a; }
+    .iapTop { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .iapTitle { font-size: 13.5px; font-weight: 700; }
+    .iapBadge { background: #4a3a10; color: #ffd43b; border: 1px solid #8a5a1a; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .iapDesc { font-size: 11.5px; color: #7d8b9f; margin: 3px 0 8px; line-height: 1.4; }
+    .iapBuy { font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 8px; background: #2a2416; border: 1px solid #8a5a1a; color: #ffd43b; }
+    .iapBuy:hover:not(:disabled) { background: #362f1c; }
+    .iapBuy.done { background: #10231c; border-color: #2f7a5a; color: #69db7c; cursor: default; }
+
+    /* Дашборд: гео-переключатель */
+    .geoSwitch { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .geoCap { font-size: 11px; color: #7d8b9f; }
+    .geoBtn { font-size: 11px; padding: 5px 10px; border-radius: 8px; background: #141a24; border: 1px solid #24324a; color: #b8c4d3; }
+    .geoBtn:hover { background: #1b2534; }
+    .geoBtn.active { border-color: #67e8f9; color: #67e8f9; background: #102530; }
+
+    /* Дашборд: секции и строки KPI */
+    .kSection { border: 1px solid #1e2a3b; border-radius: 10px; padding: 9px 11px; background: #0e1622; margin-bottom: 10px; }
+    .kSection h4 { margin: 0 0 8px; font-size: 12.5px; color: #cdd7e3; }
+    .kHead, .kRow { display: grid; grid-template-columns: 1fr 62px 62px 66px; gap: 6px; align-items: center; }
+    .kHead { font-size: 10px; color: #5c6a7d; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+    .kRow { font-size: 12.5px; padding: 3px 0; border-top: 1px solid #16202e; }
+    .kLabel { color: #b8c4d3; display: flex; flex-direction: column; }
+    .kNote { font-size: 10px; color: #5c6a7d; }
+    .kVal { font-weight: 700; color: #e8edf4; font-variant-numeric: tabular-nums; }
+    .kTgt { font-size: 11.5px; color: #7d8b9f; font-variant-numeric: tabular-nums; }
+    .kchip { font-size: 10px; font-weight: 700; border-radius: 6px; padding: 2px 6px; white-space: nowrap; }
+    .kchip.hit { background: #10231c; color: #69db7c; border: 1px solid #2f7a5a; }
+    .kchip.near { background: #2a2416; color: #ffd43b; border: 1px solid #8a5a1a; }
+    .kchip.low { background: #2a1414; color: #ff8787; border: 1px solid #7a2f2f; }
+    .kMini { font-size: 11px; color: #7d8b9f; margin-top: 6px; line-height: 1.45; }
+    .kMini.kDis { color: #5c6a7d; border-top: 1px dashed #24324a; padding-top: 6px; }
+
+    /* Дашборд: полоса структуры выручки Ad/IAP */
+    .shareBar { display: flex; height: 22px; border-radius: 8px; overflow: hidden; background: #182130; font-size: 10.5px; font-weight: 700; }
+    .shareAd { background: #1c4a63; color: #67e8f9; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
+    .shareIap { background: #4a3a10; color: #ffd43b; display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
   </style>
 </head>
 <body>
@@ -147,9 +234,22 @@
   <!-- Бустер-бар партии: Отмена / Обмен / Молот (наполняет MetaUi). -->
   <div id="boosterBar"></div>
 
+  <!-- Баннер BAN-1 (Проход Е.2, СИМУЛЯЦИЯ): полоса с авто-рефрешем;
+       Remove Ads / подписка прячут её (SimAdProvider.hideBanner). -->
+  <div id="adBanner" class="hidden">
+    <span class="simTag">СИМУЛЯЦИЯ</span>
+    <span>Рекламный баннер · BAN-1</span>
+    <span id="adBannerEcpm"></span>
+  </div>
+
   <!-- Оверлеи меты. -->
   <div id="toast" class="hidden"></div>
   <div id="metaScreen" class="hidden"></div>
+
+  <!-- Оверлеи монетизации (Проход Е.2): магазин, дашборд, показ рекламы. -->
+  <div id="shopScreen" class="hidden"></div>
+  <div id="dashboardScreen" class="hidden"></div>
+  <div id="adOverlay" class="hidden"></div>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

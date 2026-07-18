@@ -21,13 +21,16 @@ import type { Economy } from '../economy/economy';
 import type { Meta } from '../meta/meta';
 import type { BoosterController } from '../meta/boosters';
 import type { MetaUi } from '../ui/MetaUi';
+import type { MonetizeController } from '../monetize/monetize';
 
-/** Сервисы меты (Проход Е.2): экономика, прогрессия, бустеры, DOM-оверлей. */
+/** Сервисы меты (Проход Е.2): экономика, прогрессия, бустеры, DOM-оверлей,
+ * монетизация (interstitial на рестарте + rewarded на экране итога). */
 export interface MetaServices {
   economy: Economy;
   meta: Meta;
   boosters: BoosterController;
   ui: MetaUi;
+  monetize: MonetizeController;
 }
 
 /* ==================== ГЕОМЕТРИЯ (1:1 из прототипа + HUD) ==================== */
@@ -127,6 +130,9 @@ export class GameScene extends Phaser.Scene {
   private overCoinsText!: Phaser.GameObjects.Text;
   private newRecordText!: Phaser.GameObjects.Text;
   private overTimer: Phaser.Time.TimerEvent | null = null;
+  /* Rewarded-кнопки экрана итога (Проход Е.2: RW-1 «Второй шанс», RW-2 «×2 монеты») */
+  private rwReviveBtn!: Phaser.GameObjects.Text;
+  private rwDoubleBtn!: Phaser.GameObjects.Text;
 
   constructor(private readonly services: MetaServices) {
     super('game');
@@ -188,6 +194,9 @@ export class GameScene extends Phaser.Scene {
     // Проход Е.2: сброс счётчиков партии в мете и разрядка бустеров
     this.services.boosters.reset();
     this.services.meta.onNewGame();
+    // Пер-партийные капы rewarded (RW-1/RW-2) снова доступны; экран итога скрыт
+    this.services.monetize.onNewGame();
+    this.services.monetize.setResultOverlayVisible(false);
     this.updateHud();
   }
 
@@ -260,7 +269,56 @@ export class GameScene extends Phaser.Scene {
       this.overCoinsText.setText('+' + end.coins + ' 🪙');
       this.newRecordText.setVisible(isRecord);
       this.overlay.setVisible(true);
+      // Проход Е.2: офферы RW-1/RW-2 «показаны» (воронка 09 §3) + актуализация кнопок
+      this.services.monetize.setResultOverlayVisible(true);
+      this.services.monetize.noteGameOverOffersShown();
+      this.updateResultAdButtons();
     });
+  }
+
+  /* ================= REWARDED НА ЭКРАНЕ ИТОГА (Проход Е.2) ================ */
+
+  /** Доступность кнопок RW-1/RW-2 (капы 06 §2.2) — прозрачность + сериклик в обработчике. */
+  private updateResultAdButtons(): void {
+    const m = this.services.monetize;
+    this.rwReviveBtn.setAlpha(this.state.gameOver && m.canRevive() ? 1 : 0.4);
+    this.rwDoubleBtn.setAlpha(m.canDoubleCoins() ? 1 : 0.4);
+  }
+
+  /** RW-1 «Второй шанс»: досмотрел → оживление той же партии (06 §2.2). */
+  private onReviveClick(): void {
+    const m = this.services.monetize;
+    if (!this.state.gameOver || !m.canRevive()) return;
+    // Прячем экран итога на время показа; неудача — возвращаем обратно.
+    this.overlay.setVisible(false);
+    m.setResultOverlayVisible(false);
+    void m
+      .offerRevive(this.state)
+      .catch(() => false) // показ упал (прод-SDK) → вернём экран итога, не «зависаем»
+      .then((revived) => {
+        if (revived) {
+          this.updateHud();
+        } else {
+          this.overlay.setVisible(true);
+          m.setResultOverlayVisible(true);
+        }
+      });
+  }
+
+  /** RW-2 «×2 монеты за партию»: бонус = заработанному в партии (06 §2.2). */
+  private onDoubleCoinsClick(): void {
+    const m = this.services.monetize;
+    if (!m.canDoubleCoins()) return;
+    void m
+      .offerDoubleCoins()
+      .catch(() => 0) // показ упал (прод-SDK) → без награды, кнопки актуализируем
+      .then((bonus) => {
+        if (bonus > 0) {
+          const earned = this.services.economy.getEarnedThisGame();
+          this.overCoinsText.setText('+' + (earned + bonus) + ' 🪙 (×2)');
+        }
+        this.updateResultAdButtons();
+      });
   }
 
   /* ==================== БУСТЕРЫ В ПАРТИИ (Проход Е.2) ===================== */
@@ -491,56 +549,76 @@ export class GameScene extends Phaser.Scene {
 
   private buildOverlay(): void {
     const bg = this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x0b0f16, 0.85);
-    const title = this.add.text(GAME_W / 2, 168, 'Партия окончена', {
+    const title = this.add.text(GAME_W / 2, 130, 'Партия окончена', {
       fontFamily: FONT, fontSize: '26px', fontStyle: 'bold', color: '#e8edf4'
     }).setOrigin(0.5);
-    this.newRecordText = this.add.text(GAME_W / 2, 202, '🏆 Новый рекорд!', {
+    this.newRecordText = this.add.text(GAME_W / 2, 160, '🏆 Новый рекорд!', {
       fontFamily: FONT, fontSize: '16px', color: '#ffd43b'
     }).setOrigin(0.5);
-    const scoreLabel = this.add.text(GAME_W / 2, 238, 'Очки', {
+    const scoreLabel = this.add.text(GAME_W / 2, 190, 'Очки', {
       fontFamily: FONT, fontSize: '12px', color: '#8b98a9'
     }).setOrigin(0.5);
-    this.overScoreText = this.add.text(GAME_W / 2, 264, '0', {
+    this.overScoreText = this.add.text(GAME_W / 2, 216, '0', {
       fontFamily: FONT, fontSize: '32px', fontStyle: 'bold', color: '#e8edf4'
     }).setOrigin(0.5);
-    const bestLabel = this.add.text(GAME_W / 2, 300, 'Рекорд', {
+    const bestLabel = this.add.text(GAME_W / 2, 250, 'Рекорд', {
       fontFamily: FONT, fontSize: '12px', color: '#8b98a9'
     }).setOrigin(0.5);
-    this.overBestText = this.add.text(GAME_W / 2, 322, '0', {
+    this.overBestText = this.add.text(GAME_W / 2, 272, '0', {
       fontFamily: FONT, fontSize: '20px', color: '#e8edf4'
     }).setOrigin(0.5);
     // Проход Е.2: звёзды партии (04 §2) и монеты за партию (05 §2.1)
-    const starsLabel = this.add.text(GAME_W / 2, 356, 'Звёзды партии', {
+    const starsLabel = this.add.text(GAME_W / 2, 302, 'Звёзды партии', {
       fontFamily: FONT, fontSize: '12px', color: '#8b98a9'
     }).setOrigin(0.5);
-    this.overStarsText = this.add.text(GAME_W / 2, 380, '☆☆☆', {
+    this.overStarsText = this.add.text(GAME_W / 2, 326, '☆☆☆', {
       fontFamily: FONT, fontSize: '22px', color: '#ffd43b'
     }).setOrigin(0.5);
-    const coinsLabel = this.add.text(GAME_W / 2, 412, 'Монеты за партию', {
+    const coinsLabel = this.add.text(GAME_W / 2, 356, 'Монеты за партию', {
       fontFamily: FONT, fontSize: '12px', color: '#8b98a9'
     }).setOrigin(0.5);
-    this.overCoinsText = this.add.text(GAME_W / 2, 434, '+0 🪙', {
+    this.overCoinsText = this.add.text(GAME_W / 2, 378, '+0 🪙', {
       fontFamily: FONT, fontSize: '18px', color: '#ffd43b'
     }).setOrigin(0.5);
-    const againBtn = this.add.text(GAME_W / 2, 486, 'Играть снова', {
+    // Проход Е.2: rewarded-офферы экрана итога (06 §2.2 RW-1/RW-2, СИМУЛЯЦИЯ)
+    this.rwReviveBtn = this.add.text(GAME_W / 2, 416, '💚 Второй шанс (реклама)', {
+      fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#e8edf4',
+      backgroundColor: '#1f4d3a', padding: { x: 16, y: 8 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    this.rwReviveBtn.on('pointerup', () => this.onReviveClick());
+    this.rwDoubleBtn = this.add.text(GAME_W / 2, 454, '💰 ×2 монеты за партию (реклама)', {
+      fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#e8edf4',
+      backgroundColor: '#2a2416', padding: { x: 16, y: 8 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    this.rwDoubleBtn.on('pointerup', () => this.onDoubleCoinsClick());
+    const againBtn = this.add.text(GAME_W / 2, 500, 'Играть снова', {
       fontFamily: FONT, fontSize: '18px', fontStyle: 'bold', color: '#0b0f16',
       backgroundColor: '#4dabf7', padding: { x: 20, y: 10 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    againBtn.on('pointerup', () => this.startGame());
+    // Проход Е.2: рестарт с экрана итога — точка interstitial INT-2 (капы 06 §3);
+    // ручной «↻ Заново» в HUD interstitial не показывает (как в прототипе).
+    againBtn.on('pointerup', () => {
+      void this.services.monetize
+        .showInterstitialIfAllowed()
+        .catch(() => false) // показ упал (прод-SDK) → рестарт всё равно идёт
+        .then(() => this.startGame());
+    });
     // Прямой мостик в мету с экрана итога (как overMetaBtn прототипа)
-    const metaBtn = this.add.text(GAME_W / 2, 536, '🗺️ Карта и награды', {
+    const metaBtn = this.add.text(GAME_W / 2, 544, '🗺️ Карта и награды', {
       fontFamily: FONT, fontSize: '14px', color: '#e8edf4',
       backgroundColor: '#17233a', padding: { x: 16, y: 8 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     metaBtn.on('pointerup', () => {
       this.overlay.setVisible(false);
+      this.services.monetize.setResultOverlayVisible(false);
       this.services.ui.openMeta();
     });
 
     this.overlay = this.add.container(0, 0, [
       bg, title, this.newRecordText, scoreLabel, this.overScoreText,
       bestLabel, this.overBestText, starsLabel, this.overStarsText,
-      coinsLabel, this.overCoinsText, againBtn, metaBtn
+      coinsLabel, this.overCoinsText, this.rwReviveBtn, this.rwDoubleBtn,
+      againBtn, metaBtn
     ]).setDepth(10).setVisible(false);
   }
 

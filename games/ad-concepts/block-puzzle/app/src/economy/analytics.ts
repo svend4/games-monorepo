@@ -13,7 +13,10 @@ const LOUD: ReadonlySet<string> = new Set([
   'streak_change',
   'booster_used',
   'season_progress',
-  'game_end'
+  'game_end',
+  // Проход Е.2 (монетизация): покупки и недопоказы interstitial
+  'iap_completed',
+  'ad_capped'
 ]);
 
 export class Analytics {
