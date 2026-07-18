@@ -568,8 +568,8 @@ button:active { transform: translateY(1px); }
 .adSimClaim:hover { background: #256047; }
 .adSimSkip.hidden, .adSimClaim.hidden { display: none; }
 
-/* ---- Общий контейнер экранов монетизации (IAP + дашборд) ---- */
-#iapScreen, #dashboardScreen {
+/* ---- Общий контейнер экранов монетизации (IAP + дашборд + кокпит) ---- */
+#iapScreen, #dashboardScreen, #cockpitScreen {
   position: fixed;
   inset: 0;
   z-index: 45;
@@ -577,7 +577,7 @@ button:active { transform: translateY(1px); }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-#iapScreen.hidden, #dashboardScreen.hidden { display: none; }
+#iapScreen.hidden, #dashboardScreen.hidden, #cockpitScreen.hidden { display: none; }
 .monInner {
   max-width: 460px;
   margin: 0 auto;
@@ -724,3 +724,208 @@ button:active { transform: translateY(1px); }
 }
 .shareBar .shareAd { background: linear-gradient(90deg, #22d3ee, #2c8ea3); color: #04222a; }
 .shareBar .shareIap { background: linear-gradient(90deg, #b8862a, #ffd43b); color: #2a1f05; }
+
+/* ============================================================================
+ * ПРОХОД Г — soft-launch cockpit (симулятор + A/B + тюнинг + гейты)
+ * ========================================================================== */
+
+.monInner code {
+  font-family: "SF Mono", "Consolas", monospace;
+  font-size: 11px;
+  color: #a5f3fc;
+  background: #0e1622;
+  border: 1px solid #24324a;
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.cockpitSess { font-size: 11px; color: #8b98a9; text-align: right; flex: 1; }
+
+.ckSection {
+  background: #101823;
+  border: 1px solid #1e2a3b;
+  border-radius: 14px;
+  padding: 12px 13px 14px;
+  margin-bottom: 12px;
+}
+.ckSection h4 { font-size: 14px; color: #cdd7e3; margin-bottom: 6px; }
+.ckNote { font-size: 11px; color: #7d8b9f; line-height: 1.45; margin-bottom: 10px; }
+.ckNote.ckWarn, .ckVerdictWhy.ckWarn { color: #ffb454; }
+.ckMini { font-size: 10.5px; color: #8b98a9; margin-top: 8px; line-height: 1.45; }
+.ckMini b { color: #cdd7e3; }
+.ckMini.ckOk { color: #69db7c; }
+
+/* ---- A/B ---- */
+.ckExp {
+  border: 1px solid #24324a;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: #0e1622;
+  margin-bottom: 8px;
+}
+.ckExpTop { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.ckExpId { font-size: 10px; color: #6b7a8d; font-family: monospace; }
+.ckExpMeta { font-size: 10.5px; color: #7d8b9f; margin: 3px 0 7px; }
+.ckVariants { display: flex; flex-wrap: wrap; gap: 6px; }
+.ckVar {
+  font-size: 11.5px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  border: 1px solid #24324a;
+  background: #131a25;
+  color: #8b98a9;
+}
+.ckVar.active { border-color: #2c8ea3; color: #a5f3fc; background: #102530; font-weight: 600; }
+.ckCompareBtn { margin-top: 8px; font-size: 11.5px; padding: 6px 12px; }
+.ckCompareOut { margin-top: 8px; }
+
+/* ---- Панель тюнинга ---- */
+.ckGroup { margin-bottom: 10px; }
+.ckGroupName {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #67e8f9;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #1a2534;
+  padding-bottom: 3px;
+}
+.ckKnob {
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  margin-bottom: 4px;
+}
+.ckKnob.edited { border-color: #6b5518; background: #171308; }
+.ckKnobLbl { font-size: 12px; color: #cdd7e3; display: flex; flex-direction: column; }
+.ckKnobHint { font-size: 9.5px; color: #6b7a8d; }
+.ckKnobCtl { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+.ckRange { flex: 1; min-width: 110px; accent-color: #2c8ea3; }
+.ckNum {
+  width: 66px;
+  font: inherit;
+  font-size: 12px;
+  color: #ffd43b;
+  background: #0e1622;
+  border: 1px solid #2c3a50;
+  border-radius: 7px;
+  padding: 4px 6px;
+  font-variant-numeric: tabular-nums;
+}
+.ckBook { font-size: 10px; color: #7d8b9f; white-space: nowrap; }
+.ckResetOne {
+  font-size: 12px;
+  padding: 3px 8px;
+  background: #17233a;
+  border-color: #2c436b;
+  border-radius: 7px;
+}
+.ckResetOne:disabled { opacity: 0.4; cursor: default; }
+
+/* ---- Прогон ---- */
+.ckRunRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ckNlabel { font-size: 12px; color: #b8c4d3; display: flex; align-items: center; gap: 8px; }
+.ckNlabel input { accent-color: #2c8ea3; }
+.ckNlabel b { color: #ffd43b; font-variant-numeric: tabular-nums; min-width: 34px; }
+.ckRunBtn {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 9px 20px;
+  background: #1f4d3a;
+  border-color: #2f7a5a;
+  color: #cfe8d8;
+}
+.ckRunBtn:hover { background: #256047; }
+.ckRunBtn:disabled { opacity: 0.6; cursor: default; }
+
+/* ---- Таблицы ---- */
+.ckTableWrap { overflow-x: auto; margin: 4px 0; }
+.ckTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+.ckTable th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: #6b7a8d;
+  text-align: right;
+  padding: 4px 6px;
+  border-bottom: 1px solid #24324a;
+}
+.ckTable th:first-child { text-align: left; }
+.ckTable td { text-align: right; padding: 3px 6px; border-bottom: 1px solid #141d29; color: #cdd7e3; }
+.ckTable td:first-child { text-align: left; color: #8b98a9; }
+.ckTable td.ok { color: #69db7c; }
+.ckTable td.near { color: #ffd43b; }
+.ckTable td.off { color: #ff8787; }
+
+/* ---- KPI-плитки ---- */
+.ckKpiGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+.ckKpi {
+  border: 1px solid #24324a;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #0e1622;
+}
+.ckKpi.ok { border-color: #2f7a5a; }
+.ckKpi.near { border-color: #6b5518; }
+.ckKpi.off { border-color: #7a2f2f; }
+.ckKpiV { font-size: 16px; font-weight: 700; color: #e6edf3; font-variant-numeric: tabular-nums; }
+.ckKpi.ok .ckKpiV { color: #69db7c; }
+.ckKpi.near .ckKpiV { color: #ffd43b; }
+.ckKpi.off .ckKpiV { color: #ff8787; }
+.ckKpiL { font-size: 11px; color: #cdd7e3; margin-top: 1px; }
+.ckKpiS { font-size: 9.5px; color: #6b7a8d; }
+
+/* ---- Красные флаги ---- */
+.ckFlags {
+  margin-top: 10px;
+  border: 1px solid #7a2f2f;
+  border-radius: 10px;
+  padding: 8px 10px 8px 12px;
+  background: #1c1113;
+  font-size: 11px;
+  color: #ffb0b0;
+}
+.ckFlags b { color: #ff8787; }
+.ckFlags ul { margin: 5px 0 0 14px; }
+.ckFlags li { margin-bottom: 3px; line-height: 1.4; }
+
+/* ---- Гейты ---- */
+.ckGateCtl { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center; }
+.ckGateCtl label { font-size: 11.5px; color: #b8c4d3; display: flex; align-items: center; gap: 5px; }
+.ckGateCtl select, .ckGateCtl input {
+  font: inherit;
+  font-size: 12px;
+  color: #e6edf3;
+  background: #0e1622;
+  border: 1px solid #2c3a50;
+  border-radius: 7px;
+  padding: 4px 7px;
+}
+.ckGateCtl input { width: 72px; color: #ffd43b; }
+.ckBand { font-weight: 700; }
+.ckBand.kill { color: #ff8787; }
+.ckBand.iterate { color: #ffd43b; }
+.ckBand.scale { color: #69db7c; }
+
+.ckVerdict {
+  margin-top: 10px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid #2c3a50;
+  background: #0e1622;
+}
+.ckVerdict.kill { border-color: #7a2f2f; background: #1c1113; }
+.ckVerdict.iterate { border-color: #6b5518; background: #171308; }
+.ckVerdict.scale { border-color: #2f7a5a; background: #0f1c17; }
+.ckVerdictTop { font-size: 15px; margin-bottom: 5px; }
+.ckVerdict.kill .ckVerdictTop b { color: #ff8787; }
+.ckVerdict.iterate .ckVerdictTop b { color: #ffd43b; }
+.ckVerdict.scale .ckVerdictTop b { color: #69db7c; }
+.ckVerdictWhy { font-size: 11.5px; color: #b8c4d3; line-height: 1.5; margin-top: 4px; }
+.ckVerdict button { margin-top: 8px; margin-right: 6px; font-size: 11.5px; padding: 6px 12px; }
+.ckAbToggle { margin-top: 9px; font-size: 11.5px; color: #b8c4d3; align-items: center; }
+.ckAbToggle input { accent-color: #2c8ea3; margin-right: 4px; }

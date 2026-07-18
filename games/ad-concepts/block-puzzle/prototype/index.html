@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Block Surge — прототип (Проходы А + Б + В)</title>
+  <title>Block Surge — прототип (Проходы А + Б + В + Г)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,6 +16,7 @@
       <div class="topBtns">
         <button id="openShopBtn" type="button" class="iconBtn" title="Магазин (СИМУЛЯЦИЯ)">🛒</button>
         <button id="openDashBtn" type="button" class="iconBtn" title="Дашборд монетизации">📊</button>
+        <button id="openCockpitBtn" type="button" class="iconBtn" title="Soft-launch cockpit (Проход Г)">🚀</button>
         <button id="openMetaBtn" type="button" class="metaBtn">🗺️ Мета</button>
       </div>
     </div>
@@ -168,6 +169,21 @@
     </div>
   </div>
 
+  <!-- ============ ПРОХОД Г: soft-launch cockpit (симулятор + A/B + гейты) ============ -->
+  <div id="cockpitScreen" class="hidden">
+    <div class="monInner">
+      <div class="monHeader">
+        <button id="cockpitCloseBtn" type="button" class="metaClose">← Назад</button>
+        <div class="cockpitSess" id="cockpitSess"></div>
+      </div>
+      <h3 class="monTitle">🚀 Soft-launch cockpit <span class="simTag">Проход Г</span></h3>
+      <p class="monNote">Симулятор экономики (приложение 12) + A/B-фреймворк + панель тюнинга ручек +
+        гейты go/iterate/kill (09 §5.4, 10 P7). Симулятор ДЕТЕРМИНИРОВАН (свой seeded-RNG), тот же
+        расчёт в браузере и в <code>node sim.js</code>. Ничего в игре не меняет — офлайн-инструмент.</p>
+      <div id="cockpitBody"></div>
+    </div>
+  </div>
+
   <!-- Аналитический дашборд KPI сессии (09). -->
   <div id="dashboardScreen" class="hidden">
     <div class="monInner">
@@ -184,10 +200,13 @@
   </div>
 
   <!-- Порядок слоёв: economy.js (Store/Economy/Analytics) → monetize.js + analytics.js
-       (Проход В, ПОСЛЕ economy.js и ПЕРЕД game.js) → meta.js (Проход Б) → game.js (ядро). -->
+       (Проход В) → sim.js + experiments.js (Проход Г: симулятор + кокпит, ПОСЛЕ
+       analytics.js и ПЕРЕД game.js) → meta.js (Проход Б) → game.js (ядро). -->
   <script src="economy.js"></script>
   <script src="monetize.js"></script>
   <script src="analytics.js"></script>
+  <script src="sim.js"></script>
+  <script src="experiments.js"></script>
   <script src="meta.js"></script>
   <script src="game.js"></script>
 </body>

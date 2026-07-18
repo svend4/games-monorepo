@@ -943,6 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Meta.init();                                   // мета-экран: делегирование, вкладки
   if (window.Monetize)  Monetize.init();         // Проход В: реклама/IAP-заглушки, полка
   if (window.Dashboard) Dashboard.init();        // Проход В: KPI-дашборд сессии
+  if (window.Cockpit)   Cockpit.init();          // Проход Г: soft-launch кокпит (симулятор/A-B/гейты)
   Economy.subscribe(syncHud);                    // изменения валют → обновление HUD
 
   $('btn-restart').addEventListener('click', newGame);

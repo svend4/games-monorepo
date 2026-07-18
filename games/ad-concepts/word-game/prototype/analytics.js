@@ -76,6 +76,22 @@ window.Dashboard = (function () {
 
     var h = '';
 
+    // --- Блок 0: назначенные A/B-варианты (Проход Г, 09 §1.2 ab_groups[]) ---
+    if (window.Experiments && typeof window.Experiments.getAssignments === 'function') {
+      var asg = window.Experiments.getAssignments();
+      h += '<div class="kSection"><h4>A/B-группы этой сессии (Проход Г, 09 §1.2)</h4>';
+      h += '<div class="kMini">Детерминированное назначение по хешу session-id (fnv1a32). '
+        + 'В проде эти <code>ab_groups[]</code> уходят в каждое событие трекинга.</div>';
+      h += '<div class="abStrip">';
+      asg.forEach(function (a) {
+        h += '<span class="abChip"><b>' + a.exp + '</b> = ' + a.variant + '<span class="abChipLbl">' + a.label + '</span></span>';
+      });
+      h += '</div>';
+      h += '<div class="kMini">Открыть 🚀 <b>Soft-launch cockpit</b> — симулятор экономики, панель тюнинга и '
+        + 'гейты go/iterate/kill.</div>';
+      h += '</div>';
+    }
+
     // --- Блок 1: показы по форматам (impressions/DAU) ---
     h += '<div class="kSection"><h4>Показы по форматам · impressions/DAU (09 §3)</h4>';
     h += '<div class="kHead"><span>Формат</span><span>Сессия</span><span>Цель</span><span></span></div>';

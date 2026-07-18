@@ -15,6 +15,7 @@
         <div id="hud-acorns" title="Жёлуди (копилка)">🌰 <span id="acorns-value">0</span></div>
         <button id="btn-shop" title="Магазин: подписка WordGrove Club, Remove Ads, монеты (СИМУЛЯЦИЯ)">🛒</button>
         <button id="btn-dash" title="Дашборд монетизации (KPI сессии)">📊</button>
+        <button id="btn-cockpit" title="Soft-launch cockpit (Проход Г): симулятор экономики + A/B + тюнинг + гейты">🚀</button>
         <button id="btn-meta" title="Мета: атлас, дневной, копилка, миссии">🗺️</button>
         <button id="btn-restart" title="Начать уровень заново">↻</button>
       </div>
@@ -115,6 +116,22 @@
     </div>
   </div>
 
+  <!-- ============ ПРОХОД Г: soft-launch cockpit (симулятор + A/B + тюнинг + гейты) ============ -->
+  <div id="cockpitScreen" class="hidden">
+    <div class="monInner">
+      <div class="monHeader">
+        <button id="cockpitCloseBtn" type="button" class="mon-close">← В игру</button>
+        <div class="cockpitSess" id="cockpitSess"></div>
+      </div>
+      <h3 class="monTitle">🚀 Soft-launch cockpit <span class="simTag">Проход Г</span></h3>
+      <p class="monNote">Симулятор экономики (приложение 12) + A/B-фреймворк + панель тюнинга ручек +
+        гейты go/iterate/kill (09 §4.3). Симулятор ДЕТЕРМИНИРОВАН (свой seeded-RNG, INV-S2): тот же
+        расчёт в браузере и в <code>node sim.js</code>. Кокпит — офлайн-инструмент прод-команды,
+        в саму игру он не вмешивается (не трогает ядро/экономику/монетизацию/сейв).</p>
+      <div id="cockpitBody"></div>
+    </div>
+  </div>
+
   <!-- Аналитический дашборд KPI сессии (09). -->
   <div id="dashboardScreen" class="hidden">
     <div class="monInner">
@@ -131,12 +148,15 @@
     </div>
   </div>
 
-  <!-- Порядок слоёв: economy.js (Economy/Store) → monetize.js + analytics.js (Проход В,
-       ПОСЛЕ economy.js и ПЕРЕД meta.js/game.js) → meta.js (Проход Б) → game.js (ядро). -->
+  <!-- Порядок слоёв: economy.js (Economy/Store) → monetize.js + analytics.js (Проход В) →
+       sim.js + experiments.js (Проход Г: симулятор + кокпит, ПОСЛЕ analytics.js и ПЕРЕД
+       meta.js/game.js) → meta.js (Проход Б) → game.js (ядро). sim.js совместим с node. -->
   <script src="levels.js"></script>
   <script src="economy.js"></script>
   <script src="monetize.js"></script>
   <script src="analytics.js"></script>
+  <script src="sim.js"></script>
+  <script src="experiments.js"></script>
   <script src="meta.js"></script>
   <script src="game.js"></script>
 </body>

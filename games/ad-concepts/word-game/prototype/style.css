@@ -644,7 +644,7 @@ body {
 .adSimClaim:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
 
 /* ---------- Общий контейнер экранов монетизации ---------- */
-#shopScreen, #dashboardScreen {
+#shopScreen, #dashboardScreen, #cockpitScreen {
   position: fixed;
   inset: 0;
   z-index: 45;
@@ -652,6 +652,7 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+#cockpitScreen.hidden { display: none; }
 .monInner {
   max-width: 480px;
   margin: 0 auto;
@@ -989,3 +990,211 @@ body {
 .shareBar .shareAd { background: linear-gradient(90deg, #66bb6a, #43a047); color: #ffffff; }
 .shareBar .shareSub { background: linear-gradient(90deg, #ffca28, #ffb300); color: #4e342e; }
 .shareBar .shareIap { background: linear-gradient(90deg, #4dd0c4, #00897b); color: #ffffff; }
+
+/* ============================================================================
+ * ПРОХОД Г — soft-launch cockpit (симулятор + A/B + тюнинг + гейты)
+ * Светлая палитра WordGrove (аудитория 45+): зелёный/янтарный, высокий контраст.
+ * ========================================================================== */
+
+.monInner code {
+  font-family: "SF Mono", "Consolas", monospace;
+  font-size: 11px;
+  color: #2e7d32;
+  background: #eef4e7;
+  border: 1px solid #cfe0c4;
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.cockpitSess { font-size: 11px; color: #5c7a4a; text-align: right; flex: 1; }
+.cockpitSess code { font-size: 10px; }
+
+.ckSection {
+  background: #ffffff;
+  border: 1px solid #d3e4c6;
+  border-radius: 14px;
+  padding: 12px 13px 14px;
+  margin-bottom: 12px;
+}
+.ckSection h4 { font-size: 14px; color: #1b5e20; margin-bottom: 6px; }
+.ckNote { font-size: 11px; color: #5c7a4a; line-height: 1.45; margin-bottom: 10px; }
+.ckNote.ckWarn, .ckVerdictWhy.ckWarn { color: #c77800; }
+.ckMini { font-size: 10.5px; color: #6b7d5a; margin-top: 8px; line-height: 1.45; }
+.ckMini b { color: #33691e; }
+.ckMini.ckOk { color: #2e7d32; }
+
+.ckGhost {
+  border: 1px solid #a5d6a7;
+  border-radius: 16px;
+  background: #f1f8e9;
+  color: #558b2f;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 13px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.ckGhost:hover { background: #e8f5e9; }
+.ckGhost:disabled { opacity: 0.45; cursor: default; }
+
+/* ---- A/B ---- */
+.ckExp {
+  border: 1px solid #d8e8cc;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: #fbfdf8;
+  margin-bottom: 8px;
+}
+.ckExpTop { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #1b5e20; }
+.ckExpId { font-size: 10px; color: #9aad8a; font-family: monospace; }
+.ckExpMeta { font-size: 10.5px; color: #7a8b6a; margin: 3px 0 7px; }
+.ckVariants { display: flex; flex-wrap: wrap; gap: 6px; }
+.ckVar {
+  font-size: 11.5px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  border: 1px solid #d8e8cc;
+  background: #f1f8e9;
+  color: #7a8b6a;
+}
+.ckVar.active { border-color: #43a047; color: #1b5e20; background: #e8f5e9; font-weight: 700; }
+.ckCompareBtn { margin-top: 8px; }
+.ckCompareOut { margin-top: 8px; }
+
+/* ---- Панель тюнинга ---- */
+.ckGroup { margin-bottom: 10px; }
+.ckGroupName {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #2e7d32;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #e4eeda;
+  padding-bottom: 3px;
+}
+.ckKnob { padding: 6px 8px; border-radius: 8px; border: 1px solid transparent; margin-bottom: 4px; }
+.ckKnob.edited { border-color: #e0b64a; background: #fff8e1; }
+.ckKnobLbl { font-size: 12px; color: #33691e; display: flex; flex-direction: column; }
+.ckKnobHint { font-size: 9.5px; color: #9aad8a; }
+.ckKnobCtl { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+.ckRange { flex: 1; min-width: 110px; accent-color: #43a047; }
+.ckNum {
+  width: 66px;
+  font: inherit;
+  font-size: 12px;
+  color: #b8860b;
+  background: #fffdf5;
+  border: 1px solid #e0b64a;
+  border-radius: 7px;
+  padding: 4px 6px;
+  font-variant-numeric: tabular-nums;
+}
+.ckBook { font-size: 10px; color: #9aad8a; white-space: nowrap; }
+.ckResetOne {
+  font-size: 12px;
+  padding: 3px 8px;
+  background: #f1f8e9;
+  border: 1px solid #a5d6a7;
+  color: #558b2f;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.ckResetOne:disabled { opacity: 0.4; cursor: default; }
+
+/* ---- Прогон ---- */
+.ckRunRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ckNlabel { font-size: 12px; color: #33691e; display: flex; align-items: center; gap: 8px; }
+.ckNlabel input { accent-color: #43a047; }
+.ckNlabel b { color: #b8860b; font-variant-numeric: tabular-nums; min-width: 34px; }
+.ckRunBtn {
+  font-size: 14px;
+  font-weight: 800;
+  padding: 9px 20px;
+  background: #43a047;
+  border: none;
+  color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 0 #2e7d32;
+  cursor: pointer;
+}
+.ckRunBtn:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
+.ckRunBtn:disabled { opacity: 0.6; cursor: default; box-shadow: none; }
+.ckAbToggle { margin-top: 10px; }
+.ckAbToggle input { accent-color: #43a047; margin-right: 4px; }
+
+/* ---- Таблицы ---- */
+.ckTableWrap { overflow-x: auto; margin: 6px 0; }
+.ckTable { width: 100%; border-collapse: collapse; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.ckTable th {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .03em; color: #8aa07a;
+  text-align: right; padding: 4px 6px; border-bottom: 1px solid #d8e8cc;
+}
+.ckTable th:first-child { text-align: left; }
+.ckTable td { text-align: right; padding: 3px 6px; border-bottom: 1px solid #eef4e7; color: #33691e; }
+.ckTable td:first-child { text-align: left; color: #5c7a4a; }
+.ckTable td.ok { color: #2e7d32; font-weight: 700; }
+.ckTable td.near { color: #b8860b; font-weight: 700; }
+.ckTable td.off { color: #c62828; font-weight: 700; }
+
+/* ---- KPI-плитки ---- */
+.ckKpiGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+.ckKpi { border: 1px solid #d8e8cc; border-radius: 10px; padding: 8px 10px; background: #fbfdf8; }
+.ckKpi.ok { border-color: #81c784; background: #f1f8e9; }
+.ckKpi.near { border-color: #e0b64a; background: #fff8e1; }
+.ckKpi.off { border-color: #ef9a9a; background: #fdecea; }
+.ckKpiV { font-size: 15px; font-weight: 800; color: #1b5e20; font-variant-numeric: tabular-nums; }
+.ckKpi.ok .ckKpiV { color: #2e7d32; }
+.ckKpi.near .ckKpiV { color: #b8860b; }
+.ckKpi.off .ckKpiV { color: #c62828; }
+.ckKpiL { font-size: 11px; color: #33691e; margin-top: 2px; }
+.ckKpiS { font-size: 9.5px; color: #9aad8a; }
+
+/* ---- Находки-флаги ---- */
+.ckFlags {
+  margin-top: 10px; border: 1px solid #e0b64a; border-radius: 10px;
+  padding: 8px 10px 8px 12px; background: #fff8e1; font-size: 11px; color: #7a5c00;
+}
+.ckFlags b { color: #b8860b; }
+.ckFlags ul { margin: 5px 0 0 14px; }
+.ckFlags li { margin-bottom: 4px; line-height: 1.45; }
+
+/* ---- Гейты ---- */
+.ckGateCtl { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center; }
+.ckGateCtl label { font-size: 11.5px; color: #33691e; display: flex; align-items: center; gap: 5px; }
+.ckGateCtl select, .ckGateCtl input {
+  font: inherit; font-size: 12px; color: #1b5e20;
+  background: #fffdf5; border: 1px solid #cfe0c4; border-radius: 7px; padding: 4px 7px;
+}
+.ckGateCtl input { width: 76px; color: #b8860b; }
+.ckBand { font-weight: 800; }
+.ckBand.kill { color: #c62828; }
+.ckBand.iterate { color: #b8860b; }
+.ckBand.scale { color: #2e7d32; }
+.ckKillTxt { color: #c62828; }
+
+.ckVerdict { margin-top: 12px; border-radius: 12px; padding: 12px 14px; border: 1px solid #cfe0c4; background: #fbfdf8; }
+.ckVerdict.kill { border-color: #ef9a9a; background: #fdecea; }
+.ckVerdict.iterate { border-color: #e0b64a; background: #fff8e1; }
+.ckVerdict.scale { border-color: #81c784; background: #f1f8e9; }
+.ckVerdictTop { font-size: 15px; color: #1b5e20; margin-bottom: 5px; }
+.ckVerdict.kill .ckVerdictTop b { color: #c62828; }
+.ckVerdict.iterate .ckVerdictTop b { color: #b8860b; }
+.ckVerdict.scale .ckVerdictTop b { color: #2e7d32; }
+.ckVerdictWhy { font-size: 11.5px; color: #5c7a4a; line-height: 1.5; margin-top: 4px; }
+.ckVerdict .ckGhost { margin-top: 8px; margin-right: 6px; }
+
+/* ---- Виджет чувствительности подписки ---- */
+.ckSens { margin-top: 12px; border: 1px solid #b39ddb; border-radius: 12px; padding: 10px 12px; background: #f6f3fb; }
+.ckSensTitle { font-size: 13px; font-weight: 800; color: #5e35b1; margin-bottom: 4px; }
+.ckSensNote { font-size: 10.5px; color: #6a5a8a; line-height: 1.45; margin: 4px 0; }
+.ckSensNote b { color: #4527a0; }
+.ckSensTable { margin: 6px 0; }
+
+/* ---- A/B-группы в дашборде монетизации (Проход Г) ---- */
+.abStrip { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.abChip {
+  font-size: 11px; font-weight: 700; color: #1b5e20;
+  background: #e8f5e9; border: 1px solid #81c784; border-radius: 8px;
+  padding: 4px 9px; display: flex; flex-direction: column; line-height: 1.25;
+}
+.abChip b { color: #2e7d32; font-family: monospace; }
+.abChipLbl { font-size: 9.5px; font-weight: 600; color: #6b7d5a; }
