@@ -14,6 +14,8 @@ import type { Meta } from '../meta/meta';
 import type { BoosterController } from '../meta/boosters';
 import { MAP_NODES, MISSION_BONUS, STREAK_REWARDS, type NodeReward } from '../meta/config';
 import { missionDef } from '../meta/missions';
+import { getLocale, setLocale, t, type Locale } from '../i18n';
+import { setThemeMode, themeMode, type ThemeMode } from './theme';
 
 /**
  * Панель rewarded-офферов мета-экрана (Проход Е.2: RW-3/RW-4, 06 §2.2).
@@ -40,6 +42,8 @@ export class MetaUi {
   onDashClick: (() => void) | null = null;
   /** Проход Е.3: клик по бейджу soft-launch кокпита (🚀). */
   onCockpitClick: (() => void) | null = null;
+  /** Проход Ж.1: «Пройти обучение снова» (настройки) — запуск OnboardingUi. */
+  onFtueReplay: (() => void) | null = null;
   /** Проход Е.2: rewarded-панель мета-экрана (null — секция скрыта). */
   adPanel: MetaAdPanel | null = null;
 
@@ -65,10 +69,10 @@ export class MetaUi {
       '<div class="coinBox"><span class="coinIcon">🪙</span>' +
       '<span class="value" id="coinBal">0</span></div>' +
       '<div class="topbarBtns">' +
-      '<button id="openShopBtn" type="button" class="metaBtn" title="Магазин (СИМУЛЯЦИЯ)">🛒</button>' +
-      '<button id="openDashBtn" type="button" class="metaBtn" title="Дашборд монетизации">📊</button>' +
-      '<button id="openCockpitBtn" type="button" class="metaBtn" title="Soft-launch кокпит">🚀</button>' +
-      '<button id="openMetaBtn" type="button" class="metaBtn">🗺️ Мета</button>' +
+      '<button id="openShopBtn" type="button" class="metaBtn" title="' + t('topbar.shopTitle') + '">🛒</button>' +
+      '<button id="openDashBtn" type="button" class="metaBtn" title="' + t('topbar.dashTitle') + '">📊</button>' +
+      '<button id="openCockpitBtn" type="button" class="metaBtn" title="' + t('topbar.cockpitTitle') + '">🚀</button>' +
+      '<button id="openMetaBtn" type="button" class="metaBtn">' + t('topbar.meta') + '</button>' +
       '</div>';
     this.el('openMetaBtn').addEventListener('click', () => this.openMeta());
     this.el('openShopBtn').addEventListener('click', () => this.onShopClick?.());
@@ -83,38 +87,54 @@ export class MetaUi {
       if (id) this.onBoosterClick?.(id);
     });
 
-    // Скелет мета-экрана (структура секций — 1:1 с прототипом, объём Прохода Б).
+    // Скелет мета-экрана (структура секций — 1:1 с прототипом, объём Прохода Б;
+    // Проход Ж.1 добавил секцию «Настройки»: язык, яркость, повтор обучения).
     this.el('metaScreen').innerHTML =
       '<div class="metaInner">' +
       '<div class="metaHeader">' +
-      '<button id="metaCloseBtn" type="button" class="metaClose">← В игру</button>' +
+      '<button id="metaCloseBtn" type="button" class="metaClose">' + t('meta.close') + '</button>' +
       '<div class="metaTotals"><span>🪙 <b id="metaCoins">0</b></span>' +
       '<span>★ <b id="metaStars">0</b></span></div>' +
       '</div>' +
-      '<section class="metaSection"><h3>🗺️ Карта «Путешествия»</h3>' +
-      '<p class="metaNote">Копи ★ за партии (по очкам) — открывай узлы и забирай награды.</p>' +
+      '<section class="metaSection"><h3>' + t('meta.map.title') + '</h3>' +
+      '<p class="metaNote">' + t('meta.map.note') + '</p>' +
       '<div id="mapList" class="mapList"></div></section>' +
-      '<section class="metaSection"><h3>🛒 Магазин бустеров</h3>' +
-      '<p class="metaNote">Трать монеты на инструменты спасения. Их же можно докупать прямо в партии.</p>' +
+      '<section class="metaSection"><h3>' + t('meta.shop.title') + '</h3>' +
+      '<p class="metaNote">' + t('meta.shop.note') + '</p>' +
       '<div id="shopList" class="shopList"></div></section>' +
-      '<section class="metaSection"><h3>🎯 Ежедневные миссии</h3>' +
-      '<p class="metaNote">3 миссии в день с ротацией. Прогресс считается по ходам партии.</p>' +
+      '<section class="metaSection"><h3>' + t('meta.missions.title') + '</h3>' +
+      '<p class="metaNote">' + t('meta.missions.note') + '</p>' +
       '<div id="missionList" class="missionList"></div></section>' +
-      '<section class="metaSection"><h3>🔥 Серия дней</h3>' +
-      '<p class="metaNote" id="streakCount">Серия: 0 дн.</p>' +
+      '<section class="metaSection"><h3>' + t('meta.streak.title') + '</h3>' +
+      '<p class="metaNote" id="streakCount">' + t('meta.streak.count', { n: 0 }) + '</p>' +
       '<div id="streakRow" class="streakRow"></div>' +
       '<div class="streakBtns">' +
-      '<button id="streakClaimBtn" type="button">Получить награду дня</button>' +
-      '<button id="simDayBtn" type="button" class="ghostBtn">⏭ Новый день (тест)</button>' +
+      '<button id="streakClaimBtn" type="button">' + t('meta.streak.claim') + '</button>' +
+      '<button id="simDayBtn" type="button" class="ghostBtn">' + t('meta.streak.simDay') + '</button>' +
       '</div></section>' +
       // Проход Е.2: rewarded-офферы RW-3/RW-4 (06 §2.2) — секция видима,
       // только если подключена панель монетизации (adPanel).
       '<section class="metaSection hidden" id="adSection">' +
-      '<h3>📺 Реклама (СИМУЛЯЦИЯ)</h3>' +
+      '<h3>' + t('meta.ads.title') + '</h3>' +
       '<p class="metaNote" id="metaAdStatus"></p>' +
       '<div class="streakBtns">' +
-      '<button id="rwBoosterBtn" type="button" class="rwBtn">🔨 Бустер за рекламу (RW-3)</button>' +
-      '<button id="rwStreakBtn" type="button" class="rwBtn">🔥 ×2 награда дня (RW-4)</button>' +
+      '<button id="rwBoosterBtn" type="button" class="rwBtn">' + t('meta.ads.rw3') + '</button>' +
+      '<button id="rwStreakBtn" type="button" class="rwBtn">' + t('meta.ads.rw4') + '</button>' +
+      '</div></section>' +
+      // Проход Ж.1: настройки — язык (RU/EN, применение через reload, см.
+      // src/i18n/index.ts), яркость фона (2 пресета theme.ts, сразу),
+      // повтор FTUE-обучения (OnboardingUi через onFtueReplay).
+      '<section class="metaSection" id="settingsSection">' +
+      '<h3>' + t('settings.title') + '</h3>' +
+      '<div class="setRow"><span class="setLabel">' + t('settings.language') + '</span>' +
+      '<button id="langRuBtn" type="button" class="geoBtn">RU</button>' +
+      '<button id="langEnBtn" type="button" class="geoBtn">EN</button></div>' +
+      '<div class="setRow"><span class="setLabel">' + t('settings.brightness') + '</span>' +
+      '<button id="briDarkBtn" type="button" class="geoBtn">' + t('settings.brightnessDark') + '</button>' +
+      '<button id="briLightBtn" type="button" class="geoBtn">' + t('settings.brightnessLight') + '</button></div>' +
+      '<p class="metaNote">' + t('settings.reloadNote') + '</p>' +
+      '<div class="streakBtns">' +
+      '<button id="ftueReplayBtn" type="button" class="ghostBtn">' + t('settings.replayFtue') + '</button>' +
       '</div></section>' +
       '</div>';
 
@@ -124,20 +144,33 @@ export class MetaUi {
     this.el('rwBoosterBtn').addEventListener('click', () => this.adPanel?.onRw3());
     this.el('rwStreakBtn').addEventListener('click', () => this.adPanel?.onRw4());
 
+    // Настройки (Проход Ж.1): язык — персист + reload; яркость — сразу.
+    this.el('langRuBtn').addEventListener('click', () => this.switchLocale('ru'));
+    this.el('langEnBtn').addEventListener('click', () => this.switchLocale('en'));
+    this.el('briDarkBtn').addEventListener('click', () => this.switchTheme('dark'));
+    this.el('briLightBtn').addEventListener('click', () => this.switchTheme('lighter'));
+    this.el('ftueReplayBtn').addEventListener('click', () => {
+      this.closeMeta();
+      this.onFtueReplay?.();
+    });
+
     // Делегирование кликов по спискам меты (забрать узел / купить бустер).
     this.el('metaScreen').addEventListener('click', (e) => {
-      const t = e.target as HTMLElement;
-      const nodeBtn = t.closest('[data-node]');
+      const target = e.target as HTMLElement;
+      const nodeBtn = target.closest('[data-node]');
       if (nodeBtn) {
         this.meta.claimNode(parseInt(nodeBtn.getAttribute('data-node') ?? '', 10));
         return;
       }
-      const buyBtn = t.closest('[data-buy]');
+      const buyBtn = target.closest('[data-buy]');
       if (buyBtn) {
         const id = buyBtn.getAttribute('data-buy') as BoosterId;
         const def = ECON.BOOSTERS[id];
-        if (this.economy.buyBooster(id)) this.toast('Куплен «' + def.name + '»');
-        else this.toast('Недостаточно монет (' + def.price + '🪙)');
+        if (this.economy.buyBooster(id)) {
+          this.toast(t('toast.boosterBought', { name: t(`booster.${id}.name`) }));
+        } else {
+          this.toast(t('toast.notEnoughCoins', { price: def.price }));
+        }
         this.renderMeta();
         this.renderBoosterBar();
       }
@@ -190,12 +223,39 @@ export class MetaUi {
       html +=
         '<button type="button" class="boosterBtn' + armedCls + zeroCls + '" data-boost="' + id + '">' +
         '<span class="bEmoji">' + def.emoji + '</span>' +
-        '<span class="bName">' + def.name + '</span>' +
+        '<span class="bName">' + t(`booster.${id}.name`) + '</span>' +
         '<span class="bCount">×' + cnt + '</span>' +
         '<span class="bPrice">' + (cnt <= 0 ? def.price + '🪙' : '') + '</span>' +
         '</button>';
     }
     bar.innerHTML = html;
+  }
+
+  /* ==================== НАСТРОЙКИ (Проход Ж.1) ==================== */
+
+  /** Язык: персист выбора + reload (задокументировано в src/i18n/index.ts). */
+  private switchLocale(locale: Locale): void {
+    if (locale === getLocale()) return;
+    setLocale(locale);
+    window.location.reload();
+  }
+
+  /** Яркость фона: применяется сразу (CSS-переменные + канвас per-frame). */
+  private switchTheme(mode: ThemeMode): void {
+    if (mode === themeMode()) return;
+    setThemeMode(mode);
+    this.renderMeta(); // обновить active-состояние кнопок
+  }
+
+  /** active-подсветка кнопок настроек по текущим значениям. */
+  private refreshSettingsButtons(): void {
+    const mark = (id: string, active: boolean): void => {
+      document.getElementById(id)?.classList.toggle('active', active);
+    };
+    mark('langRuBtn', getLocale() === 'ru');
+    mark('langEnBtn', getLocale() === 'en');
+    mark('briDarkBtn', themeMode() === 'dark');
+    mark('briLightBtn', themeMode() === 'lighter');
   }
 
   /* =========================== МЕТА-ЭКРАН =========================== */
@@ -216,7 +276,7 @@ export class MetaUi {
   private rewardText(r: NodeReward): string {
     const parts: string[] = [];
     if (r.coins) parts.push(r.coins + '🪙');
-    if (r.booster) parts.push('1× ' + ECON.BOOSTERS[r.booster].name);
+    if (r.booster) parts.push('1× ' + t(`booster.${r.booster}.name`));
     return parts.join(' + ');
   }
 
@@ -242,15 +302,17 @@ export class MetaUi {
       const cls = 'mapNode ' + st + (node.boss ? ' boss' : '');
       mh +=
         '<div class="' + cls + '">' +
-        '<div class="mnHead"><b>Узел ' + node.id + (node.boss ? ' · Босс' : '') + '</b>' +
+        '<div class="mnHead"><b>' + t('meta.map.node', { id: node.id }) +
+        (node.boss ? t('meta.map.boss') : '') + '</b>' +
         '<span class="mnReq">' + node.stars + '★</span></div>' +
         '<div class="mnRew">' + this.rewardText(node.reward) + '</div>';
       if (st === 'ready') {
-        mh += '<button type="button" class="mnClaim" data-node="' + node.id + '">Забрать</button>';
+        mh += '<button type="button" class="mnClaim" data-node="' + node.id + '">' +
+          t('meta.map.claim') + '</button>';
       } else if (st === 'claimed') {
-        mh += '<div class="mnDone">✓ получено</div>';
+        mh += '<div class="mnDone">' + t('meta.map.claimed') + '</div>';
       } else {
-        mh += '<div class="mnLock">🔒 нужно ' + node.stars + '★</div>';
+        mh += '<div class="mnLock">' + t('meta.map.locked', { stars: node.stars }) + '</div>';
       }
       mh += '</div>';
     }
@@ -263,8 +325,9 @@ export class MetaUi {
       sh +=
         '<div class="shopItem">' +
         '<span class="siEmoji">' + def.emoji + '</span>' +
-        '<div class="siInfo"><b>' + def.name + '</b><span>' + def.hint + '</span></div>' +
-        '<span class="siOwned">в наличии: ' + this.economy.getBooster(id) + '</span>' +
+        '<div class="siInfo"><b>' + t(`booster.${id}.name`) + '</b><span>' +
+        t(`booster.${id}.hint`) + '</span></div>' +
+        '<span class="siOwned">' + t('meta.shop.owned', { n: this.economy.getBooster(id) }) + '</span>' +
         '<button type="button" class="siBuy" data-buy="' + id + '">' + def.price + '🪙</button>' +
         '</div>';
     }
@@ -280,15 +343,15 @@ export class MetaUi {
       const pct = Math.round((prog / def.target) * 100);
       xh +=
         '<div class="mission' + (done ? ' done' : '') + '">' +
-        '<div class="msTop"><span>' + def.text + '</span><b>+' + def.reward + '🪙</b></div>' +
+        '<div class="msTop"><span>' + t(def.textKey) + '</span><b>+' + def.reward + '🪙</b></div>' +
         '<div class="msBar"><div class="msFill" style="width:' + pct + '%"></div></div>' +
-        '<div class="msProg">' + (done ? '✓ выполнено' : prog + ' / ' + def.target) + '</div>' +
+        '<div class="msProg">' + (done ? t('meta.missions.done') : prog + ' / ' + def.target) + '</div>' +
         '</div>';
     }
     const allDone = m.missions.done.length >= m.missions.set.length;
     xh +=
-      '<div class="missionBonus' + (allDone ? ' done' : '') + '">Все 3 миссии → бонус-сундук +' +
-      MISSION_BONUS + '🪙 ' + (allDone ? '✓' : '') + '</div>';
+      '<div class="missionBonus' + (allDone ? ' done' : '') + '">' +
+      t('meta.missions.bonus', { bonus: MISSION_BONUS }) + (allDone ? ' ✓' : '') + '</div>';
     this.el('missionList').innerHTML = xh;
 
     // --- Стрик дней ---
@@ -300,16 +363,19 @@ export class MetaUi {
       const cls = 'streakDay' + (reached ? ' reached' : '') + (isToday ? ' current' : '');
       const label = (rw.coins ? rw.coins + '🪙' : '') + (rw.booster ? ' 🔨' : '');
       kh +=
-        '<div class="' + cls + '"><span class="sdNum">Д' + (k + 1) + '</span>' +
-        '<span class="sdRew">' + label + '</span></div>';
+        '<div class="' + cls + '"><span class="sdNum">' + t('meta.streak.day', { n: k + 1 }) +
+        '</span><span class="sdRew">' + label + '</span></div>';
     }
     this.el('streakRow').innerHTML = kh;
-    this.el('streakCount').textContent = 'Серия: ' + m.streak.count + ' дн.';
+    this.el('streakCount').textContent = t('meta.streak.count', { n: m.streak.count });
     const claimBtn = this.el('streakClaimBtn') as HTMLButtonElement;
     claimBtn.disabled = !this.meta.streakClaimable();
     claimBtn.textContent = this.meta.streakClaimable()
-      ? 'Получить награду дня'
-      : 'Награда дня получена';
+      ? t('meta.streak.claim')
+      : t('meta.streak.claimed');
+
+    // --- Настройки (Проход Ж.1) ---
+    this.refreshSettingsButtons();
 
     // --- Rewarded-панель (Проход Е.2) ---
     const adSection = this.el('adSection');

@@ -24,6 +24,15 @@ import { ShopUi } from './ui/ShopUi';
 import { DashboardUi } from './ui/DashboardUi';
 import { Experiments } from './experiments/experiments';
 import { CockpitUi } from './ui/CockpitUi';
+import { getLocale, t } from './i18n';
+import { applyThemeCss, theme } from './ui/theme';
+import { OnboardingUi } from './ui/OnboardingUi';
+
+/* ================= I18N + ТЕМА (Проход Ж.1) — до монтажа UI ============== */
+/* Локаль зафиксирована на загрузке (reload применяет смену — src/i18n);
+ * CSS-переменные темы должны стоять до первого рендера DOM-оверлеев. */
+document.documentElement.lang = getLocale();
+applyThemeCss();
 
 /* Слой экономики и меты (Проход Б): один Store — атомарный сейв blocksurge_meta. */
 const store = new Store();
@@ -115,6 +124,12 @@ monetize.onChanged = () => {
   dashboardUi.refresh();
 };
 
+/* Статичные подписи баннера BAN-1 (index.html держит пустые контейнеры). */
+const bannerSimTag = document.getElementById('adBannerSimTag');
+if (bannerSimTag) bannerSimTag.textContent = t('banner.sim');
+const bannerLabel = document.getElementById('adBannerLabel');
+if (bannerLabel) bannerLabel.textContent = t('banner.label');
+
 /* Баннер BAN-1: показать, если реклама не убрана (Remove Ads/подписка). */
 monetize.updateBanner();
 
@@ -123,10 +138,23 @@ new Phaser.Game({
   parent: 'app',
   width: GAME_W,
   height: GAME_H,
-  backgroundColor: '#0e1117',
+  backgroundColor: theme().css.bg,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
   scene: [new GameScene({ economy, meta, boosters, ui, monetize })]
 });
+
+/* ==================== FTUE-ОНБОРДИНГ (Проход Ж.1) ======================== */
+/* Порт prototype/onboarding.js: коуч-марки первого запуска (07 §3). Флаг —
+ * localStorage blocksurge_ftue (сейв прототипа подхватывается — обучение не
+ * всплывает повторно); «Пройти обучение снова» — из настроек меты. Автозапуск
+ * ждём load + кадр: канвас Phaser уже смонтирован и получил размеры FIT. */
+const onboarding = new OnboardingUi(analytics);
+ui.onFtueReplay = () => onboarding.start();
+const autoStartFtue = (): void => {
+  requestAnimationFrame(() => onboarding.maybeAutoStart());
+};
+if (document.readyState === 'complete') autoStartFtue();
+else window.addEventListener('load', autoStartFtue);

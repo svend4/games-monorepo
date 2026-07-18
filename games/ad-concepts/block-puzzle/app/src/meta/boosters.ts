@@ -9,6 +9,7 @@
 import type { Board, GameState, PieceId } from '../core/types';
 import { redealHand, refreshPlaceable } from '../core/game';
 import type { Economy } from '../economy/economy';
+import { t } from '../i18n';
 
 /** Снимок состояния ДО хода/бомбы — один уровень отмены (05 §2.2 «Отмена»). */
 interface UndoSnapshot {
@@ -62,11 +63,11 @@ export class BoosterController {
   /** «Отмена»: вернуть состояние снимка. true — ход отменён. */
   useUndo(state: GameState): boolean {
     if (state.gameOver) {
-      this.toast('Партия окончена');
+      this.toast(t('booster.toast.gameOver'));
       return false;
     }
     if (!this.snap) {
-      this.toast('Отменять нечего');
+      this.toast(t('booster.toast.nothingToUndo'));
       return false;
     }
     if (this.economy.getBooster('undo') <= 0) return false; // защита; UI не должен пускать
@@ -82,21 +83,21 @@ export class BoosterController {
     state.bombReady = s.bombReady;
     this.snap = null; // один уровень отмены на ход
     refreshPlaceable(state);
-    this.toast('Ход отменён');
+    this.toast(t('booster.toast.undone'));
     return true;
   }
 
   /** «Обмен»: новая разрешимая тройка фигур. true — рука заменена. */
   useSwap(state: GameState): boolean {
     if (state.gameOver) {
-      this.toast('Партия окончена');
+      this.toast(t('booster.toast.gameOver'));
       return false;
     }
     if (this.economy.getBooster('swap') <= 0) return false;
     if (!this.economy.consumeBooster('swap', 'classic')) return false;
     redealHand(state); // новая разрешимая тройка (ядро, INV-G1)
     this.snap = null; // старую руку уже не вернуть
-    this.toast('Фигуры заменены');
+    this.toast(t('booster.toast.swapped'));
     return true;
   }
 
@@ -105,12 +106,12 @@ export class BoosterController {
   /** Взвести/отменить режим «Молота» (повторный клик — отмена). */
   toggleHammer(state: GameState): void {
     if (state.gameOver) {
-      this.toast('Партия окончена');
+      this.toast(t('booster.toast.gameOver'));
       return;
     }
     if (this.economy.getBooster('hammer') <= 0) return;
     this.hammerArmed = !this.hammerArmed;
-    this.toast(this.hammerArmed ? 'Молот: коснись клетки поля' : 'Молот отменён');
+    this.toast(this.hammerArmed ? t('booster.toast.hammerArmed') : t('booster.toast.hammerCancelled'));
   }
 
   /** Разрядить «Молот» (рестарт/открытие меты). true — состояние изменилось. */
@@ -130,7 +131,7 @@ export class BoosterController {
     const n = state.board.length;
     if (r < 0 || c < 0 || r >= n || c >= n) return false;
     if (state.board[r][c] === 0) {
-      this.toast('Пустая клетка');
+      this.toast(t('booster.toast.emptyCell'));
       return false;
     }
     if (this.economy.getBooster('hammer') <= 0) {
@@ -144,7 +145,7 @@ export class BoosterController {
     refreshPlaceable(state);
     // checkGameOver прототипа здесь опущен: снятие клетки не сужает
     // размещаемость, а gameOver обратно не снимается — вызов был no-op.
-    this.toast('Клетка убрана');
+    this.toast(t('booster.toast.cellRemoved'));
     return true;
   }
 }

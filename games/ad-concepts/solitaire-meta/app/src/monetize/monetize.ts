@@ -23,6 +23,7 @@ import { ECON } from '../economy/econ';
 import type { Economy } from '../economy/economy';
 import type { Store } from '../economy/store';
 import { DAY_MS, dateStr } from '../meta/dates';
+import { t, tDyn } from '../i18n';
 import { systemClock, type Clock } from './clock';
 import { MON, PLACEMENTS, RW_ORDER, findIap, type IapSku, type PlacementId } from './config';
 import type { PurchaseProvider } from './purchase';
@@ -325,7 +326,7 @@ export class MonetizeController {
     if (this.adInFlight) return false;
     if (!this.rewardedAllowed(pid)) {
       this.trackOpportunity(pid, false, 'cap');
-      this.toast('Лимит этой награды на сегодня исчерпан');
+      this.toast(t('mon.toast.rwCap'));
       return false;
     }
     this.trackOpportunity(pid, true, null);
@@ -374,7 +375,7 @@ export class MonetizeController {
     const grant = this.walletGrant();
     return this.showRewarded('RW6', () => {
       this.deps.economy.addCoins(grant, 'rw6');
-      this.toast('Кошелёк садовода: +' + grant + ' 💰');
+      this.toast(t('mon.toast.wallet', { n: grant }));
     });
   }
 
@@ -385,7 +386,12 @@ export class MonetizeController {
       const id = list[Math.floor(this.rng() * list.length)];
       const def = ECON.BOOSTERS[id];
       this.deps.economy.addBooster(id, 1, 'rw3');
-      this.toast('Бустер за рекламу: +1 ' + def.emoji + ' ' + def.name);
+      this.toast(
+        t('mon.toast.booster', {
+          emoji: def.emoji,
+          name: tDyn('booster.' + id + '.name', def.name)
+        })
+      );
     });
   }
 
@@ -395,7 +401,7 @@ export class MonetizeController {
       const wheel = MON.RW4_WHEEL;
       const v = wheel[Math.floor(this.rng() * wheel.length)];
       this.deps.economy.addCoins(v, 'rw4_wheel');
-      this.toast('🎡 Колесо ярмарки: +' + v + ' 💰');
+      this.toast(t('mon.toast.wheel', { n: v }));
     });
   }
 
@@ -403,7 +409,7 @@ export class MonetizeController {
   async rwEventTokens(): Promise<boolean> {
     return this.showRewarded('RW5', () => {
       this.deps.economy.addCoins(MON.RW5_TOKENS_COINS, 'rw5_tokens');
-      this.toast('×2 жетоны ярмарки: +' + MON.RW5_TOKENS_COINS + ' 💰');
+      this.toast(t('mon.toast.event', { n: MON.RW5_TOKENS_COINS }));
     });
   }
 
@@ -550,15 +556,15 @@ export class MonetizeController {
     if (item === null) return false;
     const st = this.deps.monStore.state;
     if (item.once === true && (st.life.purchases[sku] ?? 0) > 0) {
-      this.toast('Набор уже куплен (разовый)');
+      this.toast(t('mon.toast.onceOwned'));
       return false;
     }
     if (item.kind === 'remove_ads' && st.removeAds) {
-      this.toast('Реклама уже убрана');
+      this.toast(t('mon.toast.adsOwned'));
       return false;
     }
     if (item.kind === 'piggy' && st.piggy.owned) {
-      this.toast('Копилка уже активна');
+      this.toast(t('mon.toast.piggyOwned'));
       return false;
     }
 
@@ -584,7 +590,12 @@ export class MonetizeController {
       is_first_purchase: firstNow
     });
     this.deps.monStore.save();
-    this.toast('СИМУЛЯЦИЯ покупки: ' + item.label + ' ($' + item.price.toFixed(2) + ')');
+    this.toast(
+      t('mon.toast.buy', {
+        label: tDyn('iap.' + sku + '.label', item.label),
+        price: item.price.toFixed(2)
+      })
+    );
     this.changed();
     return true;
   }
@@ -595,7 +606,7 @@ export class MonetizeController {
     st.sub.active = false; // §6.5: декор остаётся, бонусы на паузу
     this.deps.analytics.track('sub_state', { state: 'cancel', month_no: st.sub.monthNo });
     this.deps.monStore.save();
-    this.toast('Подписка отменена (декор сохранён)');
+    this.toast(t('mon.toast.subCancel'));
     this.changed();
   }
 
@@ -618,7 +629,7 @@ export class MonetizeController {
     this.deps.economy.addCoins(amt, 'piggy');
     st.piggy.balance = 0;
     this.deps.monStore.save();
-    this.toast('Копилка вскрыта: +' + amt + ' 💰');
+    this.toast(t('mon.toast.piggyBreak', { n: amt }));
     this.changed();
     return true;
   }

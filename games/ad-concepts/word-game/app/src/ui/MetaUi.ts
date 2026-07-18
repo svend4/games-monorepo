@@ -7,6 +7,8 @@
 import type { CoreGame } from '../core/game';
 import { ECON } from '../economy/econ';
 import type { Economy } from '../economy/economy';
+import { getLocale, setLocale, t, tPlural, type Locale } from '../i18n';
+import { missionText, regionName, themeLabel } from '../i18n/labels';
 import type { Meta } from '../meta/meta';
 import { REGIONS, STREAK_MILESTONE_DAYS, missionDef } from '../meta/config';
 
@@ -29,6 +31,8 @@ export class MetaUi {
    * (бесплатное открытие через Economy).
    */
   piggyOpener: (() => Promise<number>) | null = null;
+  /** «Пройти обучение снова» из настроек меты (Проход Ж.1, OnboardingUi). */
+  onReplayOnboarding: (() => void) | null = null;
 
   private scr: HTMLElement | null = null;
   private contentEl: HTMLElement | null = null;
@@ -52,19 +56,33 @@ export class MetaUi {
     const scr = document.createElement('div');
     scr.id = 'meta-screen';
     scr.className = 'hidden';
+    const loc = getLocale();
     scr.innerHTML =
       '<header class="meta-header">' +
       '<div class="meta-cur"><span class="c-coin">🪙 <b id="meta-coins">0</b></span>' +
       '<span class="c-acorn">🌰 <b id="meta-acorns">0</b></span></div>' +
-      '<button class="meta-close" data-action="close">✕ Играть</button>' +
+      '<button class="meta-close" data-action="close">' + t('meta.close') + '</button>' +
       '</header>' +
       '<nav class="meta-tabs">' +
-      '<button data-tab="atlas">🗺️ Атлас</button>' +
-      '<button data-tab="daily">📅 Дневной</button>' +
-      '<button data-tab="piggy">🐿️ Копилка</button>' +
-      '<button data-tab="missions">🎯 Миссии</button>' +
+      '<button data-tab="atlas">' + t('meta.tabAtlas') + '</button>' +
+      '<button data-tab="daily">' + t('meta.tabDaily') + '</button>' +
+      '<button data-tab="piggy">' + t('meta.tabPiggy') + '</button>' +
+      '<button data-tab="missions">' + t('meta.tabMissions') + '</button>' +
       '</nav>' +
-      '<div id="meta-content"></div>';
+      '<div id="meta-content"></div>' +
+      // Настройки (Проход Ж.1): язык RU/EN + повтор FTUE. Смена языка
+      // применяется ПЕРЕЗАГРУЗКОЙ страницы (см. src/i18n/index.ts — выбор
+      // задокументирован: строки рендерятся при монтировании, reload проще
+      // и надёжнее «горячей» смены; сейвы не затрагиваются).
+      '<div class="meta-settings" title="' + t('settings.langNote') + '">' +
+      '<span class="settings-label">' + t('settings.language') + ':</span>' +
+      '<span class="lang-switch">' +
+      '<button type="button" data-action="lang-ru"' + (loc === 'ru' ? ' class="active"' : '') + '>RU</button>' +
+      '<button type="button" data-action="lang-en"' + (loc === 'en' ? ' class="active"' : '') + '>EN</button>' +
+      '</span>' +
+      '<button type="button" class="meta-ob-replay" data-action="replay-onboarding">' +
+      t('settings.replayOnboarding') + '</button>' +
+      '</div>';
     (document.getElementById('app') ?? document.body).appendChild(scr);
     this.scr = scr;
     this.contentEl = scr.querySelector('#meta-content');
@@ -101,7 +119,7 @@ export class MetaUi {
           .then((got) => {
             this.renderTab();
             this.updateBadge();
-            if (got > 0) this.deps.toast('🐿️ Копилка открыта: +' + got + ' 🪙');
+            if (got > 0) this.deps.toast(t('toast.piggyOpened', { n: got }));
           })
           .catch(() => undefined);
         return;
@@ -109,10 +127,22 @@ export class MetaUi {
       const got = economy.openPiggy();
       this.renderTab();
       this.updateBadge();
-      if (got > 0) this.deps.toast('🐿️ Копилка открыта: +' + got + ' 🪙');
+      if (got > 0) this.deps.toast(t('toast.piggyOpened', { n: got }));
     } else if (action === 'claim-mission') {
       meta.claimMission(el.getAttribute('data-id') ?? '');
+    } else if (action === 'lang-ru' || action === 'lang-en') {
+      this.switchLocale(action === 'lang-ru' ? 'ru' : 'en');
+    } else if (action === 'replay-onboarding') {
+      this.close();
+      this.onReplayOnboarding?.();
     }
+  }
+
+  /** Смена языка: персист + reload (применение к уже отрисованному UI). */
+  private switchLocale(locale: Locale): void {
+    if (locale === getLocale()) return;
+    setLocale(locale);
+    window.location.reload();
   }
 
   /* ============================ РЕНДЕР ВКЛАДОК ============================ */
@@ -141,7 +171,7 @@ export class MetaUi {
     const total = game.getTotalLevels();
     let html =
       '<div class="meta-pane">' +
-      '<p class="pane-sub">Пройдено уровней: ' + Math.min(done, total) + ' / ' + total + '</p>';
+      '<p class="pane-sub">' + t('atlas.progress', { done: Math.min(done, total), total }) + '</p>';
     for (const region of REGIONS) {
       let rd = 0;
       for (const lvl of region.levels) if (lvl < done) rd++;
@@ -150,7 +180,7 @@ export class MetaUi {
       html +=
         '<div class="region-card">' +
         '<div class="region-head"><span class="region-emoji">' + region.emoji + '</span>' +
-        '<span class="region-name">' + region.name + '</span>' +
+        '<span class="region-name">' + regionName(region.id, region.name) + '</span>' +
         '<span class="region-pct">' + pct + '%</span></div>' +
         '<div class="region-nodes">';
       for (const lvl of region.levels) {
@@ -171,14 +201,14 @@ export class MetaUi {
         '</div>' +
         '<div class="region-reward">' +
         (claimed
-          ? '✅ Награда региона получена: +' + ECON.REGION_REWARD + ' 🪙'
-          : '🏆 Заверши все уровни → +' + ECON.REGION_REWARD + ' 🪙') +
+          ? t('atlas.regionClaimed', { n: ECON.REGION_REWARD })
+          : t('atlas.regionReward', { n: ECON.REGION_REWARD })) +
         '</div></div>';
     }
     if (done < total) {
-      html += '<button class="meta-primary" data-action="play-current">▶ Продолжить уровень ' + (done + 1) + '</button>';
+      html += '<button class="meta-primary" data-action="play-current">' + t('atlas.continue', { n: done + 1 }) + '</button>';
     } else {
-      html += '<p class="pane-sub">🌳 Роща пройдена полностью!</p>';
+      html += '<p class="pane-sub">' + t('atlas.done') + '</p>';
     }
     return html + '</div>';
   }
@@ -190,25 +220,27 @@ export class MetaUi {
     const nm = meta.nextMilestone(streak);
     let html =
       '<div class="meta-pane">' +
-      '<div class="daily-hero"><div class="daily-theme">Тема дня: <b>' + meta.todayTheme() + '</b></div>' +
-      '<div class="daily-streak">🔥 <b>' + streak + '</b> ' + plural(streak, 'день', 'дня', 'дней') +
-      ' подряд</div>' +
-      '<div class="daily-longest">Лучший стрик: ' + meta.state.daily.longest + '</div></div>';
+      '<div class="daily-hero"><div class="daily-theme">' + t('daily.themeLabel') + ': <b>' +
+      themeLabel(meta.todayTheme()) + '</b></div>' +
+      '<div class="daily-streak">🔥 <b>' + streak + '</b> ' +
+      tPlural(streak, 'plural.day.one', 'plural.day.few', 'plural.day.many') +
+      ' ' + t('daily.inARow') + '</div>' +
+      '<div class="daily-longest">' + t('daily.longest', { n: meta.state.daily.longest }) + '</div></div>';
     html += '<div class="milestones">';
     for (const days of STREAK_MILESTONE_DAYS) {
       const reached = streak >= days;
       html +=
         '<div class="ms-node' + (reached ? ' ms-reached' : '') + '">' +
-        '<div class="ms-day">' + days + 'д</div>' +
+        '<div class="ms-day">' + t('daily.msDay', { n: days }) + '</div>' +
         '<div class="ms-rew">+' + (ECON.STREAK_MILESTONES[days] ?? 0) + ' 🪙</div></div>';
     }
     html += '</div>';
-    if (nm !== null) html += '<p class="pane-sub">Следующая веха: ' + nm + ' дней</p>';
-    html += '<p class="pane-sub">Награда за день: +' + ECON.DAILY_COINS + ' 🪙 (бонусные слова → жёлуди в копилку)</p>';
+    if (nm !== null) html += '<p class="pane-sub">' + t('daily.nextMilestone', { n: nm }) + '</p>';
+    html += '<p class="pane-sub">' + t('daily.rewardInfo', { n: ECON.DAILY_COINS }) + '</p>';
     if (done) {
-      html += '<div class="daily-done">✅ Сегодня пройден — приходи завтра</div>';
+      html += '<div class="daily-done">' + t('daily.doneToday') + '</div>';
     } else {
-      html += '<button class="meta-primary" data-action="play-daily">📅 Играть дневной кроссворд</button>';
+      html += '<button class="meta-primary" data-action="play-daily">' + t('daily.play') + '</button>';
     }
     return html + '</div>';
   }
@@ -223,15 +255,14 @@ export class MetaUi {
       '<div class="piggy-emoji">🐿️</div>' +
       '<div class="piggy-count"><b>' + acorns + '</b> / ' + cap + ' 🌰</div>' +
       '<div class="piggy-bar"><div class="piggy-fill" style="width:' + pct + '%"></div></div>';
-    if (economy.isPiggyFull()) html += '<p class="pane-warn">Копилка полная — новые жёлуди сгорают!</p>';
+    if (economy.isPiggyFull()) html += '<p class="pane-warn">' + t('piggy.full') + '</p>';
     html +=
-      '<p class="pane-sub">Жёлуди капают за бонусные слова (+' + ECON.ACORN_PER_BONUS +
-      '/слово). Открытие копилки конвертирует их в монеты 1:1.</p>' +
-      '<p class="pane-note">В проде открытие — за просмотр рекламы (RV-5, Проход Е.2 — СИМУЛЯЦИЯ).</p>';
+      '<p class="pane-sub">' + t('piggy.info', { n: ECON.ACORN_PER_BONUS }) + '</p>' +
+      '<p class="pane-note">' + t('piggy.prodNote') + '</p>';
     if (acorns > 0) {
-      html += '<button class="meta-primary" data-action="open-piggy">🐿️ Открыть копилку (+' + acorns + ' 🪙)</button>';
+      html += '<button class="meta-primary" data-action="open-piggy">' + t('piggy.open', { n: acorns }) + '</button>';
     } else {
-      html += '<div class="daily-done">Пусто — собирай бонусные слова в уровнях</div>';
+      html += '<div class="daily-done">' + t('piggy.empty') + '</div>';
     }
     return html + '</div>';
   }
@@ -239,7 +270,7 @@ export class MetaUi {
   private renderMissions(): string {
     const { meta } = this.deps;
     meta.ensureMissionsToday();
-    let html = '<div class="meta-pane"><p class="pane-sub">Ежедневные миссии (обновляются каждый день)</p>';
+    let html = '<div class="meta-pane"><p class="pane-sub">' + t('missions.sub') + '</p>';
     for (const row of meta.state.missions.list) {
       const def = missionDef(row.id);
       if (def === null) continue;
@@ -249,14 +280,15 @@ export class MetaUi {
       html +=
         '<div class="mission-card' + (row.claimed ? ' mission-claimed' : '') + '">' +
         '<div class="mission-top"><span class="mission-emoji">' + def.emoji + '</span>' +
-        '<span class="mission-text">' + def.text + '</span></div>' +
+        '<span class="mission-text">' + missionText(def.id, def.text) + '</span></div>' +
         '<div class="mission-bar"><div class="mission-fill" style="width:' + pct + '%"></div></div>' +
         '<div class="mission-foot"><span class="mission-prog">' + prog + '/' + def.target + '</span>' +
         '<span class="mission-rew">' + reward + '</span>';
-      if (row.claimed) html += '<span class="mission-state">✅ Получено</span>';
+      if (row.claimed) html += '<span class="mission-state">' + t('missions.claimed') + '</span>';
       else if (prog >= def.target) {
-        html += '<button class="mission-claim" data-action="claim-mission" data-id="' + def.id + '">Забрать</button>';
-      } else html += '<span class="mission-state">В процессе</span>';
+        html += '<button class="mission-claim" data-action="claim-mission" data-id="' + def.id + '">' +
+          t('missions.claim') + '</button>';
+      } else html += '<span class="mission-state">' + t('missions.inProgress') + '</span>';
       html += '</div></div>';
     }
     return html + '</div>';
@@ -286,13 +318,4 @@ export class MetaUi {
     this.isOpen = false;
     this.scr?.classList.add('hidden');
   }
-}
-
-/** Русская плюрализация (порт plural из meta.js). */
-function plural(n: number, one: string, few: string, many: string): string {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return one;
-  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
-  return many;
 }

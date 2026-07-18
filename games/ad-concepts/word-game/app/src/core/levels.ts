@@ -13,7 +13,19 @@
  *
  * Буквы «Ё» в данных нет — нормализация е/ё (03 §2.3) не требуется.
  */
+import type { Locale } from '../i18n';
 import type { LevelData } from './types';
+
+/**
+ * ТОЧКА ПОДКЛЮЧЕНИЯ языкозависимого контента (Проход Ж.1): набор уровней
+ * выбирается по локали. Пока ОБЕ локали играют русский набор LEVELS —
+ * английский пакет уровней подключит следующий этап (Ж.2), заменив ветку
+ * 'en' на свой массив (те же инварианты INV-W1/W2, validateLevel).
+ * main.ts передаёт результат в CoreGame({ levels }).
+ */
+export function levelsFor(_locale: Locale): readonly LevelData[] {
+  return LEVELS;
+}
 
 export const LEVELS: readonly LevelData[] = [
   {

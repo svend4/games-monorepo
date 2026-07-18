@@ -73,6 +73,11 @@ export interface CoreGameOptions {
   /** Трекер аналитики (заглушка 09 §1). */
   track?: (event: string, params?: Record<string, string | number | boolean>) => void;
   hooks?: CoreHooks;
+  /**
+   * Набор уровней (Проход Ж.1: контент языкозависим — main передаёт
+   * levelsFor(locale)). По умолчанию — встроенный русский LEVELS.
+   */
+  levels?: readonly LevelData[];
 }
 
 /** Снимок кампании на время дневного режима (порт campaignSnapshot). */
@@ -93,6 +98,7 @@ export class CoreGame {
   private readonly acorns: AcornSink | null;
   private readonly track: (event: string, params?: Record<string, string | number | boolean>) => void;
   private readonly hooks: CoreHooks;
+  private readonly levels: readonly LevelData[];
 
   private state: CoreSave;
   private grid: GridModel;
@@ -105,6 +111,7 @@ export class CoreGame {
     this.acorns = opts.acorns ?? null;
     this.track = opts.track ?? (() => undefined);
     this.hooks = opts.hooks ?? {};
+    this.levels = opts.levels ?? LEVELS;
     this.state = this.load();
     this.grid = this.buildLevel();
   }
@@ -152,11 +159,11 @@ export class CoreGame {
 
   /** Индекс уровня для отображения (после финала показываем последний фоном). */
   private displayLevelIndex(): number {
-    return Math.min(this.state.level, LEVELS.length - 1);
+    return Math.min(this.state.level, this.levels.length - 1);
   }
 
   private buildLevel(): GridModel {
-    const level = LEVELS[this.displayLevelIndex()];
+    const level = this.levels[this.displayLevelIndex()];
     const grid = buildGrid(level);
 
     // Чистка сохранённых открытых клеток от чужих ключей (смена версии данных).
@@ -181,7 +188,7 @@ export class CoreGame {
   /* ============================ ГЕТТЕРЫ ============================ */
 
   getLevelData(): LevelData {
-    return LEVELS[this.displayLevelIndex()];
+    return this.levels[this.displayLevelIndex()];
   }
 
   getGrid(): GridModel {
@@ -204,16 +211,16 @@ export class CoreGame {
   /** Прогресс КАМПАНИИ (в дневном режиме — из снимка; порт WG.getLevel). */
   getCampaignLevel(): number {
     const lv = this.dailyMode && this.campaignSnapshot !== null ? this.campaignSnapshot.level : this.state.level;
-    return Math.min(lv, LEVELS.length);
+    return Math.min(lv, this.levels.length);
   }
 
   getTotalLevels(): number {
-    return LEVELS.length;
+    return this.levels.length;
   }
 
   /** Кампания пройдена целиком (не относится к дневному режиму). */
   isFinished(): boolean {
-    return !this.dailyMode && this.state.level >= LEVELS.length;
+    return !this.dailyMode && this.state.level >= this.levels.length;
   }
 
   isDailyMode(): boolean {
@@ -368,7 +375,7 @@ export class CoreGame {
     this.save();
     this.hooks.onLevelComplete?.(completedIndex, wasPerfect);
     this.buildLevel();
-    return this.state.level >= LEVELS.length ? 'finished' : 'next';
+    return this.state.level >= this.levels.length ? 'finished' : 'next';
   }
 
   /** Рестарт уровня: foundBonus сохраняем (антифарм, 11 §4.2). */
@@ -406,7 +413,7 @@ export class CoreGame {
   startDaily(idx: number): boolean {
     if (this.dailyMode) return false;
     let dayIdx = idx;
-    if (!Number.isInteger(dayIdx) || dayIdx < 0 || dayIdx >= LEVELS.length) dayIdx = 0;
+    if (!Number.isInteger(dayIdx) || dayIdx < 0 || dayIdx >= this.levels.length) dayIdx = 0;
     this.dailyMode = true;
     this.campaignSnapshot = {
       level: this.state.level,

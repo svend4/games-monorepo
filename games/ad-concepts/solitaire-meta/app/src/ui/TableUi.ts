@@ -37,7 +37,13 @@ import type { KeyValueStorage } from '../economy/store';
 import { Meta, streakRewardFor } from '../meta/meta';
 import { TOTAL_ORDERS } from '../meta/config';
 import type { MonetizeController } from '../monetize/monetize';
+import { t, tDyn } from '../i18n';
 import type { MetaUi } from './MetaUi';
+
+/** Локализованный номинал карты (Т/В/Д/К ↔ A/J/Q/K; ядро остаётся русским). */
+function rankLabel(rank: number): string {
+  return tDyn('card.rank.' + rank, RANK_LABELS[rank]);
+}
 
 /** Данные экрана победы (держим на сессии, чтобы перерисовывать оверлей). */
 interface WinInfo {
@@ -215,7 +221,7 @@ export class TableUi {
 
       const rank = s.game.deal.tableRanks[slot.id];
       const suit = SUITS[s.game.deal.tableSuits[slot.id]];
-      const label = RANK_LABELS[rank];
+      const label = rankLabel(rank);
       if (suit.red) el.classList.add('red-suit');
       el.innerHTML =
         `<div class="face">` +
@@ -264,8 +270,10 @@ export class TableUi {
         el.setAttribute(
           'aria-label',
           open
-            ? `Карта ${RANK_LABELS[g.deal.tableRanks[slot.id]]}${SUITS[g.deal.tableSuits[slot.id]].sym}`
-            : 'Закрытая карта'
+            ? t('card.open.aria', {
+                card: `${rankLabel(g.deal.tableRanks[slot.id])}${SUITS[g.deal.tableSuits[slot.id]].sym}`
+              })
+            : t('card.closed.aria')
         );
         el.setAttribute('tabindex', open && !g.over ? '0' : '-1');
       }
@@ -278,7 +286,7 @@ export class TableUi {
 
     // Сброс
     const wasteEl = this.byId('waste-card');
-    const wl = RANK_LABELS[g.waste];
+    const wl = rankLabel(g.waste);
     const ws = SUITS[g.wasteSuit];
     wasteEl.classList.toggle('red-suit', ws.red);
     wasteEl.classList.toggle('glow', g.chain >= 2);
@@ -326,7 +334,7 @@ export class TableUi {
     if (g.removed.has(slotId)) return;
 
     if (!isOpen(g, slotId)) {
-      if (s.jokerArmed) this.gToast('Джокер работает только по открытой карте');
+      if (s.jokerArmed) this.gToast(t('game.toast.jokerOpenOnly'));
       this.shake(this.cardEls[slotId]);
       this.armIdleTimer();
       return;
@@ -346,7 +354,7 @@ export class TableUi {
           return;
         }
         this.disarmJoker();
-        this.gToast('🃏 Джокер применён');
+        this.gToast(t('game.toast.jokerUsed'));
         this.applyMove(slotId, true);
       }
       return;
@@ -407,12 +415,12 @@ export class TableUi {
     const s = this.s;
     if (s === null || s.game.over) return;
     if (s.game.history.length === 0) {
-      this.gToast('Отменять нечего');
+      this.gToast(t('game.toast.nothingToUndo'));
       return;
     }
     const kind = this.economy.useUndo();
     if (kind === null) {
-      this.gToast(`Нет монет на отмену (нужно ${ECON.UNDO_PRICE})`);
+      this.gToast(t('game.toast.noCoinsUndo', { price: ECON.UNDO_PRICE }));
       return;
     }
 
@@ -421,7 +429,9 @@ export class TableUi {
       this.economy.addBooster('joker', 1, 'undo_refund'); // вернуть потраченный джокер
     }
 
-    this.gToast(kind === 'free' ? 'Ход отменён (бесплатно)' : `Ход отменён (−${ECON.UNDO_PRICE} 💰)`);
+    this.gToast(
+      kind === 'free' ? t('game.toast.undoFree') : t('game.toast.undoPaid', { price: ECON.UNDO_PRICE })
+    );
     this.render();
     this.updateBoosterBar();
     this.armIdleTimer();
@@ -436,7 +446,7 @@ export class TableUi {
     }
     s.jokerArmed = true;
     document.body.classList.add('joker-mode');
-    this.gToast('🃏 Выберите любую открытую карту');
+    this.gToast(t('game.toast.jokerChoose'));
     this.render();
     this.updateBoosterBar();
   }
@@ -466,7 +476,7 @@ export class TableUi {
     const s = this.s;
     if (s === null || s.game.over) return;
     if (s.basketActive) {
-      this.gToast('Лукошко уже включено');
+      this.gToast(t('game.toast.basketAlready'));
       return;
     }
     if (this.economy.getBooster('basket') <= 0) {
@@ -475,7 +485,7 @@ export class TableUi {
     }
     if (!this.economy.consumeBooster('basket', 'in')) return;
     s.basketActive = true;
-    this.gToast(`🧺 Урожай этой раздачи ×${ECON.BASKET_MULT}`);
+    this.gToast(t('game.toast.basketOn', { mult: ECON.BASKET_MULT }));
     this.updateBoosterBar();
   }
 
@@ -486,19 +496,24 @@ export class TableUi {
 
     const undoBtn = document.getElementById('bst-undo') as HTMLButtonElement | null;
     if (undoBtn !== null) {
-      undoBtn.textContent = free > 0 ? `↩ Отмена (${free})` : `↩ Отмена (💰${ECON.UNDO_PRICE})`;
+      undoBtn.textContent =
+        free > 0
+          ? t('booster.undo.free', { n: free })
+          : t('booster.undo.paid', { price: ECON.UNDO_PRICE });
       undoBtn.disabled = s === null || s.game.over || s.game.history.length === 0;
     }
     const jokerBtn = document.getElementById('bst-joker') as HTMLButtonElement | null;
     if (jokerBtn !== null) {
-      jokerBtn.textContent = `🃏 Джокер (${this.economy.getBooster('joker')})`;
+      jokerBtn.textContent = t('booster.joker.count', { n: this.economy.getBooster('joker') });
       jokerBtn.classList.toggle('armed', s !== null && s.jokerArmed);
       jokerBtn.disabled = over;
     }
     const basketBtn = document.getElementById('bst-basket') as HTMLButtonElement | null;
     if (basketBtn !== null) {
       basketBtn.textContent =
-        s !== null && s.basketActive ? '🧺 ×2 активно' : `🧺 Лукошко (${this.economy.getBooster('basket')})`;
+        s !== null && s.basketActive
+          ? t('booster.basket.active')
+          : t('booster.basket.count', { n: this.economy.getBooster('basket') });
       basketBtn.classList.toggle('armed', s !== null && s.basketActive);
       basketBtn.disabled = over || (s !== null && s.basketActive);
     }
@@ -582,34 +597,34 @@ export class TableUi {
     // Rewarded не убирается remove-ads/подпиской.
     let adCta = '';
     if (!w.rw2Used) {
-      adCta += `<button class="btn-ad" data-ov="rw2" type="button">📺 ×2 награда за рекламу <span class="sim-tag">СИМУЛЯЦИЯ</span></button>`;
+      adCta += `<button class="btn-ad" data-ov="rw2" type="button">${t('ad.rw2.cta')} <span class="sim-tag">${t('ad.simTag')}</span></button>`;
     } else {
-      adCta += `<div class="ad-done">✓ Награда удвоена рекламой (RW2)</div>`;
+      adCta += `<div class="ad-done">${t('ad.rw2.done')}</div>`;
     }
     if (this.monetize.isEventWeekend()) {
-      adCta += `<button class="btn-ad" data-ov="rw5" type="button">📺 ×2 жетоны ярмарки <span class="sim-tag">СИМУЛЯЦИЯ</span></button>`;
+      adCta += `<button class="btn-ad" data-ov="rw5" type="button">${t('ad.rw5.cta')} <span class="sim-tag">${t('ad.simTag')}</span></button>`;
     }
     adCta = `<div class="ad-cta">${adCta}</div>`;
 
     return (
       `<div class="emoji">🎉🍎</div>` +
-      `<h2>Стол чист!</h2>` +
-      `<p>Сад благодарит вас. Уровень ${w.n} пройден.</p>` +
+      `<h2>${t('win.title')}</h2>` +
+      `<p>${t('win.subtitle', { n: w.n })}</p>` +
       `<table class="reward">` +
-      `<tr><td>Взнос за раздачу</td><td>${s.entryPaid > 0 ? '−' + E.fmt(s.entryPaid) : 'бесплатно'}</td></tr>` +
-      `<tr><td>Выигрыш W(${w.n})</td><td>+${E.fmt(w.win)}</td></tr>` +
-      `<tr><td>Бонус колоды: ${w.stockCards} карт</td><td>+${E.fmt(w.stockB)}</td></tr>` +
-      (w.rw2Used ? `<tr><td>📺 ×2 за рекламу (RW2)</td><td>+${E.fmt(w.doubleBase)}</td></tr>` : '') +
-      `<tr class="total"><td>Итог монет за уровень</td><td>${net >= 0 ? '+' : ''}${E.fmt(net)}</td></tr>` +
-      `<tr><td>Урожай: ${s.game.harvestGot} 🍎${s.basketActive ? ' ×2' : ''}</td><td>+${E.fmt(w.gained)} 🍎</td></tr>` +
-      `<tr><td>Баланс</td><td>💰 ${E.fmt(E.getCoins())}</td></tr>` +
-      `<tr><td>Урожай в саду</td><td>🍎 ${E.fmt(E.getHarvest())}</td></tr>` +
+      `<tr><td>${t('win.row.entry')}</td><td>${s.entryPaid > 0 ? '−' + E.fmt(s.entryPaid) : t('win.entry.free')}</td></tr>` +
+      `<tr><td>${t('win.row.reward', { n: w.n })}</td><td>+${E.fmt(w.win)}</td></tr>` +
+      `<tr><td>${t('win.row.stockBonus', { n: w.stockCards })}</td><td>+${E.fmt(w.stockB)}</td></tr>` +
+      (w.rw2Used ? `<tr><td>${t('win.row.rw2')}</td><td>+${E.fmt(w.doubleBase)}</td></tr>` : '') +
+      `<tr class="total"><td>${t('win.row.total')}</td><td>${net >= 0 ? '+' : ''}${E.fmt(net)}</td></tr>` +
+      `<tr><td>${t('win.row.harvest', { n: s.game.harvestGot, x2: s.basketActive ? ' ×2' : '' })}</td><td>+${E.fmt(w.gained)} 🍎</td></tr>` +
+      `<tr><td>${t('win.row.balance')}</td><td>💰 ${E.fmt(E.getCoins())}</td></tr>` +
+      `<tr><td>${t('win.row.harvestBank')}</td><td>🍎 ${E.fmt(E.getHarvest())}</td></tr>` +
       `</table>` +
       adCta +
       this.metaCtaWin() +
       `<div class="btn-row">` +
-      `<button class="btn-main" data-ov="garden" type="button">🌳 В сад</button>` +
-      `<button class="btn-main" data-ov="again" type="button">Играть ещё</button>` +
+      `<button class="btn-main" data-ov="garden" type="button">${t('btn.toGarden')}</button>` +
+      `<button class="btn-main" data-ov="again" type="button">${t('btn.playAgain')}</button>` +
       `</div>`
     );
   }
@@ -617,7 +632,7 @@ export class TableUi {
   /** Мотиватор петли: пока сад не пройден целиком — зовём продвинуть заказ. */
   private metaCtaWin(): string {
     if (this.meta.gardenCompleted() < TOTAL_ORDERS) {
-      return `<p class="kept">Урожай растёт — загляните в сад, чтобы продвинуть заказ.</p>`;
+      return `<p class="kept">${t('win.metaCta')}</p>`;
     }
     return '';
   }
@@ -660,21 +675,21 @@ export class TableUi {
     if (L.clearRatio >= 0.6 && !s.rw1Used) {
       adCta =
         `<div class="ad-cta">` +
-        `<button class="btn-ad" data-ov="rw1" type="button">📺 Второй шанс: +5 карт в колоду <span class="sim-tag">СИМУЛЯЦИЯ</span></button>` +
+        `<button class="btn-ad" data-ov="rw1" type="button">${t('ad.rw1.cta')} <span class="sim-tag">${t('ad.simTag')}</span></button>` +
         `</div>`;
     }
     return (
       `<div class="emoji">🐶</div>` +
-      `<h2>Почти получилось!</h2>` +
-      `<p>Стол был чист на ${L.pct}%. Бисквит уверен: в следующий раз выйдет.</p>` +
+      `<h2>${t('lose.title')}</h2>` +
+      `<p>${t('lose.subtitle', { pct: L.pct })}</p>` +
       (L.gained > 0
-        ? `<p class="kept">Урожай сохранён: +${E.fmt(L.gained)} 🍎 (уже в саду)</p>`
-        : `<p class="kept">Урожай не сгорает — соберите 🍎 в новой раздаче.</p>`) +
-      `<p>Баланс: 💰 ${E.fmt(E.getCoins())} · 🍎 ${E.fmt(E.getHarvest())}</p>` +
+        ? `<p class="kept">${t('lose.harvestKept', { n: E.fmt(L.gained) })}</p>`
+        : `<p class="kept">${t('lose.harvestNone')}</p>`) +
+      `<p>${t('lose.balance', { coins: E.fmt(E.getCoins()), harvest: E.fmt(E.getHarvest()) })}</p>` +
       adCta +
       `<div class="btn-row">` +
-      `<button class="btn-main" data-ov="garden" type="button">🌳 В сад</button>` +
-      `<button class="btn-main" data-ov="again" type="button">Ещё раз</button>` +
+      `<button class="btn-main" data-ov="garden" type="button">${t('btn.toGarden')}</button>` +
+      `<button class="btn-main" data-ov="again" type="button">${t('btn.tryAgain')}</button>` +
       `</div>`
     );
   }
@@ -770,7 +785,7 @@ export class TableUi {
         s.rw1Used = true;
         s.lose = null;
         this.hideOverlay();
-        this.gToast('Второй шанс! Колода пополнена (+5 карт).');
+        this.gToast(t('game.toast.secondChance'));
         this.render();
         this.updateBoosterBar();
         this.armIdleTimer();
@@ -784,22 +799,24 @@ export class TableUi {
     if (!s.claimable) return;
     const rw = streakRewardFor(s.day);
     const extra =
-      (rw.undo ? ' +1 ундо' : '') + (rw.joker ? ' +джокер 🃏' : '') + (rw.basket ? ' +лукошко 🧺' : '');
+      (rw.undo ? t('streak.extra.undo') : '') +
+      (rw.joker ? t('streak.extra.joker') : '') +
+      (rw.basket ? t('streak.extra.basket') : '');
     this.showOverlay(
       `<div class="emoji">🌅</div>` +
-      `<h2>Утренняя лейка</h2>` +
-      `<p>День ${s.day} подряд. Забирайте награду и продолжайте стрик.</p>` +
-      `<p class="kept">Награда: 💰 ${rw.coins}${extra}</p>` +
+      `<h2>${t('streak.title')}</h2>` +
+      `<p>${t('streak.subtitle', { d: s.day })}</p>` +
+      `<p class="kept">${t('streak.reward', { coins: rw.coins, extra })}</p>` +
       `<div class="btn-row">` +
-      `<button class="btn-main ghost" data-ov="close" type="button">Позже</button>` +
-      `<button class="btn-main" data-streak="1" type="button">Забрать</button>` +
+      `<button class="btn-main ghost" data-ov="close" type="button">${t('btn.later')}</button>` +
+      `<button class="btn-main" data-streak="1" type="button">${t('btn.claim')}</button>` +
       `</div>`
     );
     // Отдельная привязка кнопки «Забрать» (грант + перерисовка HUD).
     const claimBtn = this.byId('overlay').querySelector('[data-streak]');
     if (claimBtn !== null) {
       claimBtn.addEventListener('click', () => {
-        if (this.meta.claimStreak()) this.gToast('Стрик засчитан!');
+        if (this.meta.claimStreak()) this.gToast(t('game.toast.streakClaimed'));
         this.hideOverlay();
         this.syncHud();
       });

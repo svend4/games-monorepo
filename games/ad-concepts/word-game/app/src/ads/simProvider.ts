@@ -16,6 +16,7 @@
  * В среде без DOM (vitest, node) оверлей не монтируется: show* резолвятся сразу,
  * impression'ы и выручка считаются как обычно — логика тестируема без браузера.
  */
+import { t, type TranslationKey } from '../i18n';
 import type { AdFormat, AdImpression, AdProvider, InterstitialResult, RewardedResult } from './provider';
 import { DEFAULT_GEO, GEO_LABELS, ecpmFor, genRevenue, type GeoTier } from './ecpm';
 
@@ -25,24 +26,22 @@ const INT_SKIP_AFTER = 2; // «Пропустить» появляется че�
 const RW_SECONDS = 5; // rewarded 15–30 c → в симуляции 5 c
 const BANNER_REFRESH_MS = 45000; // adaptive banner refresh 45 c (06 §3.3)
 
-/** Заголовки экрана симуляции по плейсментам (карта 06 §3). */
-const PLACEMENT_TITLES: Readonly<Record<string, string>> = {
-  'I-1': 'Interstitial · I-1 (между уровнями)',
-  'RV-1': 'Rewarded · RV-1 «Бесплатная Лампа»',
-  'RV-2': 'Rewarded · RV-2 «×2 монеты за уровень»',
-  'RV-5': 'Rewarded · RV-5 «Открыть копилку жёлудей»',
-  'RV-6': 'Rewarded · RV-6 «Заморозка стрика»'
+/** Ключи заголовков экрана симуляции по плейсментам (карта 06 §3; Ж.1 — t()). */
+const PLACEMENT_TITLE_KEYS: Readonly<Record<string, TranslationKey>> = {
+  'I-1': 'adsim.title.i1',
+  'RV-1': 'adsim.title.rv1',
+  'RV-2': 'adsim.title.rv2',
+  'RV-5': 'adsim.title.rv5',
+  'RV-6': 'adsim.title.rv6'
 };
 
-/** Пояснения под отсчётом (1:1 тексты прототипа). */
-const PLACEMENT_PITCH: Readonly<Record<string, string>> = {
-  'RV-1': 'Досмотри — откроем случайную букву в сетке бесплатно.',
-  'RV-2': 'Досмотри — удвоим монеты, заработанные на этом уровне.',
-  'RV-5': 'Досмотри — откроем копилку и конвертируем жёлуди в монеты.',
-  'RV-6': 'Досмотри — заморозим стрик, чтобы продолжить серию без потерь.'
+/** Ключи пояснений под отсчётом (тексты прототипа, локализованы в Ж.1). */
+const PLACEMENT_PITCH_KEYS: Readonly<Record<string, TranslationKey>> = {
+  'RV-1': 'adsim.pitch.rv1',
+  'RV-2': 'adsim.pitch.rv2',
+  'RV-5': 'adsim.pitch.rv5',
+  'RV-6': 'adsim.pitch.rv6'
 };
-
-const DEFAULT_PITCH = 'В проде здесь крутится реальная сеть: AppLovin MAX / AdMob (06 §6, §8).';
 
 export interface SimAdProviderOptions {
   /** Инжектируемый RNG джиттера выручки (тесты); по умолчанию Math.random. */
@@ -192,16 +191,17 @@ export class SimAdProvider implements AdProvider {
     // Разметка 1:1 с прототипом index.html (стили — index.html приложения).
     ov.innerHTML =
       '<div class="adSim">' +
-      '<div class="adSimTag">СИМУЛЯЦИЯ РЕКЛАМЫ · без реальных сетей</div>' +
-      '<div class="adSimFormat" id="adSimFormat">Реклама</div>' +
+      '<div class="adSimTag">' + t('adsim.tag') + '</div>' +
+      '<div class="adSimFormat" id="adSimFormat">' + t('adsim.defaultFormat') + '</div>' +
       '<div class="adSimBox">' +
       '<div class="adSimLogo">📺</div>' +
       '<div class="adSimPitch" id="adSimPitch"></div>' +
       '<div class="adSimEcpm" id="adSimEcpm"></div>' +
       '</div>' +
-      '<div class="adSimTimerWrap">Показ идёт: <span class="adSimTimer" id="adSimTimer">5</span> сек</div>' +
-      '<button id="adSimSkip" class="adSimSkip hidden" type="button">Пропустить ✕</button>' +
-      '<button id="adSimClaim" class="adSimClaim hidden" type="button">Забрать награду 🎁</button>' +
+      '<div class="adSimTimerWrap">' + t('adsim.showingPrefix') +
+      ' <span class="adSimTimer" id="adSimTimer">5</span> ' + t('adsim.seconds') + '</div>' +
+      '<button id="adSimSkip" class="adSimSkip hidden" type="button">' + t('adsim.skip') + '</button>' +
+      '<button id="adSimClaim" class="adSimClaim hidden" type="button">' + t('adsim.claim') + '</button>' +
       '</div>';
     this.overlayEl = ov;
     this.formatEl = document.getElementById('adSimFormat');
@@ -230,10 +230,14 @@ export class SimAdProvider implements AdProvider {
     const fmt: AdFormat = kind === 'int' ? 'int' : 'rw';
     const seconds = kind === 'int' ? INT_SECONDS : RW_SECONDS;
     if (this.formatEl) {
+      const titleKey = PLACEMENT_TITLE_KEYS[placement] as TranslationKey | undefined;
       this.formatEl.textContent =
-        PLACEMENT_TITLES[placement] ?? (kind === 'int' ? 'Interstitial · ' : 'Rewarded · ') + placement;
+        titleKey !== undefined ? t(titleKey) : (kind === 'int' ? 'Interstitial · ' : 'Rewarded · ') + placement;
     }
-    if (this.pitchEl) this.pitchEl.textContent = PLACEMENT_PITCH[placement] ?? DEFAULT_PITCH;
+    if (this.pitchEl) {
+      const pitchKey = PLACEMENT_PITCH_KEYS[placement] as TranslationKey | undefined;
+      this.pitchEl.textContent = pitchKey !== undefined ? t(pitchKey) : t('adsim.pitch.default');
+    }
     if (this.ecpmEl) {
       this.ecpmEl.textContent =
         'eCPM (' + GEO_LABELS[this.geo] + '): $' + ecpmFor(fmt, this.geo).toFixed(2) + ' / 1000';
@@ -274,7 +278,7 @@ export class SimAdProvider implements AdProvider {
             this.adTimer = null;
           }
           if (kind === 'int') {
-            skip.textContent = 'Закрыть ✕';
+            skip.textContent = t('adsim.close');
             skip.classList.remove('hidden');
             window.setTimeout(finish, 400); // interstitial закрывается сам
           } else {
@@ -284,7 +288,7 @@ export class SimAdProvider implements AdProvider {
         }
         if (this.timerEl) this.timerEl.textContent = String(remaining);
         if (kind === 'int' && remaining <= seconds - INT_SKIP_AFTER) {
-          skip.textContent = 'Пропустить ✕';
+          skip.textContent = t('adsim.skip');
           skip.classList.remove('hidden');
         }
       }, 1000);

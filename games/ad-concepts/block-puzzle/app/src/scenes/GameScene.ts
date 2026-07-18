@@ -22,6 +22,8 @@ import type { Meta } from '../meta/meta';
 import type { BoosterController } from '../meta/boosters';
 import type { MetaUi } from '../ui/MetaUi';
 import type { MonetizeController } from '../monetize/monetize';
+import { t } from '../i18n';
+import { onThemeChanged, theme } from '../ui/theme';
 
 /** Сервисы меты (Проход Е.2): экономика, прогрессия, бустеры, DOM-оверлей,
  * монетизация (interstitial на рестарте + rewarded на экране итога). */
@@ -58,6 +60,21 @@ const STORAGE_BEST = 'blocksurge_best'; // тот же ключ — сейв п�
 
 export const GAME_W = PAD * 2 + GRID_W;   // 396
 export const GAME_H = DOCK_Y + DOCK_H + PAD; // 620
+
+/** Логический прямоугольник внутри канваса (координаты сцены). */
+export interface LogicalRect { x: number; y: number; w: number; h: number }
+
+/**
+ * Регионы канваса для коуч-марок FTUE (Проход Ж.1) — аналог глобалов
+ * BOARD_X/DOCK_Y/slotRect, которые прототип читал с window. OnboardingUi
+ * переводит их в экранные координаты через rect канваса (Scale.FIT).
+ */
+export const CANVAS_RECTS: Readonly<Record<'board' | 'dock' | 'bombSlot' | 'surge', LogicalRect>> = {
+  board: { x: BOARD_X, y: BOARD_Y, w: GRID_W, h: GRID_W },
+  dock: { x: BOARD_X, y: DOCK_Y, w: GRID_W, h: DOCK_H },
+  bombSlot: { x: BOARD_X + 3 * (SLOT_W + SLOT_GAP), y: DOCK_Y, w: SLOT_W, h: DOCK_H },
+  surge: { x: BOARD_X, y: 80, w: 340, h: 24 } // шкала «Прилива» + процент в HUD
+};
 
 /* Палитра фигур 1:1 из прототипа (индекс = colorIdx каталога). */
 const COLORS: readonly number[] = [
@@ -108,10 +125,12 @@ export class GameScene extends Phaser.Scene {
   private startBest = 0; // рекорд на старте партии (для «Новый рекорд!»)
 
   /* HUD */
+  private scoreLabelText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private bestText!: Phaser.GameObjects.Text;
   private comboText!: Phaser.GameObjects.Text;
   private surgePctText!: Phaser.GameObjects.Text;
+  private restartBtnText!: Phaser.GameObjects.Text;
   private toastText!: Phaser.GameObjects.Text;
   private toastTimer: Phaser.Time.TimerEvent | null = null;
 
@@ -143,6 +162,11 @@ export class GameScene extends Phaser.Scene {
     this.buildHud();
     this.buildDockTexts();
     this.buildOverlay();
+
+    // Тема (Проход Ж.1): фон камеры + вторичные тексты — из src/ui/theme.ts;
+    // смена пресета яркости применяется сразу (заливки поля читаются per-frame).
+    this.applyTheme();
+    onThemeChanged(() => this.applyTheme());
 
     try {
       this.best = parseInt(localStorage.getItem(STORAGE_BEST) ?? '', 10) || 0;
@@ -218,12 +242,17 @@ export class GameScene extends Phaser.Scene {
     const fx = boardToPx(r + def.h / 2, c + def.w / 2);
     this.addFloat(fx.x, fx.y, '+' + res.points, res.lineCount > 0 ? '#ffd43b' : '#b8c4d3');
     if (res.mult > 1 && res.lineCount > 0) {
-      this.addFloat(fx.x, fx.y - 26, 'Комбо ×' + res.mult, '#ff922b');
+      this.addFloat(fx.x, fx.y - 26, t('game.float.combo', { mult: res.mult }), '#ff922b');
     }
     if (res.cleanBoard) {
-      this.addFloat(BOARD_X + GRID_W / 2, BOARD_Y + GRID_W / 2, 'Чистое поле +' + CLEAN_BONUS, '#69db7c');
+      this.addFloat(
+        BOARD_X + GRID_W / 2,
+        BOARD_Y + GRID_W / 2,
+        t('game.float.cleanBoard', { bonus: CLEAN_BONUS }),
+        '#69db7c'
+      );
     }
-    if (res.bombBecameReady) this.showToast('💎 Прилив! Кристальная бомба в доке');
+    if (res.bombBecameReady) this.showToast(t('game.toast.surgeReady'));
     this.afterAction();
   }
 
@@ -266,7 +295,7 @@ export class GameScene extends Phaser.Scene {
       this.overStarsText.setText(
         end.stars > 0 ? '★'.repeat(end.stars) + '☆'.repeat(3 - end.stars) : '☆☆☆'
       );
-      this.overCoinsText.setText('+' + end.coins + ' 🪙');
+      this.overCoinsText.setText(t('over.coinsValue', { coins: end.coins }));
       this.newRecordText.setVisible(isRecord);
       this.overlay.setVisible(true);
       // Проход Е.2: офферы RW-1/RW-2 «показаны» (воронка 09 §3) + актуализация кнопок
@@ -315,7 +344,7 @@ export class GameScene extends Phaser.Scene {
       .then((bonus) => {
         if (bonus > 0) {
           const earned = this.services.economy.getEarnedThisGame();
-          this.overCoinsText.setText('+' + (earned + bonus) + ' 🪙 (×2)');
+          this.overCoinsText.setText(t('over.coinsValueDoubled', { coins: earned + bonus }));
         }
         this.updateResultAdButtons();
       });
@@ -328,8 +357,11 @@ export class GameScene extends Phaser.Scene {
     const { economy, boosters, ui } = this.services;
     if (economy.getBooster(id) <= 0) {
       const def = ECON.BOOSTERS[id];
-      if (economy.buyBooster(id)) ui.toast('Куплен «' + def.name + '» за ' + def.price + '🪙');
-      else ui.toast('Недостаточно монет (' + def.price + '🪙)');
+      if (economy.buyBooster(id)) {
+        ui.toast(t('toast.boosterBoughtPrice', { name: t(`booster.${id}.name`), price: def.price }));
+      } else {
+        ui.toast(t('toast.notEnoughCoins', { price: def.price }));
+      }
       ui.renderBoosterBar();
       return;
     }
@@ -444,32 +476,36 @@ export class GameScene extends Phaser.Scene {
   /* ============================== HUD ===================================== */
 
   private buildHud(): void {
-    this.add.text(BOARD_X, 10, 'ОЧКИ', { fontFamily: FONT, fontSize: '10px', color: '#8b98a9' });
+    const sec = theme().textSecondary;
+    this.scoreLabelText = this.add.text(BOARD_X, 10, t('hud.scoreLabel'), {
+      fontFamily: FONT, fontSize: '10px', color: sec
+    });
     this.scoreText = this.add.text(BOARD_X, 22, '0', {
       fontFamily: FONT, fontSize: '28px', fontStyle: 'bold', color: '#e8edf4'
     });
-    this.bestText = this.add.text(GAME_W - PAD, 22, 'Рекорд 0', {
-      fontFamily: FONT, fontSize: '16px', color: '#8b98a9'
+    this.bestText = this.add.text(GAME_W - PAD, 22, t('hud.best', { best: 0 }), {
+      fontFamily: FONT, fontSize: '16px', color: sec
     }).setOrigin(1, 0);
 
-    this.comboText = this.add.text(BOARD_X, 62, 'Комбо —', {
-      fontFamily: FONT, fontSize: '14px', color: '#8b98a9'
+    this.comboText = this.add.text(BOARD_X, 62, t('hud.comboNone'), {
+      fontFamily: FONT, fontSize: '14px', color: sec
     });
 
-    const restartBtn = this.add.text(GAME_W - PAD, 62, '↻ Заново', {
-      fontFamily: FONT, fontSize: '14px', color: '#8b98a9'
+    const restartBtn = this.add.text(GAME_W - PAD, 62, t('hud.restart'), {
+      fontFamily: FONT, fontSize: '14px', color: sec
     }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
     restartBtn.on('pointerover', () => restartBtn.setColor('#e8edf4'));
-    restartBtn.on('pointerout', () => restartBtn.setColor('#8b98a9'));
+    restartBtn.on('pointerout', () => restartBtn.setColor(theme().textSecondary));
     restartBtn.on('pointerup', () => this.startGame());
+    this.restartBtnText = restartBtn;
 
-    this.surgePctText = this.add.text(BOARD_X + 268, 84, 'Прилив 0%', {
-      fontFamily: FONT, fontSize: '12px', color: '#8b98a9'
+    this.surgePctText = this.add.text(BOARD_X + 268, 84, t('hud.surge', { pct: 0 }), {
+      fontFamily: FONT, fontSize: '12px', color: sec
     });
 
     this.toastText = this.add.text(GAME_W / 2, BOARD_Y + 22, '', {
       fontFamily: FONT, fontSize: '13px', color: '#e8edf4',
-      backgroundColor: '#1c2634', padding: { x: 12, y: 6 }
+      backgroundColor: theme().css.panelHover, padding: { x: 12, y: 6 }
     }).setOrigin(0.5).setDepth(8).setVisible(false);
   }
 
@@ -485,20 +521,35 @@ export class GameScene extends Phaser.Scene {
       }
     }
     this.scoreText.setText(String(s.score));
-    this.bestText.setText('Рекорд ' + Math.max(this.best, s.score));
+    this.bestText.setText(t('hud.best', { best: Math.max(this.best, s.score) }));
     if (s.combo.chain >= 2) {
-      this.comboText.setText('Комбо ×' + multFor(s.combo.chain) + ' · серия ' + s.combo.chain);
+      this.comboText.setText(t('hud.comboActive', { mult: multFor(s.combo.chain), chain: s.combo.chain }));
       this.comboText.setColor('#ff922b');
     } else if (s.combo.chain === 1) {
-      this.comboText.setText('Серия начата…');
-      this.comboText.setColor('#8b98a9');
+      this.comboText.setText(t('hud.comboStarted'));
+      this.comboText.setColor(theme().textSecondary);
     } else {
-      this.comboText.setText('Комбо —');
-      this.comboText.setColor('#8b98a9');
+      this.comboText.setText(t('hud.comboNone'));
+      this.comboText.setColor(theme().textSecondary);
     }
     const pct = Math.round((s.surge.charge / SURGE_MAX) * 100);
-    this.surgePctText.setText('Прилив ' + pct + '%');
-    this.surgePctText.setColor(s.bombReady ? '#67e8f9' : '#8b98a9');
+    this.surgePctText.setText(t('hud.surge', { pct }));
+    this.surgePctText.setColor(s.bombReady ? '#67e8f9' : theme().textSecondary);
+  }
+
+  /** Применить палитру темы к камере и статичным текстам (Проход Ж.1). */
+  private applyTheme(): void {
+    const p = theme();
+    this.cameras.main.setBackgroundColor(p.canvasBg);
+    this.scoreLabelText.setColor(p.textSecondary);
+    this.bestText.setColor(p.textSecondary);
+    this.restartBtnText.setColor(p.textSecondary);
+    this.bombHint1.setColor(p.textDim);
+    this.bombHint2.setColor(p.textDim);
+    this.toastText.setStyle({ backgroundColor: p.css.panelHover });
+    // combo/surge/best перекрашиваются по текущему состоянию (в create()
+    // applyTheme зовётся до первой партии — state ещё не создан).
+    if (this.state !== undefined) this.updateHud();
   }
 
   private showToast(msg: string): void {
@@ -534,14 +585,14 @@ export class GameScene extends Phaser.Scene {
     const s = slotRect(3);
     const cx = s.x + s.w / 2;
     this.bombIcon = this.add.text(cx, s.y + s.h / 2 - 8, '💎', { fontSize: '34px' }).setOrigin(0.5);
-    this.bombLabel = this.add.text(cx, s.y + s.h - 16, 'бомба 3×3', {
+    this.bombLabel = this.add.text(cx, s.y + s.h - 16, t('dock.bombLabel'), {
       fontFamily: FONT, fontSize: '11px', color: '#67e8f9'
     }).setOrigin(0.5);
-    this.bombHint1 = this.add.text(cx, s.y + s.h / 2 - 8, 'заполни', {
-      fontFamily: FONT, fontSize: '11px', color: '#3d5065'
+    this.bombHint1 = this.add.text(cx, s.y + s.h / 2 - 8, t('dock.bombHint1'), {
+      fontFamily: FONT, fontSize: '11px', color: theme().textDim
     }).setOrigin(0.5);
-    this.bombHint2 = this.add.text(cx, s.y + s.h / 2 + 8, '«Прилив»', {
-      fontFamily: FONT, fontSize: '11px', color: '#3d5065'
+    this.bombHint2 = this.add.text(cx, s.y + s.h / 2 + 8, t('dock.bombHint2'), {
+      fontFamily: FONT, fontSize: '11px', color: theme().textDim
     }).setOrigin(0.5);
     this.bombDragText = this.add.text(0, 0, '💎', { fontSize: '40px' })
       .setOrigin(0.5).setDepth(7).setVisible(false);
@@ -549,49 +600,49 @@ export class GameScene extends Phaser.Scene {
 
   private buildOverlay(): void {
     const bg = this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x0b0f16, 0.85);
-    const title = this.add.text(GAME_W / 2, 130, 'Партия окончена', {
+    const title = this.add.text(GAME_W / 2, 130, t('over.title'), {
       fontFamily: FONT, fontSize: '26px', fontStyle: 'bold', color: '#e8edf4'
     }).setOrigin(0.5);
-    this.newRecordText = this.add.text(GAME_W / 2, 160, '🏆 Новый рекорд!', {
+    this.newRecordText = this.add.text(GAME_W / 2, 160, t('over.newRecord'), {
       fontFamily: FONT, fontSize: '16px', color: '#ffd43b'
     }).setOrigin(0.5);
-    const scoreLabel = this.add.text(GAME_W / 2, 190, 'Очки', {
+    const scoreLabel = this.add.text(GAME_W / 2, 190, t('over.scoreLabel'), {
       fontFamily: FONT, fontSize: '12px', color: '#8b98a9'
     }).setOrigin(0.5);
     this.overScoreText = this.add.text(GAME_W / 2, 216, '0', {
       fontFamily: FONT, fontSize: '32px', fontStyle: 'bold', color: '#e8edf4'
     }).setOrigin(0.5);
-    const bestLabel = this.add.text(GAME_W / 2, 250, 'Рекорд', {
+    const bestLabel = this.add.text(GAME_W / 2, 250, t('over.bestLabel'), {
       fontFamily: FONT, fontSize: '12px', color: '#8b98a9'
     }).setOrigin(0.5);
     this.overBestText = this.add.text(GAME_W / 2, 272, '0', {
       fontFamily: FONT, fontSize: '20px', color: '#e8edf4'
     }).setOrigin(0.5);
     // Проход Е.2: звёзды партии (04 §2) и монеты за партию (05 §2.1)
-    const starsLabel = this.add.text(GAME_W / 2, 302, 'Звёзды партии', {
+    const starsLabel = this.add.text(GAME_W / 2, 302, t('over.starsLabel'), {
       fontFamily: FONT, fontSize: '12px', color: '#8b98a9'
     }).setOrigin(0.5);
     this.overStarsText = this.add.text(GAME_W / 2, 326, '☆☆☆', {
       fontFamily: FONT, fontSize: '22px', color: '#ffd43b'
     }).setOrigin(0.5);
-    const coinsLabel = this.add.text(GAME_W / 2, 356, 'Монеты за партию', {
+    const coinsLabel = this.add.text(GAME_W / 2, 356, t('over.coinsLabel'), {
       fontFamily: FONT, fontSize: '12px', color: '#8b98a9'
     }).setOrigin(0.5);
-    this.overCoinsText = this.add.text(GAME_W / 2, 378, '+0 🪙', {
+    this.overCoinsText = this.add.text(GAME_W / 2, 378, t('over.coinsValue', { coins: 0 }), {
       fontFamily: FONT, fontSize: '18px', color: '#ffd43b'
     }).setOrigin(0.5);
     // Проход Е.2: rewarded-офферы экрана итога (06 §2.2 RW-1/RW-2, СИМУЛЯЦИЯ)
-    this.rwReviveBtn = this.add.text(GAME_W / 2, 416, '💚 Второй шанс (реклама)', {
+    this.rwReviveBtn = this.add.text(GAME_W / 2, 416, t('over.revive'), {
       fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#e8edf4',
       backgroundColor: '#1f4d3a', padding: { x: 16, y: 8 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     this.rwReviveBtn.on('pointerup', () => this.onReviveClick());
-    this.rwDoubleBtn = this.add.text(GAME_W / 2, 454, '💰 ×2 монеты за партию (реклама)', {
+    this.rwDoubleBtn = this.add.text(GAME_W / 2, 454, t('over.doubleCoins'), {
       fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#e8edf4',
       backgroundColor: '#2a2416', padding: { x: 16, y: 8 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     this.rwDoubleBtn.on('pointerup', () => this.onDoubleCoinsClick());
-    const againBtn = this.add.text(GAME_W / 2, 500, 'Играть снова', {
+    const againBtn = this.add.text(GAME_W / 2, 500, t('over.again'), {
       fontFamily: FONT, fontSize: '18px', fontStyle: 'bold', color: '#0b0f16',
       backgroundColor: '#4dabf7', padding: { x: 20, y: 10 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -604,7 +655,7 @@ export class GameScene extends Phaser.Scene {
         .then(() => this.startGame());
     });
     // Прямой мостик в мету с экрана итога (как overMetaBtn прототипа)
-    const metaBtn = this.add.text(GAME_W / 2, 544, '🗺️ Карта и награды', {
+    const metaBtn = this.add.text(GAME_W / 2, 544, t('over.toMeta'), {
       fontFamily: FONT, fontSize: '14px', color: '#e8edf4',
       backgroundColor: '#17233a', padding: { x: 16, y: 8 }
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -643,7 +694,7 @@ export class GameScene extends Phaser.Scene {
     const y = 86;
     const w = 260;
     const h = 12;
-    g.fillStyle(0x1a2230, 1);
+    g.fillStyle(theme().surgeTrack, 1);
     g.fillRoundedRect(x, y, w, h, 6);
     const charge = this.state.surge.charge;
     if (charge > 0 || this.state.bombReady) {
@@ -655,14 +706,18 @@ export class GameScene extends Phaser.Scene {
 
   private drawBoard(): void {
     const g = this.gfx;
-    g.fillStyle(0x0d131c, 1);
+    const pal = theme(); // палитра читается per-frame — смена пресета видна сразу
+    g.fillStyle(pal.boardPanel, 1);
     g.fillRoundedRect(BOARD_X - 6, BOARD_Y - 6, GRID_W + 12, GRID_W + 12, 12);
     const b = this.state.board;
     for (let r = 0; r < N; r++) {
       for (let c = 0; c < N; c++) {
         const p = boardToPx(r, c);
-        g.fillStyle(0x1a2230, 1);
+        // Контраст-проход Ж.1: пустая клетка светлее фона + заметная рамка.
+        g.fillStyle(pal.cellEmpty, 1);
         g.fillRoundedRect(p.x + 1.5, p.y + 1.5, CELL - 3, CELL - 3, 6);
+        g.lineStyle(1, pal.cellEmptyBorder, 1);
+        g.strokeRoundedRect(p.x + 1.5, p.y + 1.5, CELL - 3, CELL - 3, 6);
         const v = b[r][c];
         if (v !== 0) this.drawCellRect(p.x, p.y, CELL, COLORS[v - 1] ?? 0xffffff, 1);
       }
@@ -713,10 +768,14 @@ export class GameScene extends Phaser.Scene {
 
   private drawDock(): void {
     const g = this.gfx;
+    const pal = theme();
     for (let i = 0; i < 3; i++) {
       const s = slotRect(i);
-      g.fillStyle(0x141a24, 1);
+      // Контраст-проход Ж.1: гнёзда дока светлее и с контрастной рамкой.
+      g.fillStyle(pal.dockSlot, 1);
       g.fillRoundedRect(s.x, s.y, s.w, s.h, 10);
+      g.lineStyle(1, pal.dockSlotBorder, 1);
+      g.strokeRoundedRect(s.x, s.y, s.w, s.h, 10);
       const id = this.state.hand[i];
       if (id === null) continue;
       if (this.drag && this.drag.kind === 'piece' && this.drag.slot === i) continue;
@@ -732,9 +791,9 @@ export class GameScene extends Phaser.Scene {
     // Гнездо кристальной бомбы (штриховая рамка прототипа → сплошная: у Phaser
     // Graphics нет line dash; функциональной разницы нет)
     const s = slotRect(3);
-    g.fillStyle(0x10202a, 1);
+    g.fillStyle(pal.bombSlot, 1);
     g.fillRoundedRect(s.x, s.y, s.w, s.h, 10);
-    g.lineStyle(1.5, this.state.bombReady ? 0x67e8f9 : 0x26374a, 1);
+    g.lineStyle(1.5, this.state.bombReady ? 0x67e8f9 : pal.dockSlotBorder, 1);
     g.strokeRoundedRect(s.x + 2, s.y + 2, s.w - 4, s.h - 4, 8);
   }
 

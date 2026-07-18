@@ -24,6 +24,8 @@ import type { AdFormat, AdImpression, AdProvider, RewardedResult } from '../ads/
 import { GEO_LABELS, GEO_ORDER, ecpmFor, type GeoTier } from '../ads/ecpm';
 import type { Analytics } from '../economy/analytics';
 import type { Economy } from '../economy/economy';
+import { t } from '../i18n';
+import { planLabel, skuTitle } from '../i18n/labels';
 import { parseDate, todayStr } from '../meta/dates';
 import { systemClock, type Clock } from './clock';
 import { MONETIZE, findSku, type IapSku, type SubPlan } from './config';
@@ -273,7 +275,7 @@ export class MonetizeController {
       this.ensureDay();
       this.deps.monStore.state.day.int++;
       this.deps.monStore.save();
-      this.toast('Interstitial засчитан · +$' + revenueUsd.toFixed(4));
+      this.toast(t('mon.intCounted', { rev: revenueUsd.toFixed(4) }));
       this.changed();
       return true;
     }
@@ -337,11 +339,11 @@ export class MonetizeController {
     this.ensureDay();
     const day = this.deps.monStore.state.day;
     if (day.rv1 >= MONETIZE.RW.RV1_DAILY_CAP) {
-      this.toast('Лимит бесплатной Лампы на сегодня (' + MONETIZE.RW.RV1_DAILY_CAP + ')');
+      this.toast(t('mon.rv1LimitDay', { n: MONETIZE.RW.RV1_DAILY_CAP }));
       return false;
     }
     if (!this.deps.bridge.isDailyMode() && this.rv1LastKey === this.levelKey()) {
-      this.toast('Бесплатная Лампа — 1 раз на уровень');
+      this.toast(t('mon.rv1PerLevel'));
       return false;
     }
     // RV-1: показ оффера = момент клика по кнопке (нет отдельной карточки).
@@ -354,9 +356,9 @@ export class MonetizeController {
         this.rv1LastKey = this.levelKey();
         this.deps.monStore.save();
         this.track('hint_use', { type: 'lamp', source: 'rv' });
-        this.toast('💡 Буква открыта за просмотр (RV-1)');
+        this.toast(t('mon.rv1Done'));
       } else {
-        this.toast('Открывать нечего — уровень почти решён');
+        this.toast(t('mon.nothingToReveal'));
       }
     });
   }
@@ -377,7 +379,7 @@ export class MonetizeController {
     await this.playRewarded('RV-2', () => {
       extra = this.grantCoins(reward, 'rv2');
       this.rv2LastKey = this.levelKey();
-      this.toast('💰 +' + extra + ' 🪙 (×2 монеты за уровень)');
+      this.toast(t('mon.rv2Done', { n: extra }));
     });
     return extra;
   }
@@ -413,7 +415,7 @@ export class MonetizeController {
   async offerFreezeStreak(): Promise<boolean> {
     this.ensureDay();
     if (this.deps.monStore.state.day.rv6 >= MONETIZE.RW.RV6_DAILY_CAP) {
-      this.toast('Лимит «Заморозки стрика» на сегодня');
+      this.toast(t('mon.rv6Limit'));
       return false;
     }
     return this.playRewarded('RV-6', () => {
@@ -423,7 +425,7 @@ export class MonetizeController {
       s.day.rv6++;
       this.deps.monStore.save();
       this.track('streak_saved', { save_source: 'rv' });
-      this.toast('🧊 Заморозка стрика получена — серия защищена');
+      this.toast(t('mon.rv6Done'));
     });
   }
 
@@ -475,11 +477,11 @@ export class MonetizeController {
     this.deps.monStore.save();
     if (asTrial) {
       this.track('trial_start', { plan, price_tier: p.price });
-      this.toast('СИМУЛЯЦИЯ: WordGrove Club — триал 7 дней активен');
+      this.toast(t('mon.trialStarted'));
     } else {
       this.track('sub_convert', { plan, price_tier: p.price });
       this.bookSubDay(plan);
-      this.toast('СИМУЛЯЦИЯ: подписка WordGrove Club оформлена (' + p.label + ')');
+      this.toast(t('mon.subStarted', { plan: planLabel(plan) }));
     }
     this.updateBanner();
     this.changed();
@@ -517,7 +519,7 @@ export class MonetizeController {
     this.deps.monStore.save();
     this.track('sub_convert', { plan, price_tier: p.price });
     this.bookSubDay(plan);
-    this.toast('СИМУЛЯЦИЯ: триал завершён — подписка WordGrove Club активна');
+    this.toast(t('mon.trialConverted'));
     this.changed();
   }
 
@@ -529,7 +531,7 @@ export class MonetizeController {
     this.track('sub_cancel', { plan: s.subscription.plan });
     this.updateBanner();
     this.changed();
-    this.toast('СИМУЛЯЦИЯ: подписка отменена');
+    this.toast(t('mon.subCancelled'));
   }
 
   /* ==================== REMOVE ADS / ПОЛКА IAP (06 §5.2–5.3) ========= */
@@ -537,7 +539,7 @@ export class MonetizeController {
   async buyRemoveAds(): Promise<boolean> {
     const s = this.deps.monStore.state;
     if (s.removeAds) {
-      this.toast('Remove Ads уже куплен');
+      this.toast(t('mon.removeAdsOwned'));
       return false;
     }
     const res = await this.deps.purchaseProvider.buy(MONETIZE.REMOVE_ADS.id);
@@ -555,7 +557,7 @@ export class MonetizeController {
       price_usd: price,
       is_first_purchase: s.lifetime.iapCount === 1
     });
-    this.toast('СИМУЛЯЦИЯ: реклама убрана навсегда · $' + price.toFixed(2));
+    this.toast(t('mon.removeAdsDone', { price: price.toFixed(2) }));
     this.updateBanner();
     this.changed();
     return true;
@@ -567,7 +569,7 @@ export class MonetizeController {
     if (!sku) return false;
     const s = this.deps.monStore.state;
     if (sku.once === true && sku.id === 'coins_starter' && s.starterBought) {
-      this.toast('Стартовый набор — одноразовый');
+      this.toast(t('mon.starterOnce'));
       return false;
     }
     const res = await this.deps.purchaseProvider.buy(id);
@@ -592,7 +594,7 @@ export class MonetizeController {
     s.lifetime.iapRev += sku.price;
     s.lifetime.iapCount++;
     this.deps.monStore.save();
-    this.toast('СИМУЛЯЦИЯ: куплено «' + sku.title + '» · +' + sku.coins + ' 🪙 · $' + sku.price.toFixed(2));
+    this.toast(t('mon.iapDone', { title: skuTitle(sku), coins: sku.coins, price: sku.price.toFixed(2) }));
     this.changed();
     return true;
   }

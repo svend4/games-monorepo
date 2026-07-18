@@ -13,6 +13,7 @@
  */
 import { ECON } from '../economy/econ';
 import type { Analytics } from '../economy/analytics';
+import { t } from '../i18n';
 import type { Economy } from '../economy/economy';
 import type { Store } from '../economy/store';
 import type { MetaSave, StatsSave } from '../economy/save';
@@ -137,13 +138,13 @@ export class Meta {
     mi.done.push(def.id);
     this.economy.addCoins(def.reward, 'mission');
     this.analytics.track('mission_complete', { mission_id: def.id, type: 'daily' });
-    this.toast('Миссия выполнена: +' + def.reward + '🪙');
+    this.toast(t('meta.toast.missionDone', { reward: def.reward }));
     // Все 3 закрыты → бонус-сундук (04 §4.1)
     if (mi.done.length >= mi.set.length && !mi.bonusClaimed) {
       mi.bonusClaimed = true;
       this.economy.addCoins(MISSION_BONUS, 'mission_bonus');
       this.analytics.track('mission_complete', { mission_id: 'daily_bonus', type: 'daily' });
-      this.toast('Все миссии дня! Бонус-сундук +' + MISSION_BONUS + '🪙');
+      this.toast(t('meta.toast.allMissions', { bonus: MISSION_BONUS }));
     }
     this.store.save();
   }
@@ -169,10 +170,10 @@ export class Meta {
     }
     if (r.booster) {
       this.economy.addBooster(r.booster, 1, 'chest');
-      parts.push('+1 ' + ECON.BOOSTERS[r.booster].name);
+      parts.push('+1 ' + t(`booster.${r.booster}.name`));
     }
     this.analytics.track('currency_earn', { amount: r.coins ?? 0, source: 'map_node_' + node.id });
-    this.toast('Узел ' + node.id + ': ' + parts.join(', '));
+    this.toast(t('meta.toast.nodeClaimed', { id: node.id, parts: parts.join(', ') }));
     this.store.save();
     this.changed();
   }
@@ -186,9 +187,9 @@ export class Meta {
 
   claimStreak(): void {
     if (!this.streakClaimable()) return;
-    const t = this.today();
+    const todayStr = this.today();
     const st = this.m.streak;
-    const gap = st.lastClaim !== '' ? daysBetween(st.lastClaim, t) : 1;
+    const gap = st.lastClaim !== '' ? daysBetween(st.lastClaim, todayStr) : 1;
     let newDay: number;
     let action: string;
     if (st.lastClaim === '' || gap >= 2) {
@@ -201,7 +202,7 @@ export class Meta {
       action = 'inc';
     }
     st.day = newDay;
-    st.lastClaim = t;
+    st.lastClaim = todayStr;
 
     const reward = STREAK_REWARDS[newDay - 1];
     const parts: string[] = [];
@@ -211,10 +212,10 @@ export class Meta {
     }
     if (reward.booster) {
       this.economy.addBooster(reward.booster, 1, 'streak');
-      parts.push('+1 ' + ECON.BOOSTERS[reward.booster].name);
+      parts.push('+1 ' + t(`booster.${reward.booster}.name`));
     }
     this.analytics.track('streak_change', { new_value: st.count, action });
-    this.toast('Серия, день ' + newDay + ': ' + parts.join(', '));
+    this.toast(t('meta.toast.streakClaimed', { day: newDay, parts: parts.join(', ') }));
     this.store.save();
     this.changed();
   }
@@ -225,7 +226,7 @@ export class Meta {
     this.ensureMissions(); // новая дата → ротация миссий
     this.store.save();
     this.changed();
-    this.toast('Наступил новый день (тест). День +1');
+    this.toast(t('meta.toast.newDay'));
   }
 
   /* ======================= ХУКИ ИЗ ПАРТИИ (GameScene) =================== */

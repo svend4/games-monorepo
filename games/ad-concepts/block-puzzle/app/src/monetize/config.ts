@@ -4,6 +4,7 @@
  * eCPM-модель живёт в src/ads/ecpm.ts (свойство рекламного слоя).
  */
 import type { BoosterId } from '../economy/econ';
+import type { TranslationKey } from '../i18n';
 
 export const MONETIZE = {
   /** Тот же ключ localStorage, что у прототипа, — сейв подхватывается 1:1. */
@@ -71,11 +72,12 @@ export interface IapSku {
   readonly id: string;
   /** Локализованная tier-цена стора, $US (06 §5). */
   readonly price: number;
-  readonly title: string;
-  readonly desc: string;
+  /** Название/описание/бейдж — ключи i18n (Проход Ж.1), UI берёт через t(). */
+  readonly titleKey: TranslationKey;
+  readonly descKey: TranslationKey;
   readonly grant: IapGrant;
   readonly highlight?: boolean;
-  readonly badge?: string;
+  readonly badgeKey?: TranslationKey;
 }
 
 /**
@@ -83,40 +85,29 @@ export interface IapSku {
  * (≤6 SKU); здесь показываем полный каталог для теста.
  */
 export const IAP_SHELF: readonly IapSku[] = [
-  { id: 'starter', price: 0.99, title: 'Стартовый набор',
-    desc: '600 монет + Молот · окно D3–D10, одноразовый',
-    grant: { coins: 600, boosters: { hammer: 1 } }, badge: 'ЛУЧШИЙ СТАРТ' },
-  { id: 'coins_s', price: 1.99, title: 'Пак монет S',
-    desc: '1 200 монет · импульсная докупка',
+  { id: 'starter', price: 0.99, titleKey: 'iap.starter.title', descKey: 'iap.starter.desc',
+    grant: { coins: 600, boosters: { hammer: 1 } }, badgeKey: 'iap.starter.badge' },
+  { id: 'coins_s', price: 1.99, titleKey: 'iap.coins_s.title', descKey: 'iap.coins_s.desc',
     grant: { coins: 1200 } },
-  { id: 'piggy', price: 2.99, title: 'Копилка',
-    desc: 'до 3 000 монет · «свои жалко»',
+  { id: 'piggy', price: 2.99, titleKey: 'iap.piggy.title', descKey: 'iap.piggy.desc',
     grant: { coins: 3000 } },
-  { id: 'remove_ads', price: 4.99, title: 'Remove Ads',
-    desc: 'Навсегда убирает interstitial + баннер (rewarded остаётся)',
-    grant: { removeAds: true }, highlight: true, badge: 'ГЛАВНЫЙ SKU' },
-  { id: 'season_pass', price: 4.99, title: 'Season Pass',
-    desc: 'Платная ветка трека + 1 000 монет + 3 бустера',
+  { id: 'remove_ads', price: 4.99, titleKey: 'iap.remove_ads.title', descKey: 'iap.remove_ads.desc',
+    grant: { removeAds: true }, highlight: true, badgeKey: 'iap.remove_ads.badge' },
+  { id: 'season_pass', price: 4.99, titleKey: 'iap.season_pass.title', descKey: 'iap.season_pass.desc',
     grant: { coins: 1000, boosters: { undo: 1, swap: 1, hammer: 1 }, pass: true } },
-  { id: 'coins_m', price: 4.99, title: 'Пак M',
-    desc: '3 500 монет + 2 бустера',
+  { id: 'coins_m', price: 4.99, titleKey: 'iap.coins_m.title', descKey: 'iap.coins_m.desc',
     grant: { coins: 3500, boosters: { swap: 1, hammer: 1 } } },
-  { id: 'coins_l', price: 9.99, title: 'Пак L',
-    desc: '8 000 монет + 5 бустеров',
+  { id: 'coins_l', price: 9.99, titleKey: 'iap.coins_l.title', descKey: 'iap.coins_l.desc',
     grant: { coins: 8000, boosters: { undo: 2, swap: 1, hammer: 2 } } },
-  { id: 'coins_xl', price: 19.99, title: 'Пак XL',
-    desc: '18 000 монет + 12 бустеров + эксклюзивный скин',
+  { id: 'coins_xl', price: 19.99, titleKey: 'iap.coins_xl.title', descKey: 'iap.coins_xl.desc',
     grant: { coins: 18000, boosters: { undo: 4, swap: 4, hammer: 4 }, skin: 'aurora' } },
-  { id: 'coins_xxl', price: 49.99, title: 'Пак XXL',
-    desc: '50 000 монет + 30 бустеров · хвост китов',
+  { id: 'coins_xxl', price: 49.99, titleKey: 'iap.coins_xxl.title', descKey: 'iap.coins_xxl.desc',
     grant: { coins: 50000, boosters: { undo: 10, swap: 10, hammer: 10 } } },
-  { id: 'mega', price: 99.99, title: 'Мега-сундук сезона',
-    desc: '110 000 монет + все скины сезона + рамка профиля',
+  { id: 'mega', price: 99.99, titleKey: 'iap.mega.title', descKey: 'iap.mega.desc',
     grant: { coins: 110000, boosters: { undo: 20, swap: 20, hammer: 20 }, skin: 'season', frame: true },
-    badge: 'ЯКОРЬ' },
-  { id: 'sub', price: 7.99, title: 'Подписка Surge Premium',
-    desc: 'No ads + 200 монет/день + эксклюзивная тема (в мес)',
-    grant: { subscription: true, coins: 200 }, highlight: true, badge: 'ПОДПИСКА' }
+    badgeKey: 'iap.mega.badge' },
+  { id: 'sub', price: 7.99, titleKey: 'iap.sub.title', descKey: 'iap.sub.desc',
+    grant: { subscription: true, coins: 200 }, highlight: true, badgeKey: 'iap.sub.badge' }
 ];
 
 /** Ежедневный бонус подписки, монет (06 §5). */

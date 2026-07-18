@@ -7,12 +7,14 @@
 /** Идентификаторы бустеров-инвентаря (05 §2.2). */
 export type BoosterId = 'undo' | 'swap' | 'hammer';
 
-/** Определение бустера для магазина/бара (имя, цена в монетах, подсказка). */
+/**
+ * Определение бустера для магазина/бара (цена в монетах, эмодзи).
+ * Имя и подсказка — в i18n-словарях (Проход Ж.1): ключи
+ * `booster.<id>.name` / `booster.<id>.hint`, UI берёт их через t().
+ */
 export interface BoosterDef {
-  readonly name: string;
   readonly price: number;
   readonly emoji: string;
-  readonly hint: string;
 }
 
 export const ECON = {
@@ -32,11 +34,11 @@ export const ECON = {
   /** Защита от runaway при рекордной партии. */
   COIN_ENDGAME_MAX: 100,
 
-  /** Бустеры-инвентарь (05 §2.2 + прайсинг 05 §5). */
+  /** Бустеры-инвентарь (05 §2.2 + прайсинг 05 §5); имена/подсказки — i18n. */
   BOOSTERS: {
-    undo: { name: 'Отмена', price: 80, emoji: '↩️', hint: 'Отменить последний ход' },
-    swap: { name: 'Обмен', price: 120, emoji: '🔁', hint: 'Новая тройка фигур' },
-    hammer: { name: 'Молот', price: 150, emoji: '🔨', hint: 'Убрать одну клетку поля' }
+    undo: { price: 80, emoji: '↩️' },
+    swap: { price: 120, emoji: '🔁' },
+    hammer: { price: 150, emoji: '🔨' }
   } as Readonly<Record<BoosterId, BoosterDef>>,
 
   /** Порядок отображения в баре/магазине (по возрастанию цены, как в прототипе). */

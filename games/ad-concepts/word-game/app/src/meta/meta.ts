@@ -15,6 +15,8 @@ import { defaultStorage, type KeyValueStorage } from '../core/storage';
 import type { Analytics } from '../economy/analytics';
 import { ECON } from '../economy/econ';
 import type { Economy } from '../economy/economy';
+import { t } from '../i18n';
+import { regionName } from '../i18n/labels';
 import {
   META_SAVE_KEY,
   MISSIONS,
@@ -313,7 +315,13 @@ export class Meta {
       this.track('postcard_earned', { postcard_id: region.id, region: region.id });
       this.saveMeta();
       if (!silent) {
-        this.onToast?.(region.emoji + ' Регион «' + region.name + '» пройден! +' + ECON.REGION_REWARD + ' 🪙');
+        this.onToast?.(
+          t('toast.regionDone', {
+            emoji: region.emoji,
+            name: regionName(region.id, region.name),
+            n: ECON.REGION_REWARD
+          })
+        );
       }
     }
   }

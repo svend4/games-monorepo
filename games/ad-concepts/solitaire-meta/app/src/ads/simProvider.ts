@@ -27,15 +27,21 @@ import {
   type GeoTier
 } from './ecpm';
 import { MON, PLACEMENTS, type PlacementId } from '../monetize/config';
+import { t, tDyn } from '../i18n';
 
 export interface SimAdProviderOptions {
   /** Инжектируемый RNG ставки/фейлов (тесты); по умолчанию Math.random. */
   rng?: () => number;
 }
 
+/** Имя/описание плейсмента для оверлея — через i18n с фолбэком на конфиг. */
 function placementDef(placement: string): { name: string; desc: string } {
   const p = PLACEMENTS[placement as PlacementId];
-  return p !== undefined ? p : { name: placement, desc: '—' };
+  if (p === undefined) return { name: placement, desc: '—' };
+  return {
+    name: tDyn('placement.' + placement + '.name', p.name),
+    desc: tDyn('placement.' + placement + '.desc', p.desc)
+  };
 }
 
 export class SimAdProvider implements AdProvider {
@@ -132,13 +138,14 @@ export class SimAdProvider implements AdProvider {
     }
     el.innerHTML =
       '<div class="ad-box">' +
-      '<div class="ad-simtag" id="ad-tag">СИМУЛЯЦИЯ РЕКЛАМЫ</div>' +
+      '<div class="ad-simtag" id="ad-tag">' + t('adov.simTag.rewarded') + '</div>' +
       '<div class="ad-icon">📺</div>' +
       '<div class="ad-place" id="ad-place">—</div>' +
       '<div class="ad-desc" id="ad-desc">—</div>' +
       '<div class="ad-count" id="ad-count">5</div>' +
-      '<div class="ad-note" id="ad-note">в проде здесь показ AppLovin MAX / AdMob</div>' +
-      '<button class="ad-close" id="ad-close" type="button" disabled>Реклама…</button>' +
+      '<div class="ad-note" id="ad-note">' + t('adov.note.prod') + '</div>' +
+      '<button class="ad-close" id="ad-close" type="button" disabled>' +
+      t('adov.btn.loading') + '</button>' +
       '</div>';
     this.screenEl = el;
     this.tagEl = document.getElementById('ad-tag');
@@ -154,7 +161,7 @@ export class SimAdProvider implements AdProvider {
     const p = placementDef(placement);
     if (this.tagEl !== null) {
       this.tagEl.textContent =
-        format === 'rewarded' ? 'СИМУЛЯЦИЯ · REWARDED' : 'СИМУЛЯЦИЯ · INTERSTITIAL';
+        format === 'rewarded' ? t('adov.simTag.rewarded') : t('adov.simTag.interstitial');
     }
     if (this.placeEl !== null) this.placeEl.textContent = p.name + ' · ' + GEO_LABELS[this.geo];
     if (this.descEl !== null) this.descEl.textContent = p.desc;
@@ -172,10 +179,10 @@ export class SimAdProvider implements AdProvider {
     this.fillHeader(format, placement);
     if (this.countEl !== null) this.countEl.textContent = '×';
     if (this.noteEl !== null) {
-      this.noteEl.textContent = 'Реклама не загрузилась (fill < 100%) — награды нет';
+      this.noteEl.textContent = t('adov.note.fail');
     }
     btn.disabled = false;
-    btn.textContent = 'Закрыть';
+    btn.textContent = t('adov.btn.closePlain');
     el.classList.remove('hidden');
     return new Promise((resolve) => {
       btn.onclick = () => {
@@ -205,10 +212,10 @@ export class SimAdProvider implements AdProvider {
     let remain = secs;
     if (this.countEl !== null) this.countEl.textContent = String(remain);
     if (this.noteEl !== null) {
-      this.noteEl.textContent = 'в проде здесь показ AppLovin MAX / AdMob';
+      this.noteEl.textContent = t('adov.note.prod');
     }
     btn.disabled = true;
-    btn.textContent = 'Реклама… ' + remain + ' c';
+    btn.textContent = t('adov.btn.wait', { s: remain });
     btn.onclick = null;
     el.classList.remove('hidden');
 
@@ -218,7 +225,7 @@ export class SimAdProvider implements AdProvider {
         remain--;
         if (remain > 0) {
           if (this.countEl !== null) this.countEl.textContent = String(remain);
-          btn.textContent = 'Реклама… ' + remain + ' c';
+          btn.textContent = t('adov.btn.wait', { s: remain });
           return;
         }
         if (this.adTimer !== null) {
@@ -227,7 +234,7 @@ export class SimAdProvider implements AdProvider {
         }
         if (this.countEl !== null) this.countEl.textContent = '✓';
         btn.disabled = false;
-        btn.textContent = format === 'rewarded' ? 'Забрать награду ✓' : 'Закрыть ✕';
+        btn.textContent = format === 'rewarded' ? t('adov.btn.claim') : t('adov.btn.close');
         btn.onclick = () => {
           btn.onclick = null; // нет дубля награды от повторного клика
           el.classList.add('hidden');

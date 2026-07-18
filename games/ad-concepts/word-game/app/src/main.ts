@@ -14,8 +14,10 @@
  */
 import Phaser from 'phaser';
 import { CoreGame } from './core/game';
+import { levelsFor } from './core/levels';
 import { mulberry32, randomSeed } from './core/rng';
 import { defaultStorage } from './core/storage';
+import { getLocale, t, type TranslationKey } from './i18n';
 import { Analytics } from './economy/analytics';
 import { Economy } from './economy/economy';
 import { Meta } from './meta/meta';
@@ -31,6 +33,43 @@ import { ShopUi } from './ui/ShopUi';
 import { DashboardUi } from './ui/DashboardUi';
 import { Experiments } from './experiments/experiments';
 import { CockpitUi } from './ui/CockpitUi';
+import { OnboardingUi } from './ui/OnboardingUi';
+
+/* ==================== I18N-СТАТИКА (Проход Ж.1) ==================== */
+
+/**
+ * Локализация статики index.html: разметка остаётся русской (как в
+ * прототипе), а при старте тексты/тултипы переписываются под активную
+ * локаль. Смена языка применяется ПЕРЕЗАГРУЗКОЙ страницы (переключатель —
+ * в настройках мета-экрана; выбор задокументирован в src/i18n/index.ts).
+ */
+function applyStaticTexts(): void {
+  document.documentElement.lang = getLocale();
+  document.title = t('app.title');
+  const titles: ReadonlyArray<readonly [string, TranslationKey]> = [
+    ['hud-coins', 'hud.coinsTitle'],
+    ['hud-acorns', 'hud.acornsTitle'],
+    ['btn-shop', 'hud.shopTitle'],
+    ['btn-dash', 'hud.dashTitle'],
+    ['btn-cockpit', 'hud.cockpitTitle'],
+    ['btn-meta', 'hud.metaTitle'],
+    ['btn-restart', 'hud.restartTitle'],
+    ['btn-hint', 'hud.hintTitle'],
+    ['btn-rv1', 'hud.rv1Title'],
+    ['btn-shuffle', 'hud.shuffleTitle'],
+    ['btn-bonus', 'hud.bonusTitle']
+  ];
+  for (const [id, key] of titles) {
+    const el = document.getElementById(id);
+    if (el !== null) el.title = t(key);
+  }
+  const rv1Cost = document.querySelector('#btn-rv1 .cost');
+  if (rv1Cost !== null) rv1Cost.textContent = t('hud.rv1Free');
+  const bannerTag = document.querySelector('#adBanner .adBannerTag');
+  if (bannerTag !== null) bannerTag.textContent = t('banner.simTag');
+}
+
+applyStaticTexts();
 
 /* Слои экономики и меты (Проход Б): отдельные сейвы wordgrove.economy.v1 /
  * wordgrove.meta.v1; ядро владеет монетами в wordgrove.save.v1 (как прототип). */
@@ -42,6 +81,9 @@ const meta = new Meta(economy, analytics, storage);
 const game = new CoreGame({
   storage,
   rng: mulberry32(randomSeed()), // подсказка «Лампа»: сид вне логики, PRNG внутри
+  // Контент языкозависим (Ж.1): набор уровней по локали (пока RU для обеих,
+  // EN-пакет подключит следующий этап через levelsFor).
+  levels: levelsFor(getLocale()),
   acorns: economy,
   track: (event, params) => analytics.track(event, params),
   hooks: {
@@ -66,6 +108,15 @@ meta.onToast = (msg) => gridUi.toast(msg);
 
 gridUi.mount();
 metaUi.mount();
+
+/* ==================== FTUE-ОНБОРДИНГ (Проход Ж.1) ==================== */
+/* Порт prototype/onboarding.js: тот же ключ wordgrove.onboarding.v1 (сейв
+ * прототипа = обучение не показывается повторно). Монтируется ПОСЛЕ HUD:
+ * цели коуч-марок уже в DOM. Кнопки повтора: «❔» в HUD (инъекция самого
+ * слоя) и «Пройти обучение снова» в настройках мета-экрана. */
+const onboarding = new OnboardingUi({ track: (event, params) => analytics.track(event, params) });
+onboarding.mount();
+metaUi.onReplayOnboarding = () => onboarding.start(true);
 
 /* ==================== МОНЕТИЗАЦИЯ (Проход Е.2, ВСЁ — СИМУЛЯЦИЯ) =========== */
 
@@ -163,7 +214,7 @@ gridUi.adHooks = {
     const btn = document.createElement('button');
     btn.className = 'rv2-inject';
     btn.type = 'button';
-    btn.innerHTML = '📺 ×2 монеты за уровень (+' + reward + ' 🪙)<span class="rv2-sub">RV-2 · СИМУЛЯЦИЯ</span>';
+    btn.innerHTML = t('mon.rv2Btn', { n: reward }) + '<span class="rv2-sub">' + t('mon.rv2Sub') + '</span>';
     btn.addEventListener('click', () => {
       if (btn instanceof HTMLButtonElement && btn.disabled) return;
       monetize
@@ -172,7 +223,7 @@ gridUi.adHooks = {
           if (extra > 0 && btn instanceof HTMLButtonElement) {
             btn.disabled = true;
             btn.classList.add('rv-used');
-            btn.innerHTML = '✓ Удвоено: +' + extra + ' 🪙';
+            btn.innerHTML = t('mon.rv2Used', { n: extra });
           }
         })
         .catch(() => undefined);

@@ -344,6 +344,48 @@
     }
     .meta-primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
 
+    /* Настройки в футере меты (Проход Ж.1): язык RU/EN + повтор обучения */
+    .meta-settings {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid rgba(27, 94, 32, 0.12);
+    }
+    .settings-label { font-size: 12.5px; font-weight: 700; color: #558b2f; }
+    .lang-switch {
+      display: flex;
+      gap: 3px;
+      background: rgba(255, 255, 255, 0.55);
+      border-radius: 12px;
+      padding: 3px;
+    }
+    .lang-switch button {
+      border: none;
+      border-radius: 9px;
+      padding: 6px 12px;
+      font-weight: 700;
+      font-size: 12.5px;
+      cursor: pointer;
+      background: transparent;
+      color: #558b2f;
+    }
+    .lang-switch button.active { background: #43a047; color: #fff; }
+    .meta-ob-replay {
+      border: 1px solid #a5d6a7;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.6);
+      color: #33691e;
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 7px 12px;
+      cursor: pointer;
+    }
+    .meta-ob-replay:hover { background: #fff; }
+
     /* Атлас */
     .region-card {
       background: #ffffff;
@@ -1121,6 +1163,9 @@
   </style>
 </head>
 <body>
+  <!-- Статические русские тексты/тултипы ниже — исходник 1:1 с прототипом;
+       при старте applyStaticTexts() (src/main.ts) переписывает их под
+       активную локаль (Проход Ж.1). -->
   <div id="app">
     <header id="hud">
       <div id="hud-level">Уровень 1/10</div>

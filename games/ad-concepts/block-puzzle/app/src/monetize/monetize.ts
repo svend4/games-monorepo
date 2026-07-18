@@ -27,6 +27,7 @@ import type { Store } from '../economy/store';
 import type { GameState } from '../core/types';
 import type { BoosterId } from '../economy/econ';
 import { ymd } from '../meta/dates';
+import { t } from '../i18n';
 import { systemClock, type Clock } from './clock';
 import { MONETIZE, SUB_DAILY_COINS, findSku, type IapSku } from './config';
 import { InterstitialPolicy, type IntBlockReason } from './interstitial';
@@ -227,7 +228,7 @@ export class MonetizeController {
         this.policy.noteShown();
         this.deps.monStore.state.day.int++;
         this.deps.monStore.save();
-        this.toast('Interstitial засчитан · +$' + res.revenueUsd.toFixed(4));
+        this.toast(t('mon.toast.intCounted', { rev: res.revenueUsd.toFixed(4) }));
         this.changed();
       }
       return res.shown;
@@ -289,17 +290,17 @@ export class MonetizeController {
    */
   async offerRevive(state: GameState): Promise<boolean> {
     if (!state.gameOver) {
-      this.toast('Партия ещё идёт');
+      this.toast(t('mon.toast.gameRunning'));
       return false;
     }
     if (!this.canRevive()) {
-      this.toast('«Второй шанс» уже использован в этой партии');
+      this.toast(t('mon.toast.reviveUsed'));
       return false;
     }
     return this.playRewarded('RW-1', () => {
       reviveBoard(state);
       this.revivedThisGame = true;
-      this.toast('💚 Поле освобождено — играй дальше!');
+      this.toast(t('mon.toast.revived'));
     });
   }
 
@@ -320,7 +321,7 @@ export class MonetizeController {
     this.ensureDay();
     const day = this.deps.monStore.state.day;
     if (this.rw2UsedThisGame || day.rw2 >= MONETIZE.RW.RW2_DAILY_CAP) {
-      this.toast('Лимит «×2 монеты» на сегодня исчерпан');
+      this.toast(t('mon.toast.rw2Limit'));
       return 0;
     }
     const earned = this.deps.economy.getEarnedThisGame();
@@ -331,7 +332,7 @@ export class MonetizeController {
       this.rw2UsedThisGame = true;
       day.rw2++;
       this.deps.monStore.save();
-      this.toast('💰 +' + bonus + '🪙 (×2 монеты за партию)');
+      this.toast(t('mon.toast.rw2Done', { bonus }));
     });
     return bonus;
   }
@@ -345,14 +346,14 @@ export class MonetizeController {
 
   async offerFreeBooster(): Promise<boolean> {
     if (!this.canFreeBooster()) {
-      this.toast('Лимит бесплатных бустеров на сегодня');
+      this.toast(t('mon.toast.rw3Limit'));
       return false;
     }
     return this.playRewarded('RW-3', () => {
       this.deps.economy.addBooster('hammer', 1, 'rw');
       this.deps.monStore.state.day.rw3++;
       this.deps.monStore.save();
-      this.toast('🔨 +1 Молот (бесплатно за rewarded)');
+      this.toast(t('mon.toast.rw3Done'));
     });
   }
 
@@ -365,14 +366,14 @@ export class MonetizeController {
 
   async offerDoubleStreak(): Promise<boolean> {
     if (!this.canDoubleStreak()) {
-      this.toast('Лимит «×2 награда» на сегодня');
+      this.toast(t('mon.toast.rw4Limit'));
       return false;
     }
     return this.playRewarded('RW-4', () => {
       this.deps.economy.addCoins(MONETIZE.RW.RW4_BONUS_COINS, 'rw', false);
       this.deps.monStore.state.day.rw4++;
       this.deps.monStore.save();
-      this.toast('🔥 +' + MONETIZE.RW.RW4_BONUS_COINS + '🪙 (×2 награда дня)');
+      this.toast(t('mon.toast.rw4Done', { bonus: MONETIZE.RW.RW4_BONUS_COINS }));
     });
   }
 
@@ -397,9 +398,12 @@ export class MonetizeController {
     this.ensureDay();
     const d = this.deps.monStore.state.day;
     return (
-      'Сегодня rewarded: RW-3 ' + d.rw3 + '/' + MONETIZE.RW.RW3_DAILY_CAP +
-      ' · RW-4 ' + d.rw4 + '/' + MONETIZE.RW.RW4_DAILY_CAP +
-      (this.adsRemoved() ? ' · 🚫 INT+BAN убраны' : '')
+      t('mon.status.rewarded', {
+        rw3: d.rw3,
+        rw3cap: MONETIZE.RW.RW3_DAILY_CAP,
+        rw4: d.rw4,
+        rw4cap: MONETIZE.RW.RW4_DAILY_CAP
+      }) + (this.adsRemoved() ? t('mon.status.noAds') : '')
     );
   }
 
@@ -491,7 +495,7 @@ export class MonetizeController {
     this.deps.monStore.save();
 
     this.deps.analytics.track('iap_completed', { sku: id, price_usd: sku.price });
-    this.toast('СИМУЛЯЦИЯ: куплено «' + sku.title + '» · $' + sku.price.toFixed(2));
+    this.toast(t('mon.toast.purchased', { title: t(sku.titleKey), price: sku.price.toFixed(2) }));
     this.updateBanner();
     this.changed();
     return true;

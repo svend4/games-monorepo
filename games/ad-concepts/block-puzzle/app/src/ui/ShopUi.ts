@@ -9,6 +9,7 @@
 import { IAP_SHELF } from '../monetize/config';
 import type { MonetizeController } from '../monetize/monetize';
 import type { Economy } from '../economy/economy';
+import { t } from '../i18n';
 
 export class ShopUi {
   constructor(
@@ -26,12 +27,11 @@ export class ShopUi {
     this.el('shopScreen').innerHTML =
       '<div class="metaInner">' +
       '<div class="metaHeader">' +
-      '<button id="shopCloseBtn" type="button" class="metaClose">← В игру</button>' +
+      '<button id="shopCloseBtn" type="button" class="metaClose">' + t('meta.close') + '</button>' +
       '<div class="metaTotals"><span>🪙 <b id="shopCoins">0</b></span></div>' +
       '</div>' +
-      '<section class="metaSection"><h3>🛒 Магазин (СИМУЛЯЦИЯ)</h3>' +
-      '<p class="metaNote">«Покупка» — мгновенная выдача без денег и платёжных провайдеров. ' +
-      'В проде здесь StoreKit / Google Play Billing (06 §5, 10 §2).</p>' +
+      '<section class="metaSection"><h3>' + t('shop.title') + '</h3>' +
+      '<p class="metaNote">' + t('shop.note') + '</p>' +
       '<p class="metaNote" id="shopStatus"></p>' +
       '<div id="iapList" class="iapList"></div></section>' +
       '</div>';
@@ -73,12 +73,12 @@ export class ShopUi {
       const cls =
         'iapCard' + (sku.highlight === true ? ' hot' : '') + (owned ? ' owned' : '');
       html += '<div class="' + cls + '">';
-      html += '<div class="iapTop"><span class="iapTitle">' + sku.title + '</span>';
-      if (sku.badge !== undefined) html += '<span class="iapBadge">' + sku.badge + '</span>';
+      html += '<div class="iapTop"><span class="iapTitle">' + t(sku.titleKey) + '</span>';
+      if (sku.badgeKey !== undefined) html += '<span class="iapBadge">' + t(sku.badgeKey) + '</span>';
       html += '</div>';
-      html += '<div class="iapDesc">' + sku.desc + '</div>';
+      html += '<div class="iapDesc">' + t(sku.descKey) + '</div>';
       if (owned) {
-        html += '<button type="button" class="iapBuy done" disabled>✓ активно</button>';
+        html += '<button type="button" class="iapBuy done" disabled>' + t('shop.active') + '</button>';
       } else {
         html +=
           '<button type="button" class="iapBuy" data-sku="' + sku.id + '">$' +
@@ -89,10 +89,10 @@ export class ShopUi {
     this.el('iapList').innerHTML = html;
 
     const bits: string[] = [];
-    bits.push(s.removeAds ? '🚫 Реклама убрана' : '📺 Реклама включена');
-    bits.push(s.subscription.active ? '⭐ Подписка активна' : 'Без подписки');
-    if (s.skins.length > 0) bits.push('🎨 скинов: ' + s.skins.length);
-    this.el('shopStatus').textContent = 'СИМУЛЯЦИЯ · ' + bits.join(' · ');
+    bits.push(s.removeAds ? t('shop.status.adsRemoved') : t('shop.status.adsOn'));
+    bits.push(s.subscription.active ? t('shop.status.subActive') : t('shop.status.subNone'));
+    if (s.skins.length > 0) bits.push(t('shop.status.skins', { n: s.skins.length }));
+    this.el('shopStatus').textContent = t('shop.status.sim') + ' · ' + bits.join(' · ');
     this.el('shopCoins').textContent = String(this.economy.getCoins());
   }
 }

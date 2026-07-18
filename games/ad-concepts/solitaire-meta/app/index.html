@@ -11,14 +11,16 @@
        ЦА 45+, глава 07). Экраны 💎/📊/🚀 и оверлей рекламы монтируются лениво
        из src/ui/* (как в прототипе). Логика — в модулях src/, стили —
        src/style.css (порт 1:1). ВСЯ реклама и покупки — СИМУЛЯЦИЯ. -->
+  <!-- Русские строки каркаса — фолбэк: applyStaticI18n() (src/i18n/dom.ts)
+       подменяет их на текущую локаль (RU/EN) до инициализации UI-классов. -->
   <header id="hud">
     <div class="hud-title">🍎 Orchard Peaks</div>
-    <div class="hud-item" title="Баланс монет (сохраняется)">💰 <b id="hud-coins">0</b></div>
-    <div class="hud-item" title="Урожай для заказов сада (сохраняется)">🍎 <b id="hud-harvest-bank">0</b></div>
-    <div class="hud-item" title="Текущий уровень n (растит взнос E(n) и множитель W(n))">Ур. <b id="hud-level">1</b></div>
-    <div class="hud-item" title="Очки за уровень">Очки: <b id="hud-score">0</b></div>
-    <div class="hud-item" title="Серия подряд убранных карт">Серия: <b id="hud-chain">—</b></div>
-    <div class="hud-item" title="Урожай, собранный в этой раздаче">🍎 стол: <b id="hud-harvest">0/8</b></div>
+    <div class="hud-item" id="hud-item-coins" title="Баланс монет (сохраняется)">💰 <b id="hud-coins">0</b></div>
+    <div class="hud-item" id="hud-item-harvest-bank" title="Урожай для заказов сада (сохраняется)">🍎 <b id="hud-harvest-bank">0</b></div>
+    <div class="hud-item" id="hud-item-level" title="Текущий уровень n (растит взнос E(n) и множитель W(n))"><span id="hud-level-label">Ур.</span> <b id="hud-level">1</b></div>
+    <div class="hud-item" id="hud-item-score" title="Очки за уровень"><span id="hud-score-label">Очки:</span> <b id="hud-score">0</b></div>
+    <div class="hud-item" id="hud-item-chain" title="Серия подряд убранных карт"><span id="hud-chain-label">Серия:</span> <b id="hud-chain">—</b></div>
+    <div class="hud-item" id="hud-item-harvest" title="Урожай, собранный в этой раздаче"><span id="hud-harvest-label">🍎 стол:</span> <b id="hud-harvest">0/8</b></div>
     <button id="btn-garden" type="button" class="hud-btn">🌳 Сад</button>
     <button id="btn-store" type="button" class="hud-btn hud-btn-store">💎 Магазин</button>
     <button id="btn-dash" type="button" class="hud-btn hud-btn-dash">📊 KPI</button>
@@ -45,11 +47,11 @@
            aria-label="Колода добора: открыть следующую карту">
         <span id="stock-count">0</span>
       </div>
-      <div class="pile-label">Колода</div>
+      <div class="pile-label" id="stock-label">Колода</div>
     </div>
     <div class="pile">
       <div id="waste-card" class="card up" aria-label="Открытая карта сброса"></div>
-      <div class="pile-label">Сброс</div>
+      <div class="pile-label" id="waste-label">Сброс</div>
     </div>
     <p id="hint-text">
       Убирайте открытые карты на&nbsp;1 выше или ниже карты сброса.<br>
@@ -67,13 +69,14 @@
   <div id="meta-screen" class="hidden" aria-label="Сад и задания">
     <header id="meta-top">
       <button id="meta-back" type="button">← Играть</button>
-      <div class="meta-bal" title="Монеты">💰 <b id="meta-coins">0</b></div>
-      <div class="meta-bal" title="Урожай для заказов">🍎 <b id="meta-harvest">0</b></div>
+      <div class="meta-bal" id="meta-bal-coins" title="Монеты">💰 <b id="meta-coins">0</b></div>
+      <div class="meta-bal" id="meta-bal-harvest" title="Урожай для заказов">🍎 <b id="meta-harvest">0</b></div>
     </header>
     <nav id="meta-tabs">
       <button data-tab="garden" class="active" type="button">🌳 Сад</button>
       <button data-tab="tasks" type="button">🎯 Задания</button>
       <button data-tab="shop" type="button">🛒 Лавка</button>
+      <button data-tab="settings" type="button">⚙️ Настройки</button>
     </nav>
     <main id="meta-body"></main>
     <div id="meta-toast" aria-live="polite"></div>

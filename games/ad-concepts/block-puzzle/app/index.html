@@ -3,12 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <title>Block Surge — прод-порт (TS + Phaser 3)</title>
+  <title>Block Surge</title>
   <style>
+    /* ==================== ТЕМА (Проход Ж.1) ==================== */
+    /* Значения по умолчанию = пресет 'dark' из src/ui/theme.ts; theme.ts
+       переписывает переменные на рантайме (пресет 'lighter' — тумблер в
+       настройках). ЧИСЛА ЦВЕТОВ ЖИВУТ В theme.ts — здесь только дефолты,
+       чтобы страница не мигала до старта JS. */
+    :root {
+      --bg: #0e1117;
+      --panel: #1a2231;
+      --panel-hover: #232e42;
+      --panel-border: #33415c;
+      --section-bg: #151f2d;
+      --section-border: #2a3852;
+      --card-bg: #131d2b;
+      --card-border: #2e3c56;
+      --text-secondary: #9fadbf;
+      --text-tertiary: #8493a6;
+      --screen-top: #1a2534;
+      --screen-bottom: #0d121a;
+    }
+
     /* ==================== БАЗА И РАСКЛАДКА ==================== */
     /* Колонка: топбар меты → канвас партии (Phaser FIT) → бустер-бар.
        Мета-экран и тосты — fixed-оверлеи поверх (стили «в духе прототипа»). */
-    html, body { margin: 0; padding: 0; background: #0e1117; height: 100%; overflow: hidden; }
+    html, body { margin: 0; padding: 0; background: var(--bg); height: 100%; overflow: hidden; }
     body {
       display: flex; flex-direction: column;
       color: #e8edf4; font-family: system-ui, sans-serif;
@@ -27,7 +47,7 @@
     }
     .coinBox {
       display: flex; align-items: center; gap: 6px;
-      background: #141b26; border: 1px solid #24324a; border-radius: 999px;
+      background: var(--panel); border: 1px solid var(--panel-border); border-radius: 999px;
       padding: 5px 12px;
     }
     .coinBox .coinIcon { font-size: 16px; }
@@ -46,22 +66,22 @@
     .boosterBtn {
       flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px;
       padding: 6px 4px 5px; border-radius: 10px;
-      background: #141a24; border: 1px solid #24324a;
+      background: var(--panel); border: 1px solid var(--panel-border);
     }
-    .boosterBtn:hover { background: #1b2534; }
+    .boosterBtn:hover { background: var(--panel-hover); }
     .boosterBtn:active { transform: translateY(1px); }
     .boosterBtn .bEmoji { font-size: 20px; }
     .boosterBtn .bName { font-size: 12px; font-weight: 600; color: #cdd7e3; }
     .boosterBtn .bCount { font-size: 12px; font-weight: 700; color: #69db7c; font-variant-numeric: tabular-nums; }
     .boosterBtn .bPrice { font-size: 10px; color: #ffd43b; min-height: 12px; }
     .boosterBtn.zero { opacity: 0.72; }
-    .boosterBtn.zero .bCount { color: #7a8798; }
+    .boosterBtn.zero .bCount { color: var(--text-secondary); }
     .boosterBtn.armed { border-color: #67e8f9; background: #102530; box-shadow: 0 0 0 1px #2c8ea3 inset; }
 
     /* ==================== ТОСТ ==================== */
     #toast {
       position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
-      z-index: 60; background: #1c2634; border: 1px solid #2c436b;
+      z-index: 60; background: var(--panel-hover); border: 1px solid var(--panel-border);
       border-radius: 10px; padding: 8px 16px; font-size: 13px;
       transition: opacity .25s ease; pointer-events: none; white-space: nowrap;
     }
@@ -69,7 +89,7 @@
     /* ==================== МЕТА-ЭКРАН ==================== */
     #metaScreen {
       position: fixed; inset: 0; z-index: 40;
-      background: radial-gradient(120% 100% at 50% 0%, #16202e 0%, #0b0f16 70%);
+      background: radial-gradient(120% 100% at 50% 0%, var(--screen-top) 0%, var(--screen-bottom) 70%);
       overflow-y: auto; -webkit-overflow-scrolling: touch;
     }
     .metaInner { max-width: 430px; margin: 0 auto; padding: 12px 12px 40px; display: flex; flex-direction: column; gap: 12px; }
@@ -78,13 +98,13 @@
     .metaClose:hover { background: #1f2f4d; }
     .metaTotals { display: flex; gap: 14px; font-size: 15px; }
     .metaTotals b { color: #ffd43b; }
-    .metaSection { background: #101823; border: 1px solid #1e2a3b; border-radius: 14px; padding: 12px 12px 14px; }
+    .metaSection { background: var(--section-bg); border: 1px solid var(--section-border); border-radius: 14px; padding: 12px 12px 14px; }
     .metaSection h3 { font-size: 16px; margin: 0 0 2px; }
-    .metaNote { font-size: 11.5px; color: #7d8b9f; line-height: 1.4; margin: 0 0 10px; }
+    .metaNote { font-size: 11.5px; color: var(--text-tertiary); line-height: 1.4; margin: 0 0 10px; }
 
     /* Карта */
     .mapList { display: flex; flex-direction: column; gap: 8px; }
-    .mapNode { border: 1px solid #24324a; border-radius: 10px; padding: 9px 11px; background: #0e1622; }
+    .mapNode { border: 1px solid var(--card-border); border-radius: 10px; padding: 9px 11px; background: var(--card-bg); }
     .mapNode .mnHead { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
     .mapNode .mnReq { font-size: 12px; color: #ffd43b; font-weight: 700; }
     .mapNode .mnRew { font-size: 12px; color: #b8c4d3; margin-top: 2px; }
@@ -96,36 +116,36 @@
     .mnClaim { margin-top: 8px; font-size: 13px; padding: 6px 16px; border-radius: 8px; background: #1f4d3a; border: 1px solid #2f7a5a; }
     .mnClaim:hover { background: #256047; }
     .mnDone { margin-top: 6px; font-size: 12px; color: #69db7c; }
-    .mnLock { margin-top: 6px; font-size: 12px; color: #7d8b9f; }
+    .mnLock { margin-top: 6px; font-size: 12px; color: var(--text-tertiary); }
 
     /* Магазин */
     .shopList { display: flex; flex-direction: column; gap: 8px; }
-    .shopItem { display: flex; align-items: center; gap: 10px; border: 1px solid #24324a; border-radius: 10px; padding: 8px 11px; background: #0e1622; }
+    .shopItem { display: flex; align-items: center; gap: 10px; border: 1px solid var(--card-border); border-radius: 10px; padding: 8px 11px; background: var(--card-bg); }
     .shopItem .siEmoji { font-size: 22px; }
     .shopItem .siInfo { display: flex; flex-direction: column; flex: 1; }
     .shopItem .siInfo b { font-size: 13px; }
-    .shopItem .siInfo span { font-size: 11px; color: #7d8b9f; }
-    .shopItem .siOwned { font-size: 11px; color: #8b98a9; white-space: nowrap; }
+    .shopItem .siInfo span { font-size: 11px; color: var(--text-tertiary); }
+    .shopItem .siOwned { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
     .siBuy { font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 8px; background: #2a2416; border: 1px solid #8a5a1a; color: #ffd43b; }
     .siBuy:hover { background: #362f1c; }
 
     /* Миссии */
     .missionList { display: flex; flex-direction: column; gap: 9px; }
-    .mission { border: 1px solid #24324a; border-radius: 10px; padding: 9px 11px; background: #0e1622; }
+    .mission { border: 1px solid var(--card-border); border-radius: 10px; padding: 9px 11px; background: var(--card-bg); }
     .mission.done { border-color: #2f7a5a; opacity: 0.9; }
     .mission .msTop { display: flex; justify-content: space-between; font-size: 13px; }
     .mission .msTop b { color: #ffd43b; }
     .mission .msBar { height: 8px; border-radius: 999px; background: #182130; overflow: hidden; margin: 6px 0 4px; }
     .mission .msFill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #22d3ee, #69db7c); transition: width .3s ease; }
-    .mission .msProg { font-size: 11px; color: #8b98a9; }
+    .mission .msProg { font-size: 11px; color: var(--text-secondary); }
     .mission.done .msProg { color: #69db7c; }
-    .missionBonus { font-size: 12px; color: #b8c4d3; border: 1px dashed #24324a; border-radius: 10px; padding: 8px 11px; text-align: center; }
+    .missionBonus { font-size: 12px; color: #b8c4d3; border: 1px dashed var(--card-border); border-radius: 10px; padding: 8px 11px; text-align: center; }
     .missionBonus.done { color: #69db7c; border-color: #2f7a5a; }
 
     /* Стрик */
     .streakRow { display: flex; gap: 5px; margin-bottom: 10px; }
-    .streakDay { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid #24324a; border-radius: 8px; padding: 6px 2px; background: #0e1622; }
-    .streakDay .sdNum { font-size: 11px; color: #8b98a9; font-weight: 700; }
+    .streakDay { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid var(--card-border); border-radius: 8px; padding: 6px 2px; background: var(--card-bg); }
+    .streakDay .sdNum { font-size: 11px; color: var(--text-secondary); font-weight: 700; }
     .streakDay .sdRew { font-size: 10px; color: #b8c4d3; white-space: nowrap; }
     .streakDay.reached { border-color: #2f7a5a; background: #10231c; }
     .streakDay.current { border-color: #67e8f9; box-shadow: 0 0 0 1px #2c8ea3 inset; }
@@ -133,11 +153,15 @@
     #streakClaimBtn { flex: 1; font-size: 13px; font-weight: 700; padding: 9px 12px; border-radius: 10px; background: #1f4d3a; border: 1px solid #2f7a5a; }
     #streakClaimBtn:hover:not(:disabled) { background: #256047; }
     #streakClaimBtn:disabled { opacity: 0.55; cursor: default; }
-    .ghostBtn { font-size: 12px; padding: 9px 12px; border-radius: 10px; background: transparent; border: 1px solid #24324a; color: #8b98a9; }
-    .ghostBtn:hover { background: #141a24; }
+    .ghostBtn { font-size: 12px; padding: 9px 12px; border-radius: 10px; background: transparent; border: 1px solid var(--panel-border); color: var(--text-secondary); }
+    .ghostBtn:hover { background: var(--panel); }
 
     /* ==================== ПРОХОД Е.2: ТОПБАР-БЕЙДЖИ ==================== */
     .topbarBtns { display: flex; gap: 6px; }
+
+    /* ============== ПРОХОД Ж.1: НАСТРОЙКИ (язык / яркость) ============= */
+    .setRow { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    .setRow .setLabel { flex: 1; min-width: 110px; font-size: 12.5px; color: #cdd7e3; }
 
     /* Rewarded-кнопки мета-экрана (RW-3/RW-4) */
     .rwBtn { flex: 1; font-size: 12.5px; font-weight: 700; padding: 9px 10px; border-radius: 10px; background: #1f4d3a; border: 1px solid #2f7a5a; }
@@ -148,8 +172,8 @@
     #adBanner {
       display: flex; align-items: center; justify-content: center; gap: 8px;
       max-width: 430px; width: 100%; margin: 0 auto; box-sizing: border-box;
-      padding: 7px 10px; background: #182130; border-top: 1px solid #24324a;
-      font-size: 11px; color: #8b98a9; white-space: nowrap;
+      padding: 7px 10px; background: var(--panel); border-top: 1px solid var(--panel-border);
+      font-size: 11px; color: var(--text-secondary); white-space: nowrap;
     }
     #adBanner .simTag { background: #4a3a10; color: #ffd43b; border: 1px solid #8a5a1a; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
 
@@ -177,19 +201,19 @@
     /* ==================== МАГАЗИН (🛒), ДАШБОРД (📊), КОКПИТ (🚀) ======== */
     #shopScreen, #dashboardScreen, #cockpitScreen {
       position: fixed; inset: 0; z-index: 50;
-      background: radial-gradient(120% 100% at 50% 0%, #16202e 0%, #0b0f16 70%);
+      background: radial-gradient(120% 100% at 50% 0%, var(--screen-top) 0%, var(--screen-bottom) 70%);
       overflow-y: auto; -webkit-overflow-scrolling: touch;
     }
 
     /* Полка IAP */
     .iapList { display: flex; flex-direction: column; gap: 8px; }
-    .iapCard { border: 1px solid #24324a; border-radius: 10px; padding: 9px 11px; background: #0e1622; }
+    .iapCard { border: 1px solid var(--card-border); border-radius: 10px; padding: 9px 11px; background: var(--card-bg); }
     .iapCard.hot { border-color: #8a5a1a; box-shadow: 0 0 0 1px #6b4413 inset; }
     .iapCard.owned { opacity: 0.75; border-color: #2f7a5a; }
     .iapTop { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .iapTitle { font-size: 13.5px; font-weight: 700; }
     .iapBadge { background: #4a3a10; color: #ffd43b; border: 1px solid #8a5a1a; border-radius: 6px; padding: 1px 6px; font-size: 10px; font-weight: 700; white-space: nowrap; }
-    .iapDesc { font-size: 11.5px; color: #7d8b9f; margin: 3px 0 8px; line-height: 1.4; }
+    .iapDesc { font-size: 11.5px; color: var(--text-tertiary); margin: 3px 0 8px; line-height: 1.4; }
     .iapBuy { font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 8px; background: #2a2416; border: 1px solid #8a5a1a; color: #ffd43b; }
     .iapBuy:hover:not(:disabled) { background: #362f1c; }
     .iapBuy.done { background: #10231c; border-color: #2f7a5a; color: #69db7c; cursor: default; }
@@ -202,7 +226,7 @@
     .geoBtn.active { border-color: #67e8f9; color: #67e8f9; background: #102530; }
 
     /* Дашборд: секции и строки KPI */
-    .kSection { border: 1px solid #1e2a3b; border-radius: 10px; padding: 9px 11px; background: #0e1622; margin-bottom: 10px; }
+    .kSection { border: 1px solid var(--section-border); border-radius: 10px; padding: 9px 11px; background: var(--card-bg); margin-bottom: 10px; }
     .kSection h4 { margin: 0 0 8px; font-size: 12.5px; color: #cdd7e3; }
     .kHead, .kRow { display: grid; grid-template-columns: 1fr 62px 62px 66px; gap: 6px; align-items: center; }
     .kHead { font-size: 10px; color: #5c6a7d; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
@@ -226,7 +250,7 @@
     /* ==================== ПРОХОД Е.3: SOFT-LAUNCH КОКПИТ (🚀) ============ */
     .ckSess { font-size: 11px; color: #7d8b9f; }
     .ckSess code { color: #67e8f9; }
-    .ckSection { border: 1px solid #1e2a3b; border-radius: 10px; padding: 9px 11px; background: #0e1622; margin-bottom: 10px; }
+    .ckSection { border: 1px solid var(--section-border); border-radius: 10px; padding: 9px 11px; background: var(--card-bg); margin-bottom: 10px; }
     .ckSection h4 { margin: 0 0 6px; font-size: 12.5px; color: #cdd7e3; }
     .ckNote { font-size: 11px; color: #7d8b9f; line-height: 1.45; margin: 0 0 8px; }
     .ckNote code { color: #67e8f9; }
@@ -310,6 +334,122 @@
     .ckVerdict.scale .ckVerdictTop b { color: #69db7c; }
     .ckVerdictWhy { font-size: 11px; color: #8b98a9; margin: 5px 0; line-height: 1.45; }
 
+    /* ============================================================
+     * ПРОХОД Ж.1 — FTUE-ОНБОРДИНГ (коуч-марки первых 5 минут, 07 §3)
+     * Порт стилей prototype/style.css 1:1. Оверлей сам ловит ввод (не
+     * проваливает клики в игру). Подсветка — гигантский box-shadow-spread
+     * на #ftueSpot: «дырка» = целевой элемент, всё вокруг затемнено.
+     * ============================================================ */
+    #ftueOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 90;               /* выше всех экранов: adOverlay 80, shop 50, meta 40 */
+      /* фон рисует дырку через box-shadow #ftueSpot; тут прозрачно, но ввод ловим */
+    }
+    #ftueOverlay.hidden { display: none; }
+    #ftueOverlay.ftue-nospot { background: rgba(6, 10, 16, .84); }  /* шаг без цели */
+
+    #ftueSpot {
+      position: fixed;
+      border-radius: 12px;
+      pointer-events: none;
+      box-shadow:
+        0 0 0 3px rgba(103, 232, 249, .95),
+        0 0 22px 4px rgba(103, 232, 249, .35),
+        0 0 0 9999px rgba(6, 10, 16, .82);
+      animation: ftuePulse 1.4s ease-in-out infinite;
+    }
+    @keyframes ftuePulse {
+      0%, 100% {
+        box-shadow:
+          0 0 0 3px rgba(103, 232, 249, .95),
+          0 0 22px 4px rgba(103, 232, 249, .30),
+          0 0 0 9999px rgba(6, 10, 16, .82);
+      }
+      50% {
+        box-shadow:
+          0 0 0 5px rgba(103, 232, 249, 1),
+          0 0 30px 8px rgba(103, 232, 249, .55),
+          0 0 0 9999px rgba(6, 10, 16, .82);
+      }
+    }
+
+    #ftueCard {
+      position: fixed;
+      z-index: 2;
+      width: min(360px, calc(100vw - 28px));
+      background: var(--section-bg);
+      border: 1px solid #2c8ea3;
+      border-radius: 16px;
+      padding: 18px 20px 16px;
+      box-shadow: 0 18px 55px rgba(0, 0, 0, .65);
+      text-align: left;
+    }
+    .ftueTag {
+      font-size: 11px;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: #67e8f9;
+      font-weight: 700;
+    }
+    .ftueStepMeta {
+      margin-top: 3px;
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+    #ftueCard h3 {
+      margin: 8px 0 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: #e6edf3;
+    }
+    #ftueCard p {
+      margin: 8px 0 0;
+      font-size: 15.5px;
+      line-height: 1.5;
+      color: #c4cfdd;
+    }
+    .ftueDots { display: flex; gap: 7px; margin-top: 14px; }
+    .ftueDot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--panel-border);
+      transition: background .2s, transform .2s;
+    }
+    .ftueDot.done { background: #2f7a5a; }
+    .ftueDot.active { background: #67e8f9; transform: scale(1.25); }
+    .ftueBtns { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+    .ftueSpacer { flex: 1; }
+    .ftueSkipBtn {
+      background: transparent;
+      border: 1px solid var(--panel-border);
+      color: var(--text-secondary);
+      border-radius: 10px;
+      padding: 9px 14px;
+      min-height: 44px;
+    }
+    .ftueSkipBtn:hover { background: var(--panel); }
+    .ftueNavBtn {
+      padding: 9px 16px;
+      min-height: 44px;
+      border-radius: 10px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+    }
+    .ftueNavBtn.ftuePrimary {
+      background: #14657a;
+      border-color: #2c8ea3;
+      color: #eafcff;
+    }
+    .ftueNavBtn.ftuePrimary:hover { background: #187f99; }
+    .ftueNavBtn[disabled] { opacity: .4; cursor: default; }
+
+    @media (prefers-reduced-motion: reduce) {
+      #ftueSpot { animation: none; }       /* 07 §4: reduced motion */
+    }
+
     /* ==================== ПРОХОД Е.3: SAFE-AREA (Capacitor) ==============
        Вырезы/чёлки устройств: viewport-fit=cover уже задан во viewport;
        топбар, бустер-бар и баннер отступают от инсетов. */
@@ -330,10 +470,11 @@
   <div id="boosterBar"></div>
 
   <!-- Баннер BAN-1 (Проход Е.2, СИМУЛЯЦИЯ): полоса с авто-рефрешем;
-       Remove Ads / подписка прячут её (SimAdProvider.hideBanner). -->
+       Remove Ads / подписка прячут её (SimAdProvider.hideBanner).
+       Тексты заполняет main.ts через t() (i18n, Проход Ж.1). -->
   <div id="adBanner" class="hidden">
-    <span class="simTag">СИМУЛЯЦИЯ</span>
-    <span>Рекламный баннер · BAN-1</span>
+    <span class="simTag" id="adBannerSimTag"></span>
+    <span id="adBannerLabel"></span>
     <span id="adBannerEcpm"></span>
   </div>
 

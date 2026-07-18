@@ -7,9 +7,19 @@
  */
 import { MON, IAP_SHELF, findIap, type IapSku, type PlacementId } from '../monetize/config';
 import type { MonetizeController } from '../monetize/monetize';
+import { t, tDyn } from '../i18n';
 
 function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
+}
+
+/** Переводы полки IAP (лейбл/примечание) с фолбэком на строку конфига. */
+function iapLabel(item: IapSku): string {
+  return tDyn('iap.' + item.sku + '.label', item.label);
+}
+
+function iapNote(item: IapSku): string {
+  return tDyn('iap.' + item.sku + '.note', item.note);
 }
 
 export class ShopUi {
@@ -30,8 +40,8 @@ export class ShopUi {
     el.className = 'hidden';
     el.innerHTML =
       '<header id="store-top">' +
-      '<button id="store-back" type="button">← Играть</button>' +
-      '<div class="store-title">💎 Магазин</div>' +
+      '<button id="store-back" type="button">' + t('store.back') + '</button>' +
+      '<div class="store-title">' + t('store.title') + '</div>' +
       '<div class="store-geo" id="store-geo"></div>' +
       '</header>' +
       '<main id="store-body"></main>';
@@ -94,15 +104,21 @@ export class ShopUi {
     const cap = MON.RW_DAILY_CAP[pid];
     const left = cap !== undefined ? Math.max(0, cap - this.monetize.rwUsedToday(pid)) : null;
     const disabled = !this.monetize.rewardedAllowed(pid);
-    const capNote = cap !== undefined ? 'осталось сегодня: ' + left + '/' + cap : 'без дневного лимита';
+    const capNote =
+      cap !== undefined
+        ? t('store.capLeft', { left: left ?? 0, cap })
+        : t('store.capNone');
     return (
       '<div class="offer-item">' +
       '<div class="offer-ico">📺</div>' +
-      '<div class="offer-info"><div class="offer-name">' + esc(this.monetize.placementName(pid)) +
+      '<div class="offer-info"><div class="offer-name">' +
+      esc(tDyn('placement.' + pid + '.name', this.monetize.placementName(pid))) +
       ' <span class="rw-tag">' + pid + '</span></div>' +
-      '<div class="offer-hint">' + esc(this.monetize.placementDesc(pid)) + ' · ' + capNote + '</div></div>' +
+      '<div class="offer-hint">' +
+      esc(tDyn('placement.' + pid + '.desc', this.monetize.placementDesc(pid))) +
+      ' · ' + capNote + '</div></div>' +
       '<button class="offer-btn" data-act="' + action + '" ' + (disabled ? 'disabled' : '') + '>' +
-      (disabled ? 'Лимит' : esc(cta)) + '</button></div>'
+      (disabled ? t('store.limit') : esc(cta)) + '</button></div>'
     );
   }
 
@@ -113,84 +129,83 @@ export class ShopUi {
     if (geoEl !== null) geoEl.textContent = '🌍 ' + this.monetize.geoLabel();
 
     let html = '';
-    html +=
-      '<div class="sim-banner">⚠ СИМУЛЯЦИЯ: рекламные сети и биллинг НЕ подключены. ' +
-      'Покупки не списывают денег, «показ рекламы» — экранная заглушка. В проде — AppLovin MAX / AdMob и сторы.</div>';
+    html += '<div class="sim-banner">' + t('store.simBanner') + '</div>';
 
     /* --- Бесплатно за рекламу (rewarded-офферы RW3/RW4/RW6/RW5) --- */
-    html += '<h3 class="store-h">🎁 Бесплатно за рекламу (rewarded)</h3>';
-    html +=
-      '<p class="store-sub">Rewarded — доминанта модели (цель 65–70% рекламной выручки, 06 §6.1). ' +
-      'Это бонусы по желанию: подписка и remove-ads их НЕ убирают.</p>';
-    html += this.rwOfferCard('RW6', 'rw-wallet', 'Смотреть');
-    html += this.rwOfferCard('RW3', 'rw-booster', 'Смотреть');
-    html += this.rwOfferCard('RW4', 'rw-wheel', 'Крутить');
-    if (st.eventWeekend) html += this.rwOfferCard('RW5', 'rw-event', 'Смотреть');
+    html += '<h3 class="store-h">' + t('store.h.rewarded') + '</h3>';
+    html += '<p class="store-sub">' + t('store.sub.rewarded') + '</p>';
+    html += this.rwOfferCard('RW6', 'rw-wallet', t('store.cta.watch'));
+    html += this.rwOfferCard('RW3', 'rw-booster', t('store.cta.watch'));
+    html += this.rwOfferCard('RW4', 'rw-wheel', t('store.cta.spin'));
+    if (st.eventWeekend) html += this.rwOfferCard('RW5', 'rw-event', t('store.cta.watch'));
 
     /* --- Подписка и remove-ads (06 §6.5) --- */
-    html += '<h3 class="store-h">🚫 Без рекламы и подписка</h3>';
+    html += '<h3 class="store-h">' + t('store.h.noads') + '</h3>';
     const ra = findIap('remove_ads') as IapSku;
     html +=
       '<div class="iap-item hi">' +
       '<div class="iap-ico">🚫</div>' +
-      '<div class="iap-info"><div class="iap-name">' + esc(ra.label) + '</div>' +
-      '<div class="iap-note">' + esc(ra.note) + '</div></div>' +
+      '<div class="iap-info"><div class="iap-name">' + esc(iapLabel(ra)) + '</div>' +
+      '<div class="iap-note">' + esc(iapNote(ra)) + '</div></div>' +
       (st.removeAds
-        ? '<button class="iap-btn owned" disabled>Куплено ✓</button>'
+        ? '<button class="iap-btn owned" disabled>' + t('store.owned') + '</button>'
         : '<button class="iap-btn" data-act="buy" data-sku="remove_ads">$' + ra.price.toFixed(2) + '</button>') +
       '</div>';
     const cm = findIap('club_month') as IapSku;
     html +=
       '<div class="iap-item hi">' +
       '<div class="iap-ico">🌿</div>' +
-      '<div class="iap-info"><div class="iap-name">' + esc(cm.label) +
-      (st.sub.active ? ' <span class="rw-tag">мес ' + st.sub.monthNo + '</span>' : '') + '</div>' +
-      '<div class="iap-note">' + esc(cm.note) + '</div></div>' +
+      '<div class="iap-info"><div class="iap-name">' + esc(iapLabel(cm)) +
       (st.sub.active
-        ? '<button class="iap-btn ghost" data-act="sub-cancel">Отменить</button>'
-        : '<button class="iap-btn" data-act="buy" data-sku="club_month">$' + cm.price.toFixed(2) + '/мес</button>') +
+        ? ' <span class="rw-tag">' + t('store.sub.month', { n: st.sub.monthNo }) + '</span>'
+        : '') + '</div>' +
+      '<div class="iap-note">' + esc(iapNote(cm)) + '</div></div>' +
+      (st.sub.active
+        ? '<button class="iap-btn ghost" data-act="sub-cancel">' + t('store.cancel') + '</button>'
+        : '<button class="iap-btn" data-act="buy" data-sku="club_month">$' + cm.price.toFixed(2) +
+          t('store.perMonth') + '</button>') +
       '</div>';
 
     /* --- Копилка (06 §6.4) --- */
     const pg = findIap('piggy_greenhouse') as IapSku;
-    html += '<h3 class="store-h">🐷 Копилка</h3>';
+    html += '<h3 class="store-h">' + t('store.h.piggy') + '</h3>';
     html +=
       '<div class="iap-item">' +
       '<div class="iap-ico">🪟</div>' +
-      '<div class="iap-info"><div class="iap-name">' + esc(pg.label) +
+      '<div class="iap-info"><div class="iap-name">' + esc(iapLabel(pg)) +
       (st.piggy.owned ? ' <span class="rw-tag">' + Math.round(st.piggy.balance) + '/' + MON.PIGGY_CAP + '</span>' : '') +
       '</div>' +
-      '<div class="iap-note">' + esc(pg.note) + '</div></div>';
+      '<div class="iap-note">' + esc(iapNote(pg)) + '</div></div>';
     if (!st.piggy.owned) {
       html += '<button class="iap-btn" data-act="buy" data-sku="piggy_greenhouse">$' + pg.price.toFixed(2) + '</button>';
     } else if (st.piggy.balance >= MON.PIGGY_UNLOCK) {
-      html += '<button class="iap-btn" data-act="piggy-break">Вскрыть 💰</button>';
+      html += '<button class="iap-btn" data-act="piggy-break">' + t('store.piggy.break') + '</button>';
     } else {
-      html += '<button class="iap-btn owned" disabled>от ' + MON.PIGGY_UNLOCK + '</button>';
+      html += '<button class="iap-btn owned" disabled>' + t('store.piggy.from', { n: MON.PIGGY_UNLOCK }) + '</button>';
     }
     html += '</div>';
 
     /* --- Монеты и наборы (06 §6.4) --- */
-    html += '<h3 class="store-h">🪙 Монеты и наборы</h3>';
-    html +=
-      '<p class="store-sub">Персонализация номиналов — по E(n) игрока (06 §6.4). Цены США; в проде локализуются по матрице сторов.</p>';
+    html += '<h3 class="store-h">' + t('store.h.coins') + '</h3>';
+    html += '<p class="store-sub">' + t('store.sub.coins') + '</p>';
     for (const item of IAP_SHELF) {
       if (item.kind === 'remove_ads' || item.kind === 'sub' || item.kind === 'piggy') continue;
       const bought = st.life.purchases[item.sku] ?? 0;
       const lock = item.once === true && bought > 0;
+      const note = iapNote(item);
       html +=
         '<div class="iap-item">' +
         '<div class="iap-ico">' + (item.price >= 49 ? '👑' : item.price >= 19 ? '💰' : item.price >= 9 ? '🧰' : '🪙') + '</div>' +
-        '<div class="iap-info"><div class="iap-name">' + esc(item.label) +
-        (item.once === true ? ' <span class="rw-tag">разово</span>' : '') + '</div>' +
-        '<div class="iap-note">' + this.iapContents(item) + (item.note !== '' ? ' · ' + esc(item.note) : '') + '</div></div>' +
+        '<div class="iap-info"><div class="iap-name">' + esc(iapLabel(item)) +
+        (item.once === true ? ' <span class="rw-tag">' + t('store.once') + '</span>' : '') + '</div>' +
+        '<div class="iap-note">' + this.iapContents(item) + (note !== '' ? ' · ' + esc(note) : '') + '</div></div>' +
         (lock
-          ? '<button class="iap-btn owned" disabled>Куплено ✓</button>'
+          ? '<button class="iap-btn owned" disabled>' + t('store.owned') + '</button>'
           : '<button class="iap-btn" data-act="buy" data-sku="' + item.sku + '">$' + item.price.toFixed(2) + '</button>') +
         '</div>';
     }
 
-    html += '<p class="store-foot">СИМУЛЯЦИЯ · Проход Е.2 · выручка каждого показа/покупки уходит в дашборд «📊 KPI».</p>';
+    html += '<p class="store-foot">' + t('store.foot') + '</p>';
     this.bodyEl.innerHTML = html;
   }
 
@@ -199,7 +214,7 @@ export class ShopUi {
     if (item.coins !== undefined) parts.push('💰 ' + item.coins);
     if (item.joker !== undefined) parts.push('🃏 ' + item.joker);
     if (item.basket !== undefined) parts.push('🧺 ' + item.basket);
-    if (item.card !== undefined) parts.push('🃟 ' + item.card + ' карт.');
+    if (item.card !== undefined) parts.push('🃟 ' + t('store.contents.cards', { n: item.card }));
     return parts.length > 0 ? parts.join(' + ') : '—';
   }
 }

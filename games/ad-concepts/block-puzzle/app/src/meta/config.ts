@@ -3,6 +3,7 @@
  * Источники: 04 §2 (карта и звёзды), 04 §3 (стрик), 04 §4.1 (миссии).
  */
 import type { BoosterId } from '../economy/econ';
+import type { TranslationKey } from '../i18n';
 
 /** Звёзды за партию по очкам (04 §2): score ≥ порога → 1 / 2 / 3 ★. */
 export const STAR_THRESHOLDS: readonly number[] = [800, 2000, 4000];
@@ -65,17 +66,18 @@ export interface MissionDef {
   target: number;
   /** Награда в монетах. */
   reward: number;
-  text: string;
+  /** Текст миссии — ключ i18n (Проход Ж.1), UI берёт через t(). */
+  textKey: TranslationKey;
 }
 
 /** Пул ежедневных миссий (04 §4.1: 3 шт., ротация), значения 1:1 из прототипа. */
 export const MISSION_POOL: readonly MissionDef[] = [
-  { id: 'lines20', type: 'lines', target: 20, reward: 40, text: 'Очисти 20 линий' },
-  { id: 'lines35', type: 'lines', target: 35, reward: 50, text: 'Очисти 35 линий' },
-  { id: 'combo3', type: 'combo', target: 3, reward: 60, text: 'Собери комбо ×3' },
-  { id: 'games2', type: 'games', target: 2, reward: 40, text: 'Сыграй 2 партии' },
-  { id: 'score25', type: 'score', target: 2500, reward: 60, text: 'Набери 2500 очков за партию' },
-  { id: 'clean1', type: 'clean', target: 1, reward: 50, text: 'Собери «чистое поле»' }
+  { id: 'lines20', type: 'lines', target: 20, reward: 40, textKey: 'mission.lines20' },
+  { id: 'lines35', type: 'lines', target: 35, reward: 50, textKey: 'mission.lines35' },
+  { id: 'combo3', type: 'combo', target: 3, reward: 60, textKey: 'mission.combo3' },
+  { id: 'games2', type: 'games', target: 2, reward: 40, textKey: 'mission.games2' },
+  { id: 'score25', type: 'score', target: 2500, reward: 60, textKey: 'mission.score25' },
+  { id: 'clean1', type: 'clean', target: 1, reward: 50, textKey: 'mission.clean1' }
 ];
 
 /** 04 §4.1: все 3 закрыты → бонус-сундук 60 монет. */

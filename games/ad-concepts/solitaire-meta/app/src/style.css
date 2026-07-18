@@ -662,6 +662,16 @@ body.joker-mode .card.up { cursor: pointer; }
 
 .ghost-btn:hover { background: #f3edd4; }
 
+/* Вкладка «Настройки» (Проход Ж.1): переключатель языка RU/EN */
+.lang-row { display: flex; gap: 10px; }
+.lang-row .lang-btn { flex: 1; min-height: 52px; font-weight: 600; }
+.lang-btn.active {
+  border-color: #5f9e3e;
+  background: #eef4e0;
+  font-weight: 800;
+  cursor: default;
+}
+
 /* Стрик-лента */
 .streak-row {
   display: flex;

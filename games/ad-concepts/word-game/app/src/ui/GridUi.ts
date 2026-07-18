@@ -22,6 +22,8 @@ import {
 import type { CoreGame, WinInfo } from '../core/game';
 import { ECON } from '../economy/econ';
 import type { Economy } from '../economy/economy';
+import { t } from '../i18n';
+import { themeLabel } from '../i18n/labels';
 import type { Meta } from '../meta/meta';
 
 /** Управление колесом (реализует WheelScene). */
@@ -128,7 +130,7 @@ export class GridUi {
       this.game.getGrid().cellKeys.every((k) => !this.game.isRevealed(k))
     ) {
       this.firstRunToastShown = true;
-      this.toast('Зажми букву и веди по буквам, отпусти — проверка');
+      this.toast(t('toast.firstRun'));
     }
     this.onAfterRebuild?.();
   }
@@ -195,7 +197,7 @@ export class GridUi {
         this.updateWordDisplay('');
         break;
       case 'tooShort':
-        if (word.length >= 2) this.toast('Слово — минимум ' + MIN_WORD_LEN + ' буквы');
+        if (word.length >= 2) this.toast(t('toast.tooShort', { min: MIN_WORD_LEN }));
         this.updateWordDisplay('');
         break;
       case 'gridHit': {
@@ -207,12 +209,12 @@ export class GridUi {
       }
       case 'duplicate':
         this.flashWord(word, 'dup'); // DUPLICATE: нейтрально, без наград (03 §2.1)
-        this.toast('Уже найдено');
+        this.toast(t('toast.duplicate'));
         break;
       case 'bonus':
         this.flashWord(word, 'bonus');
-        if (res.acorns.burned > 0) this.toast('⭐ Копилка полна — жёлуди сгорают! Открой копилку 🐿️');
-        else this.toast('⭐ Бонусное слово! +' + ECON.ACORN_PER_BONUS + ' 🌰');
+        if (res.acorns.burned > 0) this.toast(t('toast.piggyFull'));
+        else this.toast(t('toast.bonusWord', { n: ECON.ACORN_PER_BONUS }));
         this.updateHud();
         break;
       case 'invalid':
@@ -236,17 +238,17 @@ export class GridUi {
   private useHint(): void {
     // Клубный безлимит (Проход Е.2): подписчику Лампа бесплатна (06 §5.1).
     if (this.freeHint !== null && this.freeHint()) {
-      if (!this.revealFreeLetterFromAd()) this.toast('Открывать нечего');
-      else this.toast('👑 Клубная подсказка (безлимит)');
+      if (!this.revealFreeLetterFromAd()) this.toast(t('toast.nothingToReveal'));
+      else this.toast(t('toast.clubHint'));
       return;
     }
     const res = this.game.useHint();
     if (!res.ok) {
-      if (res.reason === 'noCoins') this.toast('Не хватает монет — открой копилку 🐿️ или пройди уровень');
+      if (res.reason === 'noCoins') this.toast(t('toast.noCoins'));
       return;
     }
     this.revealCellEl(res.key, true, 0);
-    this.toast('💡 Буква открыта');
+    this.toast(t('toast.hintUsed'));
     this.updateHud();
     if (res.win !== null) this.scheduleWin(res.win);
   }
@@ -269,7 +271,7 @@ export class GridUi {
     if (!this.game.restartLevel()) return;
     this.hideOverlay();
     this.rebuild();
-    this.toast('Уровень начат заново');
+    this.toast(t('toast.levelRestarted'));
   }
 
   /* ============================ ПОБЕДА / ПЕРЕХОДЫ ============================ */
@@ -294,13 +296,13 @@ export class GridUi {
     const level = this.game.getLevelData();
     const bonusFound = this.game.getFoundBonus().length;
     const html =
-      '<h2>Уровень ' + (this.game.getLevelIndex() + 1) + ' пройден! 🌿</h2>' +
+      '<h2>' + t('win.title', { n: this.game.getLevelIndex() + 1 }) + '</h2>' +
       '<p class="reward-line">+' + WIN_REWARD + ' 🪙</p>' +
-      (win.perfect ? '<p class="reward-line">✨ Блестящий проход: +' + PERFECT_BONUS + ' 🪙</p>' : '') +
+      (win.perfect ? '<p class="reward-line">' + t('win.perfect', { n: PERFECT_BONUS }) + '</p>' : '') +
       (bonusFound > 0
-        ? '<p>Бонусных слов найдено: ' + bonusFound + ' из ' + level.bonus.length + '</p>'
-        : '<p>Бонусных слов на уровне было: ' + level.bonus.length + '</p>') +
-      '<button class="primary" id="ov-next">Дальше ▶</button>';
+        ? '<p>' + t('win.bonusFound', { found: bonusFound, total: level.bonus.length }) + '</p>'
+        : '<p>' + t('win.bonusTotal', { total: level.bonus.length }) + '</p>') +
+      '<button class="primary" id="ov-next">' + t('win.next') + '</button>';
     this.showOverlay(html);
     const nextBtn = this.el('ov-next');
     // Инъекция RV-2 «×2 монеты» ПЕРЕД кнопкой «Дальше» (порт maybeInjectDouble).
@@ -334,12 +336,11 @@ export class GridUi {
 
   private showFinalOverlay(): void {
     const html =
-      '<h2>🌳 Роща пройдена!</h2>' +
-      '<p>Все ' + this.game.getTotalLevels() + ' уровней позади. Монет накоплено: ' +
-      this.game.getCoins() + ' 🪙</p>' +
-      '<p>Открой 🗺️ Мету: атлас регионов, дневной кроссворд со стриком, копилка жёлудей и миссии.</p>' +
-      '<button class="primary" id="ov-replay">Играть с начала</button>' +
-      '<button class="secondary" id="ov-wipe">Сбросить всё</button>';
+      '<h2>' + t('final.title') + '</h2>' +
+      '<p>' + t('final.body', { total: this.game.getTotalLevels(), coins: this.game.getCoins() }) + '</p>' +
+      '<p>' + t('final.hint') + '</p>' +
+      '<button class="primary" id="ov-replay">' + t('final.replay') + '</button>' +
+      '<button class="secondary" id="ov-wipe">' + t('final.wipe') + '</button>';
     this.showOverlay(html);
     this.el('ov-replay').addEventListener('click', () => {
       this.hideOverlay();
@@ -352,7 +353,7 @@ export class GridUi {
       this.economy.reset(); // жёлуди/копилка
       this.meta.reset(); // атлас/дневной/миссии/стрик
       this.rebuild();
-      this.toast('Прогресс сброшен');
+      this.toast(t('toast.progressReset'));
     });
   }
 
@@ -364,27 +365,27 @@ export class GridUi {
     this.hideOverlay();
     this.wheel?.cancelDrag();
     this.rebuild();
-    this.toast('📅 Дневной кроссворд: тема «' + this.meta.todayTheme() + '»');
+    this.toast(t('toast.dailyStart', { theme: themeLabel(this.meta.todayTheme()) }));
   }
 
   private showDailyWinOverlay(): void {
     // Награда (монеты дня + веха стрика) — Meta, идемпотентно в пределах дня.
     const res = this.meta.onDailyComplete();
     const bonusFound = this.game.getFoundBonus().length;
-    let html = '<h2>📅 Дневной кроссворд пройден!</h2>';
+    let html = '<h2>' + t('dailyWin.title') + '</h2>';
     if (res.already) {
       html +=
-        '<p>Сегодня ты его уже проходил — награда даётся раз в день.</p>' +
-        '<p>Текущий стрик: 🔥 ' + res.streak + '</p>';
+        '<p>' + t('dailyWin.already') + '</p>' +
+        '<p>' + t('dailyWin.streakNow', { n: res.streak }) + '</p>';
     } else {
-      html += '<p class="reward-line">+' + ECON.DAILY_COINS + ' 🪙 за день</p>';
+      html += '<p class="reward-line">' + t('dailyWin.dayReward', { n: ECON.DAILY_COINS }) + '</p>';
       if (res.milestone > 0) {
-        html += '<p class="reward-line">🔥 Веха стрика ' + res.streak + ' дн.: +' + res.milestone + ' 🪙</p>';
+        html += '<p class="reward-line">' + t('dailyWin.milestone', { days: res.streak, n: res.milestone }) + '</p>';
       }
-      html += '<p>Стрик: 🔥 ' + res.streak + ' подряд</p>';
+      html += '<p>' + t('dailyWin.streak', { n: res.streak }) + '</p>';
     }
-    if (bonusFound > 0) html += '<p>Бонусных слов: ' + bonusFound + ' → жёлуди в копилке 🌰</p>';
-    html += '<button class="primary" id="ov-daily-done">В меню меты</button>';
+    if (bonusFound > 0) html += '<p>' + t('dailyWin.bonus', { n: bonusFound }) + '</p>';
+    html += '<button class="primary" id="ov-daily-done">' + t('dailyWin.toMeta') + '</button>';
     this.showOverlay(html);
     this.el('ov-daily-done').addEventListener('click', () => {
       this.hideOverlay();
@@ -403,13 +404,12 @@ export class GridUi {
     const listHtml =
       found.length > 0
         ? '<div class="bonus-list">' + found.map((w) => '<span>' + w + '</span>').join('') + '</div>'
-        : '<p>Пока пусто. Составляй валидные слова, которых нет в сетке, — за каждое +' +
-          ECON.ACORN_PER_BONUS + ' 🌰 в копилку</p>';
+        : '<p>' + t('bonus.empty', { n: ECON.ACORN_PER_BONUS }) + '</p>';
     const html =
-      '<h2>⭐ Бонусные слова</h2>' +
-      '<p>Найдено на уровне: ' + found.length + ' из ' + level.bonus.length + '</p>' +
+      '<h2>' + t('bonus.title') + '</h2>' +
+      '<p>' + t('bonus.found', { found: found.length, total: level.bonus.length }) + '</p>' +
       listHtml +
-      '<button class="primary" id="ov-close">Понятно</button>';
+      '<button class="primary" id="ov-close">' + t('bonus.ok') + '</button>';
     this.showOverlay(html);
     this.el('ov-close').addEventListener('click', () => this.hideOverlay());
   }
@@ -419,10 +419,10 @@ export class GridUi {
   updateHud(): void {
     const total = this.game.getTotalLevels();
     this.el('hud-level').textContent = this.game.isDailyMode()
-      ? '📅 Дневной кроссворд'
+      ? t('hud.daily')
       : this.game.getCampaignLevel() < total
-        ? 'Уровень ' + (this.game.getLevelIndex() + 1) + '/' + total
-        : 'Роща пройдена';
+        ? t('hud.level', { n: this.game.getLevelIndex() + 1, total })
+        : t('hud.groveDone');
     this.el('coins-value').textContent = String(this.game.getCoins());
     this.el('acorns-value').textContent = String(this.economy.getAcorns());
     this.el('bonus-count').textContent = String(this.game.getFoundBonus().length);

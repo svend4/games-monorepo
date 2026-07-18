@@ -12,6 +12,7 @@ GDD `../` (главы 01–12). Архитектура повторяет зав
 | **Е.1** | Vite + TS strict + Phaser 3: ядро (`src/core`), экономика/мета (`src/economy`, `src/meta`), рендер колеса (WheelScene) + DOM-сетка/HUD/мета (`src/ui`) | ✅ |
 | **Е.2** | Слой рекламы за интерфейсом (`src/ads`), монетизация с капами на Clock (`src/monetize`), магазин 🛒 с апселлом подписки, дашборд 📊 | ✅ |
 | **Е.3** | Симулятор экономики (`src/sim`, порт Прохода Г, CLI `npm run sim` — бит-в-бит с прототипом), A/B+тюнинг+гейты (`src/experiments`), кокпит 🚀, safe-area, Capacitor | ✅ |
+| **Ж.1** | i18n RU/EN (`src/i18n`: словари ru/en с компиляторной полнотой `satisfies`, `t()`/`tPlural`, локаль: override `wordgrove.locale` → `navigator.language` → en, смена языка в настройках меты — с reload) + порт FTUE (`src/ui/OnboardingUi.ts`, тот же ключ `wordgrove.onboarding.v1`) + точка `levelsFor(locale)` под EN-набор уровней | ✅ |
 
 ## Архитектура слоёв
 

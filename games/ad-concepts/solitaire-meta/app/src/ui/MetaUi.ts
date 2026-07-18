@@ -10,12 +10,16 @@ import { ECON, type MissionDef } from '../economy/econ';
 import type { Economy } from '../economy/economy';
 import { Meta, streakRewardFor } from '../meta/meta';
 import { TOTAL_ORDERS, ZONES } from '../meta/config';
+import { getLocale, setLocale, t, tDyn } from '../i18n';
 
-export type MetaTab = 'garden' | 'tasks' | 'shop';
+export type MetaTab = 'garden' | 'tasks' | 'shop' | 'settings';
 
 export class MetaUi {
   /** Возврат в игру (TableUi обновляет HUD, как Game.syncHud в прототипе). */
   onClose: (() => void) | null = null;
+
+  /** «Пройти обучение снова» (⚙️ Настройки): main.ts запускает OnboardingUi. */
+  onReplayTutorial: (() => void) | null = null;
 
   private tab: MetaTab = 'garden';
   private elScreen!: HTMLElement;
@@ -69,38 +73,59 @@ export class MetaUi {
     if (b === null || b.disabled) return;
     const act = b.getAttribute('data-action');
     if (act === 'order') {
+      // Зону активного заказа фиксируем ДО выполнения (после — заказ уже следующий).
+      const before = this.meta.activeOrder();
       const res = this.meta.completeActiveOrder();
       if (res !== null) {
         this.render();
-        this.flashToast(
-          res.zoneCompleted !== null
-            ? '🎉 Зона «' + res.zoneCompleted.name + '» готова! +💰 ' + res.zoneCompleted.bonus
-            : 'Заказ выполнен! Сад подрос.'
-        );
+        if (res.zoneCompleted !== null && before !== null) {
+          const zid = ZONES[before.zoneIdx].id;
+          this.flashToast(
+            t('meta.toast.zoneDone', {
+              name: tDyn('zone.' + zid + '.name', res.zoneCompleted.name),
+              bonus: res.zoneCompleted.bonus
+            })
+          );
+        } else {
+          this.flashToast(t('meta.toast.orderDone'));
+        }
       }
     } else if (act === 'buy') {
       const id = b.getAttribute('data-id');
       if (id === 'joker' || id === 'basket') {
         if (this.economy.buyBooster(id)) {
           this.render();
-          this.flashToast('Куплено: ' + ECON.BOOSTERS[id].name);
+          this.flashToast(
+            t('meta.toast.bought', { name: tDyn('booster.' + id + '.name', ECON.BOOSTERS[id].name) })
+          );
         }
       }
     } else if (act === 'claim-mission') {
       const id = b.getAttribute('data-id') ?? '';
       if (this.meta.claimMission(id)) {
         this.render();
-        this.flashToast('Награда за миссию получена!');
+        this.flashToast(t('meta.toast.missionClaimed'));
       }
     } else if (act === 'claim-streak') {
       if (this.meta.claimStreak()) {
         this.render();
-        this.flashToast('Стрик засчитан! Лейка полна.');
+        this.flashToast(t('meta.toast.streakClaimed'));
       }
     } else if (act === 'newday') {
       this.meta.newDay();
       this.render();
-      this.flashToast('Наступил новый день (тест).');
+      this.flashToast(t('meta.toast.newDay'));
+    } else if (act === 'set-lang') {
+      const lang = b.getAttribute('data-lang');
+      if ((lang === 'ru' || lang === 'en') && lang !== getLocale()) {
+        setLocale(lang);
+        // Применение смены языка — перезагрузка страницы (см. src/i18n/index.ts):
+        // консистентный ре-рендер всех экранов, сейвы не затрагиваются.
+        window.location.reload();
+      }
+    } else if (act === 'replay-ftue') {
+      this.close();
+      this.onReplayTutorial?.();
     }
   }
 
@@ -150,6 +175,7 @@ export class MetaUi {
     this.syncBalances();
     if (this.tab === 'garden') this.elBody.innerHTML = this.renderGarden();
     else if (this.tab === 'tasks') this.elBody.innerHTML = this.renderTasks();
+    else if (this.tab === 'settings') this.elBody.innerHTML = this.renderSettings();
     else this.elBody.innerHTML = this.renderShop();
     this.elBody.scrollTop = 0;
   }
@@ -163,12 +189,10 @@ export class MetaUi {
 
     if (done >= TOTAL_ORDERS) {
       html +=
-        '<div class="meta-hero">🎉 Весь сад расцвёл!</div>' +
-        '<p class="meta-sub">Вы прошли все зоны прототипа. В полной игре — 12 зон и 240 уровней.</p>';
+        '<div class="meta-hero">' + t('garden.allDone.title') + '</div>' +
+        '<p class="meta-sub">' + t('garden.allDone.sub') + '</p>';
     } else {
-      html +=
-        '<p class="meta-sub">Заказы тратят 🍎 урожай (и иногда 💰 монеты), продвигают зону и открывают новую цель. ' +
-        'Не хватает урожая — сыграйте ещё раздачу.</p>';
+      html += '<p class="meta-sub">' + t('garden.intro') + '</p>';
     }
 
     for (let zi = 0; zi <= Math.min(curZone, ZONES.length - 1); zi++) {
@@ -177,10 +201,12 @@ export class MetaUi {
     // Тизер следующей запертой зоны.
     if (curZone + 1 < ZONES.length && done < TOTAL_ORDERS) {
       const nz = ZONES[curZone + 1];
+      const czName = tDyn('zone.' + ZONES[curZone].id + '.name', ZONES[curZone].name);
       html +=
         '<div class="zone locked"><div class="zone-head"><span class="zone-emoji">🔒</span>' +
-        '<span class="zone-name">' + this.esc(nz.name) + '</span></div>' +
-        '<div class="zone-teaser">Откроется, когда закончите «' + this.esc(ZONES[curZone].name) + '»</div></div>';
+        '<span class="zone-name">' + this.esc(tDyn('zone.' + nz.id + '.name', nz.name)) + '</span></div>' +
+        '<div class="zone-teaser">' +
+        this.esc(t('garden.locked.teaser', { name: czName })) + '</div></div>';
     }
     return html;
   }
@@ -201,31 +227,36 @@ export class MetaUi {
     let html = '<div class="zone">';
     html +=
       '<div class="zone-head"><span class="zone-emoji">' + z.emoji + '</span>' +
-      '<span class="zone-name">' + this.esc(z.name) + '</span>' +
+      '<span class="zone-name">' + this.esc(tDyn('zone.' + z.id + '.name', z.name)) + '</span>' +
       '<span class="zone-pct">' + pct + '%</span></div>';
-    html += '<div class="zone-scene" title="' + this.esc(z.scene) + '">' + scene + '</div>';
+    html +=
+      '<div class="zone-scene" title="' + this.esc(tDyn('zone.' + z.id + '.scene', z.scene)) + '">' +
+      scene + '</div>';
     html += '<div class="zone-bar"><div class="zone-fill" style="width:' + pct + '%"></div></div>';
 
     // Активный заказ этой зоны (если он тут).
     const ao = this.meta.activeOrder();
     if (ao !== null && ao.zoneIdx === zi) {
       const o = ao.order;
+      const oi = z.orders.indexOf(o); // индекс заказа внутри зоны — ключ перевода
+      const title = tDyn('order.' + z.id + '.' + oi + '.title', o.title);
       const okH = this.economy.getHarvest() >= o.costH;
       const okC = this.economy.getCoins() >= o.costC;
       const can = okH && okC;
       html += '<div class="order active">';
-      html += '<div class="order-title">📋 ' + this.esc(o.title) + ' ' + o.decor + '</div>';
+      html += '<div class="order-title">📋 ' + this.esc(title) + ' ' + o.decor + '</div>';
       html +=
-        '<div class="order-cost">Нужно: ' +
+        '<div class="order-cost">' + t('garden.order.need') + ' ' +
         '<b class="' + (okH ? '' : 'lack') + '">🍎 ' + o.costH + '</b>' +
         (o.costC > 0 ? ' + <b class="' + (okC ? '' : 'lack') + '">💰 ' + o.costC + '</b>' : '') +
-        ' → награда <b>💰 ' + o.rc + '</b></div>';
+        ' ' + t('garden.order.rewardArrow') + ' <b>💰 ' + o.rc + '</b></div>';
       html +=
         '<button class="order-btn" data-action="order" ' + (can ? '' : 'disabled') + '>' +
-        (can ? 'Выполнить заказ' : okH ? 'Не хватает монет' : 'Не хватает урожая') + '</button>';
+        (can ? t('garden.order.do') : okH ? t('garden.order.noCoins') : t('garden.order.noHarvest')) +
+        '</button>';
       html += '</div>';
     } else if (done >= z.endIndex) {
-      html += '<div class="order zone-done">✓ Зона готова — сад благодарит вас!</div>';
+      html += '<div class="order zone-done">' + t('garden.zone.done') + '</div>';
     }
     html += '</div>';
     return html;
@@ -239,7 +270,7 @@ export class MetaUi {
     const s = this.meta.streakStatus();
     const rw = streakRewardFor(s.day);
     html += '<div class="card-panel">';
-    html += '<div class="panel-title">🌅 Утренняя лейка — стрик</div>';
+    html += '<div class="panel-title">' + t('tasks.streak.title') + '</div>';
     html += '<div class="streak-row">';
     for (let d = 1; d <= 7; d++) {
       const isNow = s.claimable && d === s.day;
@@ -251,25 +282,28 @@ export class MetaUi {
     }
     html += '</div>';
     if (s.claimable) {
-      const extra = (rw.undo ? ' +↩' : '') + (rw.joker ? ' +🃏' : '') + (rw.basket ? ' +🧺' : '');
+      const extra =
+        (rw.undo ? t('tasks.streak.extra.undo') : '') +
+        (rw.joker ? t('tasks.streak.extra.joker') : '') +
+        (rw.basket ? t('tasks.streak.extra.basket') : '');
       html +=
-        '<button class="claim-btn" data-action="claim-streak">Забрать день ' + s.day +
-        ': 💰 ' + rw.coins + extra + '</button>';
+        '<button class="claim-btn" data-action="claim-streak">' +
+        t('tasks.streak.claim', { d: s.day, coins: rw.coins, extra }) + '</button>';
     } else {
-      html += '<div class="claimed-note">Награда дня забрана. Возвращайтесь завтра — стрик продолжится.</div>';
+      html += '<div class="claimed-note">' + t('tasks.streak.claimed') + '</div>';
     }
     html += '</div>';
 
     // Миссии — дневные и недельная.
-    html += this.renderMissionGroup('Дневные миссии', ECON.DAILY_MISSIONS);
-    html += this.renderMissionGroup('Миссия недели', ECON.WEEKLY_MISSIONS);
+    html += this.renderMissionGroup(t('tasks.missions.daily'), ECON.DAILY_MISSIONS);
+    html += this.renderMissionGroup(t('tasks.missions.weekly'), ECON.WEEKLY_MISSIONS);
 
     // Тест-кнопка виртуального дня.
     html +=
       '<div class="card-panel test-panel">' +
-      '<div class="panel-title">🧪 Проверка петли</div>' +
-      '<div class="claimed-note">Сдвиньте «сегодня» на день вперёд, чтобы увидеть стрик и сброс миссий.</div>' +
-      '<button class="ghost-btn" data-action="newday">Новый день (тест)</button></div>';
+      '<div class="panel-title">' + t('tasks.test.title') + '</div>' +
+      '<div class="claimed-note">' + t('tasks.test.note') + '</div>' +
+      '<button class="ghost-btn" data-action="newday">' + t('tasks.test.newDay') + '</button></div>';
     return html;
   }
 
@@ -280,21 +314,24 @@ export class MetaUi {
       const pct = Math.round((prog / def.target) * 100);
       const claimed = this.meta.missionClaimed(def.id);
       const ready = prog >= def.target && !claimed;
+      const cardExtra = def.card === true ? t('tasks.mission.card') : '';
       html += '<div class="mission">';
-      html += '<div class="mission-text">' + this.esc(def.text) + '</div>';
+      html +=
+        '<div class="mission-text">' +
+        this.esc(tDyn('mission.' + def.id + '.text', def.text)) + '</div>';
       html +=
         '<div class="mission-bar"><div class="mission-fill" style="width:' + pct + '%"></div>' +
         '<span class="mission-frac">' + prog + '/' + def.target + '</span></div>';
       if (claimed) {
-        html += '<div class="mission-reward done">✓ Забрано (💰 ' + def.coins + ')</div>';
+        html += '<div class="mission-reward done">' + t('tasks.mission.claimed', { coins: def.coins }) + '</div>';
       } else if (ready) {
         html +=
           '<button class="claim-btn small" data-action="claim-mission" data-id="' + def.id + '">' +
-          'Забрать 💰 ' + def.coins + (def.card === true ? ' + карточка' : '') + '</button>';
+          t('tasks.mission.claim', { coins: def.coins }) + cardExtra + '</button>';
       } else {
         html +=
-          '<div class="mission-reward">Награда: 💰 ' + def.coins +
-          (def.card === true ? ' + карточка' : '') + '</div>';
+          '<div class="mission-reward">' + t('tasks.mission.reward', { coins: def.coins }) +
+          cardExtra + '</div>';
       }
       html += '</div>';
     }
@@ -305,7 +342,7 @@ export class MetaUi {
   /* ---------- Вкладка «Лавка»: бустеры + план экономики ---------- */
 
   private renderShop(): string {
-    let html = '<p class="meta-sub">Бустеры покупаются за монеты и помогают в раскладах (05 §5.6).</p>';
+    let html = '<p class="meta-sub">' + t('lavka.intro') + '</p>';
     for (const id of ECON.BOOSTER_ORDER) {
       const def = ECON.BOOSTERS[id];
       const owned = this.economy.getBooster(id);
@@ -314,20 +351,22 @@ export class MetaUi {
       html += '<div class="shop-item">';
       html += '<div class="shop-emoji">' + def.emoji + '</div>';
       html +=
-        '<div class="shop-info"><div class="shop-name">' + this.esc(def.name) +
+        '<div class="shop-info"><div class="shop-name">' +
+        this.esc(tDyn('booster.' + id + '.name', def.name)) +
         ' <span class="owned">×' + owned + '</span></div>' +
-        '<div class="shop-hint">' + this.esc(def.hint) + '</div></div>';
+        '<div class="shop-hint">' + this.esc(tDyn('booster.' + id + '.hint', def.hint)) + '</div></div>';
       html +=
         '<button class="buy-btn" data-action="buy" data-id="' + id + '" ' +
         (full || !afford ? 'disabled' : '') + '>' +
-        (full ? 'Максимум' : '💰 ' + def.price) + '</button>';
+        (full ? t('lavka.max') : '💰 ' + def.price) + '</button>';
       html += '</div>';
     }
     html +=
       '<div class="shop-item info-item"><div class="shop-emoji">↩</div>' +
-      '<div class="shop-info"><div class="shop-name">Отмена хода</div>' +
-      '<div class="shop-hint">Бесплатных: ' + this.economy.getFreeUndos() +
-      '. Далее — 💰 ' + ECON.UNDO_PRICE + ' за отмену прямо в раздаче.</div></div></div>';
+      '<div class="shop-info"><div class="shop-name">' + t('lavka.undo.name') + '</div>' +
+      '<div class="shop-hint">' +
+      t('lavka.undo.hint', { n: this.economy.getFreeUndos(), price: ECON.UNDO_PRICE }) +
+      '</div></div></div>';
 
     html += this.renderEconomyPlan();
     return html;
@@ -351,17 +390,16 @@ export class MetaUi {
       }
     }
     let html = '<div class="card-panel plan-panel">';
-    html += '<div class="panel-title">📊 Экономика: где вы на кривой</div>';
+    html += '<div class="panel-title">' + t('plan.title') + '</div>';
     html +=
-      '<div class="plan-now">Уровень <b>' + n + '</b> · взнос <b>💰 ' + this.economy.fmt(e) +
-      '</b> · выигрыш <b>💰 ' + this.economy.fmt(w) + '</b> · множитель <b>×' + m.toFixed(2) + '</b></div>';
-    html +=
-      '<div class="plan-note">Спроектированный путь баланса медианного игрока (05 §5.4): ' +
-      'дни 1–4 — профицит («медовый месяц»), день 5+ — плановое сползание в дефицит, ' +
-      'день 12–16 — точка первого денежного решения.</div>';
+      '<div class="plan-now">' +
+      t('plan.now', { n, e: this.economy.fmt(e), w: this.economy.fmt(w), m: m.toFixed(2) }) +
+      '</div>';
+    html += '<div class="plan-note">' + t('plan.note1') + '</div>';
     html +=
       '<div class="plan-table-wrap"><table class="plan-table"><thead><tr>' +
-      '<th>День</th><th>Ур.</th><th>Сальдо/день</th><th>Баланс</th></tr></thead><tbody>';
+      '<th>' + t('plan.th.day') + '</th><th>' + t('plan.th.level') + '</th>' +
+      '<th>' + t('plan.th.saldo') + '</th><th>' + t('plan.th.balance') + '</th></tr></thead><tbody>';
     for (let j = 0; j < plan.length; j++) {
       const row = plan[j];
       const pos = row.saldo >= 0;
@@ -372,7 +410,34 @@ export class MetaUi {
         '<td>' + this.economy.fmt(row.balance) + '</td></tr>';
     }
     html += '</tbody></table></div>';
-    html += '<div class="plan-note">▲ строка ближе всего к вашему уровню (' + this.esc(plan[nearest].note) + ').</div>';
+    const nearestNote = tDyn('plan.d' + plan[nearest].day + '.note', plan[nearest].note);
+    html += '<div class="plan-note">' + t('plan.note2', { note: this.esc(nearestNote) }) + '</div>';
+    html += '</div>';
+    return html;
+  }
+
+  /* ---------- Вкладка «Настройки»: язык RU/EN + повтор обучения ---------- */
+
+  private renderSettings(): string {
+    const cur = getLocale();
+    let html = '<div class="card-panel">';
+    html += '<div class="panel-title">' + t('settings.lang.title') + '</div>';
+    html += '<div class="claimed-note">' + t('settings.lang.note') + '</div>';
+    html += '<div class="lang-row">';
+    html +=
+      '<button class="ghost-btn lang-btn' + (cur === 'ru' ? ' active' : '') +
+      '" data-action="set-lang" data-lang="ru" ' + (cur === 'ru' ? 'disabled' : '') + '>' +
+      t('settings.lang.ru') + '</button>';
+    html +=
+      '<button class="ghost-btn lang-btn' + (cur === 'en' ? ' active' : '') +
+      '" data-action="set-lang" data-lang="en" ' + (cur === 'en' ? 'disabled' : '') + '>' +
+      t('settings.lang.en') + '</button>';
+    html += '</div></div>';
+
+    html += '<div class="card-panel">';
+    html += '<div class="panel-title">' + t('settings.ftue.title') + '</div>';
+    html += '<div class="claimed-note">' + t('settings.ftue.note') + '</div>';
+    html += '<button class="ghost-btn" data-action="replay-ftue">' + t('settings.ftue.replay') + '</button>';
     html += '</div>';
     return html;
   }

@@ -10,6 +10,7 @@
  * ВСЯ реклама и покупки — СИМУЛЯЦИЯ (SimAdProvider/SimPurchaseProvider).
  */
 import './style.css';
+import { applyStaticI18n } from './i18n/dom';
 import { Store } from './economy/store';
 import { Analytics } from './economy/analytics';
 import { Economy } from './economy/economy';
@@ -25,6 +26,12 @@ import { ShopUi } from './ui/ShopUi';
 import { DashboardUi } from './ui/DashboardUi';
 import { Experiments } from './experiments/experiments';
 import { CockpitUi } from './ui/CockpitUi';
+import { OnboardingUi } from './ui/OnboardingUi';
+
+/* Проход Ж.1: i18n RU/EN. Локаль решена при импорте src/i18n (localStorage →
+ * navigator → en); статический каркас index.html переводим ДО построения
+ * экранов — дальше все строки идут через t()/tDyn() в месте рендера. */
+applyStaticI18n();
 
 /* Слой экономики и меты: один Store — атомарный сейв orchardPeaks.meta
  * (те же ключи, что у прототипа: прогресс подхватывается без миграции). */
@@ -88,12 +95,18 @@ const experiments = new Experiments();
 const cockpitUi = new CockpitUi(experiments);
 cockpitUi.mount();
 
-/* Мета-экран (Сад/Задания/Лавка) и стол партии — DOM-оверлеи прототипа 1:1. */
+/* Мета-экран (Сад/Задания/Лавка/Настройки) и стол партии — DOM-оверлеи 1:1. */
 const metaUi = new MetaUi(economy, meta);
 const tableUi = new TableUi(economy, meta, metaUi, analytics, monetize, localStorage);
 
 metaUi.init();
 tableUi.init();
+
+/* FTUE-онбординг (Проход Ж.1, порт prototype/onboarding.js): тот же ключ
+ * orchardPeaks.onboarding — сейв прототипа не показывает обучение повторно.
+ * Повтор — кнопка в мете (⚙️ Настройки). */
+const onboarding = new OnboardingUi(analytics);
+metaUi.onReplayTutorial = () => onboarding.start(true);
 
 /* Кнопки HUD Проходов В/Г: магазин, KPI-дашборд, soft-launch кокпит. */
 document.getElementById('btn-store')?.addEventListener('click', () => shopUi.open());
@@ -130,3 +143,4 @@ cockpitUi.onClose = () => tableUi.syncHud();
 
 tableUi.newGame();
 tableUi.maybeShowStreakModal(); // ежедневный стрик поверх стартовой раздачи
+onboarding.maybeStartOnFirstRun(); // первый запуск: коуч-марки поверх всего (350 мс)
