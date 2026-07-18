@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>WordGrove — прототип (Проходы А + Б)</title>
+  <title>WordGrove — прототип (Проходы А + Б + В)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,6 +13,8 @@
       <div id="hud-right">
         <div id="hud-coins" title="Монеты">🪙 <span id="coins-value">0</span></div>
         <div id="hud-acorns" title="Жёлуди (копилка)">🌰 <span id="acorns-value">0</span></div>
+        <button id="btn-shop" title="Магазин: подписка WordGrove Club, Remove Ads, монеты (СИМУЛЯЦИЯ)">🛒</button>
+        <button id="btn-dash" title="Дашборд монетизации (KPI сессии)">📊</button>
         <button id="btn-meta" title="Мета: атлас, дневной, копилка, миссии">🗺️</button>
         <button id="btn-restart" title="Начать уровень заново">↻</button>
       </div>
@@ -30,6 +32,9 @@
         <div class="side-col">
           <button id="btn-hint" title="Лампа: открыть случайную букву сетки">
             <span class="icon">💡</span><span class="cost" id="hint-cost">100</span>
+          </button>
+          <button id="btn-rv1" class="hidden" title="Бесплатная Лампа за просмотр рекламы (RV-1, СИМУЛЯЦИЯ)">
+            <span class="icon">📺</span><span class="cost">беспл.</span>
           </button>
         </div>
         <canvas id="wheel"></canvas>
@@ -49,8 +54,89 @@
     </div>
   </div>
 
+  <!-- ============ ПРОХОД В: реклама-заглушки, IAP-полка, подписка, дашборд ============ -->
+
+  <!-- Симулированный баннер B-1 (06 §3.3). Прячется при подписке / Remove Ads / на дневном. -->
+  <div id="adBanner" class="hidden">
+    <span class="adBannerTag">СИМУЛЯЦИЯ</span>
+    <span class="adBannerText">Adaptive banner 320×50 · eCPM <b id="adBannerEcpm">…</b></span>
+    <span class="adBannerNet">AppLovin MAX</span>
+  </div>
+
+  <!-- Оверлей-симуляция показа рекламы (interstitial + rewarded) с отсчётом 3–5 сек. -->
+  <div id="adOverlay" class="hidden">
+    <div class="adSim">
+      <div class="adSimTag">СИМУЛЯЦИЯ РЕКЛАМЫ · без реальных сетей</div>
+      <div class="adSimFormat" id="adSimFormat">Реклама</div>
+      <div class="adSimBox">
+        <div class="adSimLogo">📺</div>
+        <div class="adSimPitch" id="adSimPitch">В проде здесь крутится AppLovin MAX / AdMob.</div>
+        <div class="adSimEcpm" id="adSimEcpm"></div>
+      </div>
+      <div class="adSimTimerWrap">Показ идёт: <span class="adSimTimer" id="adSimTimer">5</span> сек</div>
+      <button id="adSimSkip" class="adSimSkip hidden" type="button">Пропустить ✕</button>
+      <button id="adSimClaim" class="adSimClaim hidden" type="button">Забрать награду 🎁</button>
+    </div>
+  </div>
+
+  <!-- Магазин: подписка WordGrove Club (главный продукт) + Remove Ads + RV-6 + полка монет.
+       Покупка/подписка = мгновенная симуляция без реальных денег и платёжных SDK. -->
+  <div id="shopScreen" class="hidden">
+    <div class="monInner">
+      <div class="monHeader">
+        <button id="shopCloseBtn" type="button" class="mon-close">← В игру</button>
+        <div class="monTotals"><span>🪙 <b id="shopCoins">0</b></span></div>
+      </div>
+      <h3 class="monTitle">🛒 Магазин <span class="simTag">СИМУЛЯЦИЯ</span></h3>
+      <p class="monNote">Всё на этом экране — симуляция: подписка и покупки выдают товар мгновенно,
+        без реальных денег и платёжных провайдеров (в проде — App Store / Google Play Billing).
+        Каждая покупка логирует выручку в дашборд.</p>
+
+      <div id="subCard" class="subCard"></div>
+
+      <div id="removeAdsCard" class="removeAdsCard"></div>
+
+      <section class="rvShowcase">
+        <h4>📺 Смотреть рекламу за награду <span class="simTag">rewarded</span></h4>
+        <p class="monNote">Rewarded — добровольный обмен «просмотр → награда» (06 §2, §3.1).
+          RV-1 «Бесплатная Лампа» — в игре; RV-2 «×2 монеты» — на экране победы;
+
+          RV-5 «Открыть копилку» — в 🐿️ Копилке меты; RV-6 — здесь.</p>
+        <button id="rv6Btn" type="button" class="rvBtn">🧊 Заморозка стрика — продолжить серию
+          <span class="rvSub">RV-6 · СИМУЛЯЦИЯ</span></button>
+        <div id="rv6Status" class="rvStatus"></div>
+      </section>
+
+      <section class="shelfSection">
+        <h4>🪙 Полка монет (06 §5.3)</h4>
+        <div id="shopStatus" class="shopStatus"></div>
+        <div id="iapList" class="iapList"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Аналитический дашборд KPI сессии (09). -->
+  <div id="dashboardScreen" class="hidden">
+    <div class="monInner">
+      <div class="monHeader">
+        <button id="dashCloseBtn" type="button" class="mon-close">← В игру</button>
+        <div class="dashGeo" id="dashGeo"></div>
+      </div>
+      <h3 class="monTitle">📊 Дашборд монетизации <span class="simTag">сессия = 1 DAU</span></h3>
+      <p class="monNote">Живые KPI сессии против целей главы 09 и структуры выручки 06 (65/22/13).
+        Считаются по реальным событиям сессии (показы, покупки, подписка). Гео-переключатель
+        меняет eCPM будущих показов (06 §8.1).</p>
+      <div id="dashBody"></div>
+      <button id="dashResetBtn" type="button" class="mon-ghost">↺ Сбросить счётчики сессии</button>
+    </div>
+  </div>
+
+  <!-- Порядок слоёв: economy.js (Economy/Store) → monetize.js + analytics.js (Проход В,
+       ПОСЛЕ economy.js и ПЕРЕД meta.js/game.js) → meta.js (Проход Б) → game.js (ядро). -->
   <script src="levels.js"></script>
   <script src="economy.js"></script>
+  <script src="monetize.js"></script>
+  <script src="analytics.js"></script>
   <script src="meta.js"></script>
   <script src="game.js"></script>
 </body>

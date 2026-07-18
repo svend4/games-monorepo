@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Orchard Peaks — прототип (Проходы А + Б)</title>
+  <title>Orchard Peaks — прототип (Проходы А + Б + В)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,6 +16,8 @@
     <div class="hud-item" title="Серия подряд убранных карт">Серия: <b id="hud-chain">—</b></div>
     <div class="hud-item" title="Урожай, собранный в этой раздаче">🍎 стол: <b id="hud-harvest">0/8</b></div>
     <button id="btn-garden" type="button" class="hud-btn">🌳 Сад</button>
+    <button id="btn-store" type="button" class="hud-btn hud-btn-store">💎 Магазин</button>
+    <button id="btn-dash" type="button" class="hud-btn hud-btn-dash">📊 KPI</button>
     <button id="btn-restart" type="button" class="hud-btn">Новый расклад</button>
   </header>
 
@@ -29,6 +31,7 @@
     <button id="bst-undo" type="button" title="Отменить последний ход">↩ Отмена</button>
     <button id="bst-joker" type="button" title="Джокер: убрать любую открытую карту">🃏 Джокер (0)</button>
     <button id="bst-basket" type="button" title="Золотое лукошко: ×2 урожай за раздачу">🧺 Лукошко (0)</button>
+    <button id="bst-wallet" type="button" class="bst-ad" title="Кошелёк садовода (rewarded): пополнить монеты за просмотр рекламы — СИМУЛЯЦИЯ" style="display:none">💰 Кошелёк</button>
   </section>
 
   <section id="bottom">
@@ -73,9 +76,12 @@
 
   <noscript><p style="text-align:center;font-size:20px">Для игры нужен включённый JavaScript.</p></noscript>
 
-  <!-- Порядок важен: экономика и мета до ядра (готовые window.Economy/Meta). -->
+  <!-- Порядок важен: экономика и мета до ядра (готовые window.Economy/Meta).
+       Проход В: monetize.js + analytics.js — после economy.js, ПЕРЕД game.js. -->
   <script src="economy.js"></script>
   <script src="meta.js"></script>
+  <script src="monetize.js"></script>
+  <script src="analytics.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

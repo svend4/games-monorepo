@@ -269,6 +269,7 @@ let winsCount = lsGet(LS.wins, 0);
 let gamesCount = lsGet(LS.games, 0);
 let idleTimer = null;
 let hintEl = null;
+let lastFinishWin = false;    // был ли последний финал победой (для INT1, 06 §6.2/§6.3)
 
 const $ = (id) => document.getElementById(id);
 
@@ -329,6 +330,7 @@ function newGame() {
     history: [],
     jokerArmed: false,
     basketActive: false,
+    rw1Used: false,     // RW1 «Второй шанс» — 1/уровень (06 §6.2)
     over: false,
   };
   buildTableDom();
@@ -630,7 +632,10 @@ function updateBoosterBar() {
 function commitHarvest() {
   if (G.harvestCommitted) return 0;
   const mult = G.basketActive ? ECFG.BASKET_MULT : 1;
-  const gained = G.harvestGot * ECFG.HARVEST_PER_CARD * mult;
+  // Проход В: подписка «Клуб садовода» даёт +50% урожая (06 §6.5). Заглушка
+  // Monetize может отсутствовать (Проходы А+Б) — тогда множитель 1.
+  const clubMult = (window.Monetize && Monetize.harvestMultiplier) ? Monetize.harvestMultiplier() : 1;
+  const gained = Math.round(G.harvestGot * ECFG.HARVEST_PER_CARD * mult * clubMult);
   if (gained > 0) Economy.addHarvest(gained, G.basketActive ? 'basket' : 'cards');
   G.harvestCommitted = true;
   G.harvestGained = gained;
@@ -639,6 +644,7 @@ function commitHarvest() {
 
 function finishWin() {
   G.over = true;
+  lastFinishWin = true;                          // для INT1 на возврате в сад (06 §6.2)
   clearHint();
   disarmJoker();
 
@@ -653,6 +659,12 @@ function finishWin() {
   Economy.nextLevel();                          // прогресс к n+1
   Meta.track('wins', 1);                        // недельная миссия «выиграй N уровней»
 
+  // Проход В: копилка копит 5% выигрышей; счётчик уровней для правил INT (06 §6.3).
+  if (window.Monetize) {
+    Monetize.onCoinsWon(win + stockB);
+    Monetize.onLevelFinished();
+  }
+
   winsCount++; gamesCount++;
   lsSet(LS.wins, winsCount);
   lsSet(LS.games, gamesCount);
@@ -661,24 +673,49 @@ function finishWin() {
 
   window.Analytics.track('level_finish', { result: 'win', level: n, coins_won: win + stockB, harvest_earned: gained });
 
-  const earned = Economy.getEarnedThisLevel();
-  const net = earned - G.entryPaid;
+  // Данные экрана победы держим на G, чтобы перерисовать после rewarded «×2».
+  G.win = { n: n, stockCards: stockCards, stockB: stockB, win: win, gained: gained,
+            doubleBase: win + stockB, rw2Used: false };
   syncHud();
   updateBoosterBar();
+  showOverlay(winOverlayHtml());
+}
 
-  showOverlay(
+/* HTML экрана победы — вынесен, чтобы перерисовывать после rewarded «×2 награда»
+ * (значения net/баланса пересчитываются заново из текущего состояния). */
+function winOverlayHtml() {
+  const w = G.win;
+  const earned = Economy.getEarnedThisLevel();
+  const net = earned - G.entryPaid;
+
+  let adCta = '';
+  if (window.Monetize) {                         // rewarded не убирается remove-ads/подпиской
+    if (!w.rw2Used) {
+      adCta += `<button class="btn-ad" data-ov="rw2" type="button">📺 ×2 награда за рекламу <span class="sim-tag">СИМУЛЯЦИЯ</span></button>`;
+    } else {
+      adCta += `<div class="ad-done">✓ Награда удвоена рекламой (RW2)</div>`;
+    }
+    if (Monetize.isEventWeekend()) {
+      adCta += `<button class="btn-ad" data-ov="rw5" type="button">📺 ×2 жетоны ярмарки <span class="sim-tag">СИМУЛЯЦИЯ</span></button>`;
+    }
+    if (adCta) adCta = `<div class="ad-cta">${adCta}</div>`;
+  }
+
+  return (
     `<div class="emoji">🎉🍎</div>` +
     `<h2>Стол чист!</h2>` +
-    `<p>Сад благодарит вас. Уровень ${n} пройден.</p>` +
+    `<p>Сад благодарит вас. Уровень ${w.n} пройден.</p>` +
     `<table class="reward">` +
     `<tr><td>Взнос за раздачу</td><td>${G.entryPaid > 0 ? '−' + Economy.fmt(G.entryPaid) : 'бесплатно'}</td></tr>` +
-    `<tr><td>Выигрыш W(${n})</td><td>+${Economy.fmt(win)}</td></tr>` +
-    `<tr><td>Бонус колоды: ${stockCards} карт</td><td>+${Economy.fmt(stockB)}</td></tr>` +
+    `<tr><td>Выигрыш W(${w.n})</td><td>+${Economy.fmt(w.win)}</td></tr>` +
+    `<tr><td>Бонус колоды: ${w.stockCards} карт</td><td>+${Economy.fmt(w.stockB)}</td></tr>` +
+    (w.rw2Used ? `<tr><td>📺 ×2 за рекламу (RW2)</td><td>+${Economy.fmt(w.doubleBase)}</td></tr>` : '') +
     `<tr class="total"><td>Итог монет за уровень</td><td>${net >= 0 ? '+' : ''}${Economy.fmt(net)}</td></tr>` +
-    `<tr><td>Урожай: ${G.harvestGot} 🍎${G.basketActive ? ' ×2' : ''}</td><td>+${Economy.fmt(gained)} 🍎</td></tr>` +
+    `<tr><td>Урожай: ${G.harvestGot} 🍎${G.basketActive ? ' ×2' : ''}</td><td>+${Economy.fmt(w.gained)} 🍎</td></tr>` +
     `<tr><td>Баланс</td><td>💰 ${Economy.fmt(Economy.getCoins())}</td></tr>` +
     `<tr><td>Урожай в саду</td><td>🍎 ${Economy.fmt(Economy.getHarvest())}</td></tr>` +
     `</table>` +
+    adCta +
     metaCtaWin() +
     `<div class="btn-row">` +
     `<button class="btn-main" data-ov="garden" type="button">🌳 В сад</button>` +
@@ -698,26 +735,44 @@ function metaCtaWin() {
 
 function finishLose() {
   G.over = true;
+  lastFinishWin = false;                     // INT никогда после поражения (06 §6.3.4)
   clearHint();
   disarmJoker();
 
   gamesCount++;
   lsSet(LS.games, gamesCount);
   const gained = commitHarvest();            // урожай сохраняется даже при поражении (п. 3.6)
+  if (window.Monetize) Monetize.onLevelFinished();
 
   window.Analytics.track('level_finish', { result: 'lose', level: G.entryLevel, harvest_earned: gained });
 
-  const pct = Math.round((G.removed.size / TABLE_SIZE) * 100);
+  const clearRatio = G.removed.size / TABLE_SIZE;
+  G.lose = { pct: Math.round(clearRatio * 100), gained: gained, clearRatio: clearRatio };
   syncHud();
   updateBoosterBar();
-  showOverlay(
+  showOverlay(loseOverlayHtml());
+}
+
+/* HTML экрана поражения — вынесен для перерисовки после rewarded «Второй шанс». */
+function loseOverlayHtml() {
+  const L = G.lose;
+  // RW1 «Второй шанс» (06 §6.2): rewarded, только если стол ≥ 60% чист и ещё не
+  // брали в ЭТОМ уровне (флаг на G, а не на G.lose — 1/уровень даже после добора).
+  let adCta = '';
+  if (window.Monetize && L.clearRatio >= 0.60 && !G.rw1Used) {
+    adCta = `<div class="ad-cta">` +
+      `<button class="btn-ad" data-ov="rw1" type="button">📺 Второй шанс: +5 карт в колоду <span class="sim-tag">СИМУЛЯЦИЯ</span></button>` +
+      `</div>`;
+  }
+  return (
     `<div class="emoji">🐶</div>` +
     `<h2>Почти получилось!</h2>` +
-    `<p>Стол был чист на ${pct}%. Бисквит уверен: в следующий раз выйдет.</p>` +
-    (gained > 0
-      ? `<p class="kept">Урожай сохранён: +${Economy.fmt(gained)} 🍎 (уже в саду)</p>`
+    `<p>Стол был чист на ${L.pct}%. Бисквит уверен: в следующий раз выйдет.</p>` +
+    (L.gained > 0
+      ? `<p class="kept">Урожай сохранён: +${Economy.fmt(L.gained)} 🍎 (уже в саду)</p>`
       : `<p class="kept">Урожай не сгорает — соберите 🍎 в новой раздаче.</p>`) +
     `<p>Баланс: 💰 ${Economy.fmt(Economy.getCoins())} · 🍎 ${Economy.fmt(Economy.getHarvest())}</p>` +
+    adCta +
     `<div class="btn-row">` +
     `<button class="btn-main" data-ov="garden" type="button">🌳 В сад</button>` +
     `<button class="btn-main" data-ov="again" type="button">Ещё раз</button>` +
@@ -747,13 +802,64 @@ function onOverlayClick(ev) {
   if (!b) return;
   const act = b.getAttribute('data-ov');
   if (act === 'again') newGame();
-  else if (act === 'garden') openGarden('garden');   // мета поверх оверлея; закрытие вернёт сюда
+  else if (act === 'garden') goGardenFromOverlay();  // возможен INT1 после победы
   else if (act === 'close') hideOverlay();
+  else if (act === 'rw2') onRewardedDoubleWin();
+  else if (act === 'rw5') onRewardedEventTokens();
+  else if (act === 'rw1') onRewardedSecondChance();
   else if (act === 'claim-streak') {
     Meta.claimStreak && Meta.claimStreak();
     hideOverlay();
     syncHud();
   }
+}
+
+/* Возврат на карту сада после победы: правила 06 §6.3 решают, показать ли INT1.
+ * После поражения (lastFinishWin=false) interstitial не запрашивается вовсе. */
+function goGardenFromOverlay() {
+  if (lastFinishWin && window.Monetize) {
+    Monetize.maybeInterstitial(function () { openGarden('garden'); });
+  } else {
+    openGarden('garden');
+  }
+}
+
+/* RW2 «Удвоить награду» (06 §6.2): rewarded на экране победы → ×2 монет уровня. */
+function onRewardedDoubleWin() {
+  if (!window.Monetize || !G || !G.win || G.win.rw2Used) return;
+  Monetize.showRewarded('RW2', {}, function (ok) {
+    if (!ok) return;
+    Economy.addCoins(G.win.doubleBase, 'rw2_double', true);
+    G.win.rw2Used = true;
+    syncHud();
+    showOverlay(winOverlayHtml());               // перерисовать итог с удвоением
+  });
+}
+
+/* RW5 «×2 жетоны ярмарки» (06 §6.2): rewarded на победе во время ивента пт–вс. */
+function onRewardedEventTokens() {
+  if (!window.Monetize) return;
+  Monetize.rwEventTokens(function () { syncHud(); showOverlay(winOverlayHtml()); });
+}
+
+/* RW1 «Второй шанс» (06 §6.2): rewarded из тупика (стол ≥ 60%) → +5 карт в колоду
+ * и продолжение уровня вместо поражения. */
+function onRewardedSecondChance() {
+  if (!window.Monetize || !G || !G.lose || G.rw1Used) return;
+  Monetize.showRewarded('RW1', {}, function (ok) {
+    if (!ok) return;
+    for (let i = 0; i < 5; i++) {
+      G.deal.stockRanks.push(randRank());
+      G.deal.stockSuits.push(randSuit());
+    }
+    G.rw1Used = true;
+    G.over = false;
+    hideOverlay();
+    gToast('Второй шанс! Колода пополнена (+5 карт).');
+    render();
+    updateBoosterBar();
+    armIdleTimer();
+  });
 }
 
 /* Стрик-модалка на входе (ежедневный ритуал, 04 §4.4). */
@@ -835,6 +941,8 @@ window.Game = {
 
 document.addEventListener('DOMContentLoaded', () => {
   Meta.init();                                   // мета-экран: делегирование, вкладки
+  if (window.Monetize)  Monetize.init();         // Проход В: реклама/IAP-заглушки, полка
+  if (window.Dashboard) Dashboard.init();        // Проход В: KPI-дашборд сессии
   Economy.subscribe(syncHud);                    // изменения валют → обновление HUD
 
   $('btn-restart').addEventListener('click', newGame);

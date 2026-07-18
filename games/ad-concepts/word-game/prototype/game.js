@@ -824,7 +824,26 @@
     refreshHud: updateHud,
     toast: toast,
     startDaily: startDaily,
-    isDailyMode: function () { return dailyMode; }
+    isDailyMode: function () { return dailyMode; },
+    // Проход В: цена Лампы (для клубного «безлимита подсказок» и UI монетизации).
+    getHintCost: function () { return CFG.HINT_COST; },
+    // Проход В (ДОБАВОЧНЫЙ хук, ядро не меняется): открыть случайную скрытую букву
+    // БЕЗПЛАТНО. Используется rewarded RV-1 «Бесплатная Лампа» и клубной подпиской
+    // «безлимит подсказок» (monetize.js). Логика идентична useHint(), но без списания
+    // монет. Возвращает true, если буква открыта. usedHint=true — открытие буквы
+    // (любым способом) снимает «блестящий проход», как и платная Лампа.
+    revealFreeLetter: function () {
+      if (allCompleted()) return false;
+      var hidden = cellKeys.filter(function (k) { return !state.revealed[k]; });
+      if (hidden.length === 0) return false;
+      var key = hidden[Math.floor(Math.random() * hidden.length)];
+      state.usedHint = true;
+      revealCell(key, true, 0);
+      updateHud();
+      save();
+      checkWin();
+      return true;
+    }
   };
 
   // ============================== СТАРТ ==============================

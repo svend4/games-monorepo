@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Block Surge — прототип (Проходы А + Б)</title>
+  <title>Block Surge — прототип (Проходы А + Б + В)</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,11 @@
         <span class="coinIcon">🪙</span>
         <span class="value" id="coinBal">0</span>
       </div>
-      <button id="openMetaBtn" type="button" class="metaBtn">🗺️ Карта · магазин · миссии</button>
+      <div class="topBtns">
+        <button id="openShopBtn" type="button" class="iconBtn" title="Магазин (СИМУЛЯЦИЯ)">🛒</button>
+        <button id="openDashBtn" type="button" class="iconBtn" title="Дашборд монетизации">📊</button>
+        <button id="openMetaBtn" type="button" class="metaBtn">🗺️ Мета</button>
+      </div>
     </div>
 
     <header id="hud">
@@ -53,6 +57,12 @@
         <p class="ovRow">Звёзды партии: <b id="overStars">☆☆☆</b></p>
         <p class="ovRow">Монеты за партию: <b id="overCoins">0</b> 🪙</p>
         <p id="newRecord" class="hidden">🎉 Новый рекорд!</p>
+        <div class="rwOffers">
+          <button id="rwContinueBtn" type="button" class="rwBtn">📺 Второй шанс
+            <span class="rwSub">освободить поле · RW-1 · СИМУЛЯЦИЯ</span></button>
+          <button id="rwDoubleBtn" type="button" class="rwBtn">📺 ×2 монеты за партию
+            <span class="rwSub">RW-2 · СИМУЛЯЦИЯ</span></button>
+        </div>
         <button id="againBtn" type="button">Играть заново</button>
         <button id="overMetaBtn" type="button">🗺️ Карта и награды</button>
       </div>
@@ -96,13 +106,88 @@
             <button id="simDayBtn" type="button" class="ghostBtn">⏭ Новый день (тест)</button>
           </div>
         </section>
+
+        <section class="metaSection" id="monetizeSection">
+          <h3>📺 Реклама за награду · 💳 Монетизация <span class="simTag">Проход В</span></h3>
+          <p class="metaNote">Rewarded-плейсменты RW-3/RW-4 (06 §2.2): просмотр = симуляция-заглушка,
+            выдаёт награду и логирует ad revenue в дашборд. Всё — без реальных сетей.</p>
+          <div class="rwMetaRow">
+            <button id="rwBoosterBtn" type="button" class="rwBtn">📺 Бесплатный бустер (Молот)
+              <span class="rwSub">RW-3 · СИМУЛЯЦИЯ</span></button>
+            <button id="rwStreakBtn" type="button" class="rwBtn">📺 ×2 награда дня (+100🪙)
+              <span class="rwSub">RW-4 · СИМУЛЯЦИЯ</span></button>
+          </div>
+          <div id="metaAdStatus" class="metaAdStatus"></div>
+          <div class="monLinks">
+            <button id="metaShopBtn" type="button" class="metaBtn">🛒 Магазин IAP</button>
+            <button id="metaDashBtn" type="button" class="metaBtn">📊 Дашборд KPI</button>
+          </div>
+        </section>
       </div>
     </div>
   </div>
 
-  <!-- Слои Прохода Б подключаются ПЕРЕД ядром: определяют Store/Economy/Meta,
-       которые ядро вызывает через хуки. -->
+  <!-- ============ ПРОХОД В: реклама-заглушки, IAP-полка, дашборд ============ -->
+
+  <!-- Симулированный баннер (06 §2.3). Скрывается при Remove Ads / подписке. -->
+  <div id="adBanner" class="hidden">
+    <span class="adBannerTag">СИМУЛЯЦИЯ</span>
+    <span class="adBannerText">Adaptive banner 320×50 · <b id="adBannerEcpm">eCPM …</b></span>
+    <span class="adBannerNet">AppLovin MAX</span>
+  </div>
+
+  <!-- Оверлей-симуляция показа рекламы (interstitial + rewarded) с отсчётом. -->
+  <div id="adOverlay" class="hidden">
+    <div class="adSim">
+      <div class="adSimTag">СИМУЛЯЦИЯ РЕКЛАМЫ · без реальных сетей</div>
+      <div class="adSimFormat" id="adSimFormat">Interstitial</div>
+      <div class="adSimBox">
+        <div class="adSimLogo">📺</div>
+        <div class="adSimPitch" id="adSimPitch">В проде здесь крутится AppLovin MAX / AdMob.</div>
+        <div class="adSimEcpm" id="adSimEcpm"></div>
+      </div>
+      <div class="adSimTimerWrap">Показ идёт: <span class="adSimTimer" id="adSimTimer">5</span> сек</div>
+      <button id="adSimSkip" class="adSimSkip hidden" type="button">Пропустить ✕</button>
+      <button id="adSimClaim" class="adSimClaim hidden" type="button">Забрать награду 🎁</button>
+    </div>
+  </div>
+
+  <!-- Экран полки IAP (06 §5). Покупка = мгновенная симуляция без денег. -->
+  <div id="iapScreen" class="hidden">
+    <div class="monInner">
+      <div class="monHeader">
+        <button id="iapCloseBtn" type="button" class="metaClose">← Назад</button>
+        <div class="metaTotals"><span>🪙 <b id="iapCoins">0</b></span></div>
+      </div>
+      <h3 class="monTitle">🛒 Магазин <span class="simTag">СИМУЛЯЦИЯ</span></h3>
+      <p class="monNote">Покупки — мгновенная симуляция без реальных денег и платёжных SDK.
+        Каждая выдаёт товар и логирует revenue в дашборд. Витрина сегментируется (≤6 SKU, 06 §5);
+        здесь показан полный каталог для теста.</p>
+      <div id="iapStatus" class="iapStatus"></div>
+      <div id="iapList" class="iapList"></div>
+    </div>
+  </div>
+
+  <!-- Аналитический дашборд KPI сессии (09). -->
+  <div id="dashboardScreen" class="hidden">
+    <div class="monInner">
+      <div class="monHeader">
+        <button id="dashCloseBtn" type="button" class="metaClose">← Назад</button>
+        <div class="dashGeo" id="dashGeo"></div>
+      </div>
+      <h3 class="monTitle">📊 Дашборд монетизации <span class="simTag">сессия = 1 DAU</span></h3>
+      <p class="monNote">Живые KPI сессии против целей главы 09. Считаются по реальным событиям
+        сессии (показы, покупки). Гео-переключатель меняет eCPM будущих показов.</p>
+      <div id="dashBody"></div>
+      <button id="dashResetBtn" type="button" class="ghostBtn">↺ Сбросить счётчики сессии</button>
+    </div>
+  </div>
+
+  <!-- Порядок слоёв: economy.js (Store/Economy/Analytics) → monetize.js + analytics.js
+       (Проход В, ПОСЛЕ economy.js и ПЕРЕД game.js) → meta.js (Проход Б) → game.js (ядро). -->
   <script src="economy.js"></script>
+  <script src="monetize.js"></script>
+  <script src="analytics.js"></script>
   <script src="meta.js"></script>
   <script src="game.js"></script>
 </body>

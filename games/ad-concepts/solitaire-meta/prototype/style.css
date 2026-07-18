@@ -817,3 +817,489 @@ body.joker-mode .card.up { cursor: pointer; }
 
 /* Когда открыт мета-экран, фон партии не скроллим. */
 body.meta-open { overflow: hidden; }
+
+/* ============================================================
+   ПРОХОД В — МОНЕТИЗАЦИЯ (реклама/IAP-заглушки) + KPI-ДАШБОРД
+   Крупные шрифты (ЦА 45+). Акценты: 💎 фиолетовый (премиум),
+   📺 синий (реклама), 📊 бирюзовый (аналитика). Всё — СИМУЛЯЦИЯ.
+   ============================================================ */
+
+:root {
+  --ad: #2f7fd1;          /* реклама / rewarded / interstitial */
+  --ad-dk: #1f5fa6;
+  --prem: #8a5cc4;        /* премиум / IAP / магазин */
+  --prem-dk: #6b3fa6;
+  --ok: #3f9a3a;
+  --warn: #d99a1f;
+  --bad: #c0392b;
+}
+
+/* ---------- HUD-кнопки Прохода В ---------- */
+
+.hud-btn-store {
+  background: linear-gradient(180deg, #a878d8, #8a5cc4);
+  color: #fff;
+  border-color: var(--prem-dk);
+  font-weight: 700;
+}
+.hud-btn-store:hover { filter: brightness(1.06); background: linear-gradient(180deg, #a878d8, #8a5cc4); }
+
+.hud-btn-dash {
+  background: linear-gradient(180deg, #3aa6b0, #2b7e8a);
+  color: #fff;
+  border-color: #21636d;
+  font-weight: 700;
+}
+.hud-btn-dash:hover { filter: brightness(1.06); background: linear-gradient(180deg, #3aa6b0, #2b7e8a); }
+
+/* Кнопка «Кошелёк» (RW6) в панели бустеров — рекламный акцент. */
+#booster-bar button.bst-ad {
+  border-color: var(--ad-dk);
+  background: linear-gradient(180deg, #7db6ec, #3f8ed6);
+  color: #08243f;
+}
+#booster-bar button.bst-ad:hover:not(:disabled) {
+  background: linear-gradient(180deg, #7db6ec, #3f8ed6);
+  filter: brightness(1.06);
+}
+
+/* ---------- Метка «СИМУЛЯЦИЯ» и рекламные CTA на оверлеях итога ---------- */
+
+.ad-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 14px 0 4px;
+}
+
+.btn-ad {
+  font-size: 21px;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #4a97dd, #2f7fd1);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(30, 90, 160, 0.4);
+}
+.btn-ad:hover { filter: brightness(1.07); }
+
+.sim-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.ad-done { color: var(--ad-dk); font-weight: 700; font-size: 18px; }
+
+/* ---------- Оверлей-симуляция показа рекламы ---------- */
+
+#ad-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 500;                 /* выше всех экранов */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(12, 18, 28, 0.82);
+}
+#ad-screen.hidden { display: none; }
+
+.ad-box {
+  background: linear-gradient(180deg, #10263f, #0b1b2e);
+  color: #eaf2fb;
+  border: 2px solid #2f7fd1;
+  border-radius: 20px;
+  padding: 26px 26px 22px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.55);
+}
+
+.ad-simtag {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #ffd76a;
+  border: 2px dashed #ffd76a;
+  border-radius: 8px;
+  padding: 5px 12px;
+  margin-bottom: 14px;
+}
+
+.ad-icon { font-size: 46px; line-height: 1; }
+.ad-place { font-size: 23px; font-weight: 800; margin-top: 8px; }
+.ad-desc { font-size: 17px; color: #b7cbe2; margin-top: 4px; line-height: 1.4; }
+
+.ad-count {
+  font-size: 58px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #7db6ec;
+  margin: 12px 0 6px;
+  line-height: 1;
+}
+
+.ad-note { font-size: 15px; color: #8ba6c4; margin-bottom: 16px; font-style: italic; }
+
+.ad-close {
+  font-size: 21px;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 14px 30px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #4a97dd, #2f7fd1);
+  color: #fff;
+  cursor: pointer;
+  width: 100%;
+}
+.ad-close:disabled { background: #24425f; opacity: 0.55; cursor: default; }
+.ad-close:not(:disabled):hover { filter: brightness(1.08); }
+
+/* ---------- Общий каркас экранов Магазина и Дашборда ---------- */
+
+#store-screen, #dash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #f6f1de, #dcead0 55%, #cfe3bd);
+  color: var(--ink);
+}
+#store-screen.hidden, #dash-screen.hidden { display: none; }
+
+#store-top, #dash-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: #fffdf4;
+  border-bottom: 2px solid #cdd6b4;
+  flex-wrap: wrap;
+}
+
+#store-back, #dash-back {
+  font-size: 20px;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 10px 20px;
+  border: 2px solid #7a8a5f;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+#store-back:hover, #dash-back:hover { background: #f3edd4; }
+
+.store-title, .dash-title { font-size: 24px; font-weight: 800; flex: 1; }
+.store-geo, .dash-geo { font-size: 18px; font-weight: 700; color: #4a5240; white-space: nowrap; }
+
+#store-body, #dash-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px clamp(12px, 4vw, 40px) 48px;
+  max-width: 820px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Баннер «СИМУЛЯЦИЯ» — заметный, но не тревожный. */
+.sim-banner {
+  background: #fff4d6;
+  border: 2px solid #e6c363;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 16px;
+  line-height: 1.45;
+  color: #6a4d18;
+  margin-bottom: 16px;
+}
+
+.store-h, .dash-h {
+  font-size: 21px;
+  font-weight: 800;
+  margin: 18px 0 10px;
+  color: #2d3327;
+}
+.store-sub { font-size: 16px; color: #5a6149; line-height: 1.45; margin: 0 0 12px; }
+
+/* ---------- Магазин: rewarded-офферы ---------- */
+
+.offer-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #eef6fd;
+  border: 2px solid #a9cdee;
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+}
+.offer-ico { font-size: 30px; }
+.offer-info { flex: 1; }
+.offer-name { font-size: 20px; font-weight: 700; }
+.offer-hint { font-size: 15px; color: #4a5240; line-height: 1.4; }
+
+.rw-tag {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1f5fa6;
+  background: #d6e8fa;
+  border-radius: 6px;
+  padding: 1px 7px;
+  vertical-align: middle;
+}
+
+.offer-btn {
+  font-size: 19px;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #4a97dd, #2f7fd1);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.offer-btn:hover:not(:disabled) { filter: brightness(1.07); }
+.offer-btn:disabled { background: #c3c8b4; cursor: default; }
+
+/* ---------- Магазин: IAP-полка ---------- */
+
+.iap-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fffdf4;
+  border: 2px solid #cdd6b4;
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+}
+.iap-item.hi { background: #f6eefc; border-color: #d0b6ea; }
+.iap-ico { font-size: 30px; }
+.iap-info { flex: 1; }
+.iap-name { font-size: 20px; font-weight: 700; }
+.iap-note { font-size: 15px; color: #4a5240; line-height: 1.4; }
+
+.iap-btn {
+  font-size: 19px;
+  font-family: inherit;
+  font-weight: 800;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #a878d8, #8a5cc4);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.iap-btn:hover:not(:disabled) { filter: brightness(1.07); }
+.iap-btn.owned { background: #bcc4ae; color: #55604a; cursor: default; }
+.iap-btn.ghost { background: #fff; color: var(--prem-dk); border: 2px solid #c9a9e6; }
+
+.store-foot, .dash-foot {
+  font-size: 14px;
+  color: #6a7358;
+  text-align: center;
+  margin-top: 20px;
+  font-style: italic;
+}
+
+/* ---------- Дашборд: контролы ---------- */
+
+.dash-ctrl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.ctrl-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ctrl-lab { font-size: 15px; font-weight: 700; color: #4a5240; }
+
+.ctrl-btn {
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 8px 16px;
+  border: 2px solid #9fb0c9;
+  border-radius: 10px;
+  background: #fff;
+  color: #2d3327;
+  cursor: pointer;
+}
+.ctrl-btn:hover { background: #eef2f8; }
+.ctrl-btn.on {
+  background: linear-gradient(180deg, #3aa6b0, #2b7e8a);
+  color: #fff;
+  border-color: #21636d;
+}
+
+/* ---------- Дашборд: крупные плитки выручки ---------- */
+
+.dash-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.dash-tile {
+  border-radius: 16px;
+  padding: 16px 14px;
+  text-align: center;
+  border: 2px solid #cdd6b4;
+  background: #fffdf4;
+}
+.dash-tile.ad  { border-color: #a9cdee; background: #eef6fd; }
+.dash-tile.iap { border-color: #d0b6ea; background: #f6eefc; }
+.dash-tile.sum { border-color: #9fd0b0; background: #eaf7ee; }
+.tile-val { font-size: 34px; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.05; }
+.tile-lab { font-size: 17px; font-weight: 700; margin-top: 4px; }
+.tile-sub { font-size: 14px; color: #6a7358; margin-top: 2px; }
+
+/* ---------- Дашборд: карточки/таблицы ---------- */
+
+.dash-card {
+  background: #fffdf4;
+  border: 2px solid #cdd6b4;
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.dash-small { font-size: 14px; color: #5a6149; line-height: 1.5; }
+.dash-hint { font-size: 15px; color: #6a4d18; background: #fff4d6; border-radius: 10px; padding: 8px 12px; margin: 10px 0 0; }
+.dash-note { font-size: 18px; }
+
+.hl {
+  font-variant-numeric: tabular-nums;
+  border-radius: 8px;
+  padding: 1px 8px;
+}
+.hl.ok   { background: #dbf1d9; color: #2f7a2b; }
+.hl.warn { background: #fbeecb; color: #916012; }
+.hl.bad  { background: #fadbd6; color: #a23125; }
+
+/* Гейт доли рекламы 50/50 */
+.gauge {
+  position: relative;
+  height: 26px;
+  background: linear-gradient(90deg, #a9cdee, #d0b6ea);
+  border-radius: 13px;
+  margin: 10px 0 6px;
+  overflow: hidden;
+}
+.gauge-band { position: absolute; top: 0; bottom: 0; background: rgba(63, 154, 58, 0.5); }
+.gauge-mid { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #3f9a3a; }
+.gauge-mark {
+  position: absolute; top: -4px; bottom: -4px; width: 4px;
+  background: #2d3327; border-radius: 2px;
+  box-shadow: 0 0 0 2px #fff;
+  transform: translateX(-2px);
+}
+.gauge-legend { display: flex; justify-content: space-between; font-size: 13px; color: #5a6149; }
+
+/* KPI-таблица */
+.kpi-table-wrap { overflow-x: auto; }
+.kpi-table { width: 100%; border-collapse: collapse; font-size: 17px; }
+.kpi-table th {
+  text-align: left; font-size: 14px; color: #5a6149;
+  padding: 4px 8px; border-bottom: 2px solid #e2e6d0;
+}
+.kpi-table td { padding: 7px 8px; border-bottom: 1px solid #eceee0; }
+.kpi-table td.kpi-fact { font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.kpi-table td.kpi-tgt { color: #6a7358; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.kpi-table.plc tr.has { background: #f3f9ef; }
+.kpi-table.plc td { text-align: left; }
+.kpi-table.plc td:nth-child(n+2) { text-align: right; font-variant-numeric: tabular-nums; }
+
+.kpi-dot {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.kpi-dot.ok { background: var(--ok); }
+.kpi-dot.warn { background: var(--warn); }
+.kpi-dot.bad { background: var(--bad); }
+
+/* Воронка */
+.funnel { display: flex; gap: 8px; margin: 8px 0; }
+.fun-step {
+  flex: 1;
+  background: #eef6fd;
+  border: 2px solid #a9cdee;
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+}
+.fun-val { font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.fun-lab { font-size: 14px; color: #4a5240; }
+
+.blk-wrap { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.blk-chip {
+  font-size: 14px;
+  background: #fadbd6;
+  color: #a23125;
+  border-radius: 8px;
+  padding: 3px 9px;
+  font-weight: 700;
+}
+
+.stat-line { font-size: 17px; margin: 6px 0; }
+.stat-line b { font-variant-numeric: tabular-nums; }
+
+/* Лента событий */
+.evlog {
+  font-family: "Consolas", "SF Mono", monospace;
+  font-size: 14px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.ev-row {
+  display: flex;
+  gap: 10px;
+  padding: 4px 6px;
+  border-bottom: 1px solid #eceee0;
+}
+.ev-name { font-weight: 700; color: #1f5fa6; white-space: nowrap; }
+.ev-p { color: #5a6149; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Тост монетизации ---------- */
+
+#mon-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 74px;
+  transform: translate(-50%, 20px);
+  background: rgba(30, 60, 100, 0.95);
+  color: #fff;
+  font-size: 18px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 520;
+  max-width: 90vw;
+  text-align: center;
+}
+#mon-toast.show { opacity: 1; transform: translate(-50%, 0); }

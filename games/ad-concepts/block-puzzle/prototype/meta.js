@@ -245,6 +245,13 @@ window.Meta = (function () {
   /* ======================= ХУКИ ИЗ ЯДРА (game.js) =================== */
 
   var maxComboThisGame = 1;
+  // Учёт «одна партия = одно начисление конца» при оживлении RW-1 (Проход В):
+  // оживление сбрасывает gameOver в game.js, НЕ вызывая onNewGame, поэтому
+  // onGameEnd срабатывает повторно. Начисляем звёзды/монеты конца дельтой,
+  // а gamesPlayed/миссию «партий» — ровно один раз за матч.
+  var endCreditedThisMatch = false;
+  var prevEndStars = 0;
+  var prevEndCoins = 0;
 
   // Ход с постановкой фигуры завершён: lines — очищено линий, mult — множитель
   // комбо, clean — собралось ли «чистое поле», size — клеток в фигуре.
@@ -270,20 +277,28 @@ window.Meta = (function () {
 
   // Конец партии (честный game over ядра). score — финальный счёт.
   function onGameEnd(score) {
-    // Звёзды за партию (04 §2).
+    // Звёзды за партию (04 §2). При оживлении RW-1 (повторный вызов в той же
+    // партии) начисляем только прирост над уже начисленным — итог за матч = ★ по финалу.
     var stars = 0;
     for (var i = 0; i < STAR_THRESHOLDS.length; i++) if (score >= STAR_THRESHOLDS[i]) stars = i + 1;
-    M.totalStars += stars;
+    var starsDelta = endCreditedThisMatch ? Math.max(0, stars - prevEndStars) : stars;
+    M.totalStars += starsDelta;
+    prevEndStars = Math.max(prevEndStars, stars);
 
-    // Монеты за конец партии (аналог «Победа на уровне», 05 §2.1).
+    // Монеты за конец партии (аналог «Победа на уровне», 05 §2.1) — тоже дельтой.
     var endCoins = Math.min(Economy.ECON.COIN_ENDGAME_MAX,
       Math.floor(score / Economy.ECON.COIN_ENDGAME_DIV));
-    if (endCoins > 0) Economy.addCoins(endCoins, 'level', true);
+    var endCoinsDelta = endCreditedThisMatch ? Math.max(0, endCoins - prevEndCoins) : endCoins;
+    if (endCoinsDelta > 0) Economy.addCoins(endCoinsDelta, 'level', true);
+    prevEndCoins = Math.max(prevEndCoins, endCoins);
 
-    // Прогресс миссий: сыграна партия + рекорд очков за партию.
-    STATS.gamesPlayed += 1;
-    advanceMissions('games', 1, 'add');
+    // Прогресс миссий: партия засчитывается один раз за матч (оживление её не удваивает).
+    if (!endCreditedThisMatch) {
+      STATS.gamesPlayed += 1;
+      advanceMissions('games', 1, 'add');
+    }
     advanceMissions('score', score, 'max');
+    endCreditedThisMatch = true;
 
     A.track('game_end', { mode: 'classic', score: score, stars: stars });
     Store.save();
@@ -299,6 +314,9 @@ window.Meta = (function () {
   function onNewGame() {
     Economy.resetEarnedThisGame();
     maxComboThisGame = 1;
+    endCreditedThisMatch = false;   // новая партия — начисление конца снова «полное»
+    prevEndStars = 0;
+    prevEndCoins = 0;
     disarmHammer();
     Economy.refreshCoinHud();
     renderBoosterBar();

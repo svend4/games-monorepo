@@ -519,3 +519,473 @@ body {
   box-shadow: 0 3px 0 #2e7d32;
 }
 .mission-claim:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e7d32; }
+
+/* ============================================================
+   ПРОХОД В: реклама-заглушки, IAP-полка, подписка, дашборд.
+   Вся графика — CSS/эмодзи. Реклама/покупки — СИМУЛЯЦИЯ.
+   ============================================================ */
+
+.hidden { display: none !important; }
+
+/* HUD: кнопки магазина и дашборда (в один стиль с 🗺️/↻). */
+#hud-right { flex-wrap: wrap; justify-content: flex-end; }
+#btn-shop, #btn-dash {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  color: #1b5e20;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+#btn-shop:hover, #btn-dash:hover { background: #fff; }
+
+/* Кнопка RV-1 в колонке колеса — золотая (реклама за награду). */
+#btn-rv1 { border-color: #ffb300; }
+#btn-rv1:hover { background: #fff8e1; }
+#btn-rv1 .cost { color: #b8860b; }
+#btn-rv1.poor { opacity: 0.55; }
+
+/* Когда виден баннер — резервируем место снизу, чтобы не перекрывать колесо. */
+#app.has-banner { padding-bottom: 50px; }
+
+/* ---------- Баннер B-1 (фиксированный низ) ---------- */
+#adBanner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 12;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: repeating-linear-gradient(135deg, #eef6e6, #eef6e6 12px, #e3efd6 12px, #e3efd6 24px);
+  border-top: 1px solid #a5d6a7;
+  font-size: 12px;
+  color: #558b2f;
+}
+.adBannerTag {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: #b8860b;
+  border: 1px solid #e0b64a;
+  border-radius: 5px;
+  padding: 2px 6px;
+  background: #fff8e1;
+}
+.adBannerText b { color: #33691e; font-variant-numeric: tabular-nums; }
+.adBannerNet { font-size: 10px; color: #8aa07a; }
+
+/* ---------- Оверлей-симуляция показа рекламы ---------- */
+#adOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(15, 40, 18, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.adSim {
+  width: 100%;
+  max-width: 340px;
+  background: #ffffff;
+  border: 2px solid #66bb6a;
+  border-radius: 18px;
+  padding: 18px 20px 22px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+}
+.adSimTag {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: #b8860b;
+  text-transform: uppercase;
+}
+.adSimFormat { font-size: 15px; font-weight: 800; color: #2e7d32; }
+.adSimBox {
+  background: linear-gradient(160deg, #f1f8e9, #e8f5e9);
+  border: 1px dashed #81c784;
+  border-radius: 14px;
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.adSimLogo { font-size: 46px; line-height: 1; animation: ad-pulse 1.4s ease-in-out infinite; }
+@keyframes ad-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+.adSimPitch { font-size: 12.5px; color: #558b2f; line-height: 1.4; }
+.adSimEcpm { font-size: 11.5px; color: #00897b; font-weight: 700; font-variant-numeric: tabular-nums; }
+.adSimTimerWrap { font-size: 13px; color: #7a8b6a; }
+.adSimTimer { font-size: 22px; font-weight: 800; color: #ef6c00; font-variant-numeric: tabular-nums; }
+.adSimSkip, .adSimClaim {
+  border: none;
+  border-radius: 22px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 11px 20px;
+  cursor: pointer;
+  align-self: center;
+}
+.adSimSkip { background: #eeeeee; color: #455a64; }
+.adSimClaim { background: #43a047; color: #fff; box-shadow: 0 4px 0 #2e7d32; }
+.adSimClaim:active { transform: translateY(2px); box-shadow: 0 2px 0 #2e7d32; }
+
+/* ---------- Общий контейнер экранов монетизации ---------- */
+#shopScreen, #dashboardScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: linear-gradient(175deg, #e8f5e9 0%, #c8e6c9 55%, #a5d6a7 100%);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.monInner {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 10px 12px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.monHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px;
+  background: linear-gradient(180deg, #e8f5e9 72%, rgba(232, 245, 233, 0));
+}
+.mon-close {
+  border: none;
+  border-radius: 20px;
+  background: #43a047;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 8px 16px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #2e7d32;
+}
+.mon-close:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e7d32; }
+.monTotals { display: flex; gap: 8px; font-weight: 700; font-size: 15px; }
+.monTotals span { background: rgba(255, 255, 255, 0.8); border-radius: 14px; padding: 5px 12px; }
+.monTitle { font-size: 18px; color: #1b5e20; }
+.simTag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #b8860b;
+  background: #fff8e1;
+  border: 1px solid #e0b64a;
+  border-radius: 6px;
+  padding: 2px 6px;
+  vertical-align: middle;
+}
+.monNote { font-size: 12px; color: #5c7a4a; line-height: 1.45; }
+.mon-ghost {
+  border: 1px solid #a5d6a7;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #558b2f;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+  align-self: center;
+}
+
+/* ---------- Подписка WordGrove Club (герой) ---------- */
+.subCard {
+  background: linear-gradient(160deg, #ffffff, #f1f8e9);
+  border: 2px solid #ffd54f;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 4px 14px rgba(184, 134, 11, 0.18);
+}
+.sub-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  color: #b8860b;
+  background: #fff8e1;
+  border: 1px solid #e0b64a;
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-bottom: 8px;
+}
+.sub-title { font-size: 22px; color: #1b5e20; margin-bottom: 8px; }
+.sub-perks { list-style: none; margin: 0 0 12px; padding: 0; }
+.sub-perks li {
+  font-size: 13px;
+  color: #33691e;
+  padding: 3px 0 3px 22px;
+  position: relative;
+}
+.sub-perks li::before { content: '✓'; position: absolute; left: 2px; color: #43a047; font-weight: 800; }
+.sub-prices { display: flex; gap: 10px; }
+.sub-buy {
+  flex: 1 1 0;
+  border: none;
+  border-radius: 16px;
+  padding: 12px 10px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+.sub-buy.trial { background: #43a047; color: #fff; box-shadow: 0 4px 0 #2e7d32; }
+.sub-buy.year { background: #ffb300; color: #4e342e; box-shadow: 0 4px 0 #c68400; }
+.sub-buy:active { transform: translateY(2px); }
+.sub-sub { font-size: 10.5px; font-weight: 600; opacity: 0.92; }
+.sub-active {
+  font-size: 15px;
+  font-weight: 800;
+  color: #2e7d32;
+  background: rgba(67, 160, 71, 0.12);
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.sub-cancel {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 14px;
+  background: #f5f5f5;
+  color: #78909c;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px;
+  cursor: pointer;
+}
+
+/* ---------- Remove Ads ---------- */
+.removeAdsCard {
+  background: #ffffff;
+  border: 1px solid #cfe0c4;
+  border-radius: 14px;
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ra-top { display: flex; flex-direction: column; gap: 3px; }
+.ra-title { font-size: 14px; font-weight: 800; color: #1b5e20; }
+.ra-sub { font-size: 11px; color: #7a8b6a; line-height: 1.3; }
+.ra-buy {
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: #fff8e1;
+  border: 1.5px solid #e0b64a;
+  color: #b8860b;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.ra-buy.done { background: #e8f5e9; border-color: #81c784; color: #2e7d32; cursor: default; }
+
+/* ---------- RV-6 showcase ---------- */
+.rvShowcase, .shelfSection {
+  background: rgba(255, 255, 255, 0.66);
+  border-radius: 14px;
+  padding: 13px 14px;
+}
+.rvShowcase h4, .shelfSection h4 { font-size: 14px; color: #1b5e20; margin-bottom: 6px; }
+.rvBtn {
+  width: 100%;
+  border: 2px solid #ffb300;
+  border-radius: 16px;
+  background: #fff8e1;
+  color: #6d4c00;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  margin-top: 6px;
+}
+.rvBtn:active { transform: scale(0.98); }
+.rvBtn:disabled { opacity: 0.5; cursor: default; }
+.rvSub { font-size: 10.5px; font-weight: 600; color: #b8860b; }
+.rvStatus { font-size: 12px; color: #558b2f; text-align: center; margin-top: 8px; }
+.rvStatus b { color: #33691e; }
+
+/* ---------- Полка монет (IAP) ---------- */
+.shopStatus {
+  font-size: 12px;
+  color: #2e7d32;
+  background: #ffffff;
+  border: 1px solid #cfe0c4;
+  border-radius: 10px;
+  padding: 8px 10px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.iapList { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.iapCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #cfe0c4;
+  border-radius: 12px;
+  padding: 10px 11px;
+  background: #ffffff;
+}
+.iapCard.hot { border-color: #ffb300; box-shadow: 0 0 0 1px #ffd54f inset; }
+.iapCard.owned { opacity: 0.66; }
+.iapTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+.iapTitle { font-size: 13px; font-weight: 800; color: #1b5e20; line-height: 1.2; }
+.iapBadge {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #b8860b;
+  border: 1px solid #e0b64a;
+  border-radius: 5px;
+  padding: 2px 5px;
+  white-space: nowrap;
+  background: #fff8e1;
+}
+.iapDesc { font-size: 11px; color: #6b7d5a; line-height: 1.35; flex: 1; }
+.iapBuy {
+  font-size: 14px;
+  font-weight: 800;
+  padding: 8px 10px;
+  background: #43a047;
+  border: none;
+  color: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #2e7d32;
+}
+.iapBuy:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e7d32; }
+.iapBuy.done { background: #e8f5e9; color: #2e7d32; box-shadow: none; cursor: default; }
+
+/* ---------- Инъекция RV-2 в оверлей победы ---------- */
+.rv2-inject {
+  margin-top: 12px !important;
+  padding: 11px 20px !important;
+  border: none;
+  border-radius: 22px;
+  background: #ffb300 !important;
+  color: #4e342e !important;
+  box-shadow: 0 4px 0 #c68400 !important;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  width: 100%;
+}
+.rv2-inject:active { transform: translateY(2px); box-shadow: 0 2px 0 #c68400 !important; }
+.rv2-inject.rv-used { background: #e8f5e9 !important; color: #2e7d32 !important; box-shadow: none !important; cursor: default; }
+.rv2-sub { font-size: 10.5px; font-weight: 600; opacity: 0.85; }
+
+/* ---------- Дашборд KPI ---------- */
+.dashGeo { flex: 1; }
+.geoSwitch { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; justify-content: flex-end; }
+.geoCap { font-size: 11px; color: #7a8b6a; margin-right: 2px; }
+.geoBtn {
+  font-size: 11px;
+  padding: 5px 9px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #b5d4a6;
+  border-radius: 8px;
+  color: #558b2f;
+  cursor: pointer;
+}
+.geoBtn.active { border-color: #2e7d32; color: #fff; background: #43a047; }
+
+.kSection {
+  background: #ffffff;
+  border: 1px solid #d3e4c6;
+  border-radius: 14px;
+  padding: 11px 12px 13px;
+}
+.kSection h4 { font-size: 13px; color: #1b5e20; margin-bottom: 8px; }
+.kHead, .kRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+.kHead {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #8aa07a;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e4eeda;
+  margin-bottom: 4px;
+}
+.kHead span:nth-child(2), .kHead span:nth-child(3) { text-align: right; }
+.kRow { padding: 4px 0; border-bottom: 1px solid #eef4e7; }
+.kRow:last-child { border-bottom: none; }
+.kLabel { font-size: 12px; color: #33691e; display: flex; flex-direction: column; }
+.kNote { font-size: 9.5px; color: #9aad8a; }
+.kVal { font-size: 13px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; color: #1b5e20; }
+.kTgt { font-size: 11px; text-align: right; color: #7a8b6a; font-variant-numeric: tabular-nums; min-width: 42px; }
+.kStat { text-align: right; min-width: 54px; }
+.kchip {
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 6px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+.kchip.hit { color: #2e7d32; background: #e8f5e9; border: 1px solid #81c784; }
+.kchip.near { color: #b8860b; background: #fff8e1; border: 1px solid #e0b64a; }
+.kchip.low { color: #c62828; background: #fdecea; border: 1px solid #ef9a9a; }
+.kMini { font-size: 10.5px; color: #6b7d5a; margin-top: 7px; line-height: 1.4; }
+.kMini b { color: #33691e; }
+.kMini.kDis { color: #b8860b; }
+
+.shareCap { font-size: 11px; color: #7a8b6a; margin: 4px 0 3px; }
+.shareBar {
+  display: flex;
+  height: 26px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #cfe0c4;
+  font-size: 11px;
+  font-weight: 800;
+}
+.shareBar div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  transition: width .3s ease;
+}
+.shareBar .shareAd { background: linear-gradient(90deg, #66bb6a, #43a047); color: #ffffff; }
+.shareBar .shareSub { background: linear-gradient(90deg, #ffca28, #ffb300); color: #4e342e; }
+.shareBar .shareIap { background: linear-gradient(90deg, #4dd0c4, #00897b); color: #ffffff; }
