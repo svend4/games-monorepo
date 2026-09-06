@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "care-unit.schema.json",
+  "title": "Единица заботы (care unit)",
+  "description": "Пилот идеи №16 из ../05-mozgovoy-shturm-arhitektura-i-vizualizaciya.md — один абстрактный контракт для дома престарелых / ухода на дому, приюта для животных (Tierheim) и приюта для бездомных людей. Домен-специфика — только в needs_vocabulary и подписях, форма контракта одна.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "domain",
+    "subject",
+    "private_space",
+    "needs_vocabulary",
+    "caretaker",
+    "escalation"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "id": { "type": "string", "description": "Уникальный идентификатор единицы заботы, напр. 'room-101'." },
+    "domain": {
+      "type": "string",
+      "enum": ["elderly_care", "home_care", "animal_shelter", "homeless_shelter"],
+      "description": "Какой из документа 05 §Вопрос-2 доменов инстанцирован."
+    },
+    "subject": {
+      "type": "object",
+      "required": ["kind", "display_name"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["human", "animal"] },
+        "display_name": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "private_space": {
+      "type": "object",
+      "required": ["kind", "code"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["room", "kennel", "bed"],
+          "description": "Комната (дом престарелых), вольер/клетка (Tierheim), койко-место (приют для бездомных)."
+        },
+        "code": { "type": "string", "description": "Например '101', 'K-12', 'Койка 5'." }
+      }
+    },
+    "needs_vocabulary": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Домен-специфический словарь потребностей — подмножество или аналог таблицы из ../03-pult-upravleniya-uhod.md §2.",
+      "items": {
+        "type": "object",
+        "required": ["id", "icon", "label_ru", "urgency_default"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "icon": { "type": "string" },
+          "label_ru": { "type": "string" },
+          "urgency_default": { "type": "string", "enum": ["info", "warn", "danger"] }
+        }
+      }
+    },
+    "caretaker": {
+      "type": "object",
+      "required": ["role", "display_name"],
+      "additionalProperties": false,
+      "properties": {
+        "role": { "type": "string" },
+        "display_name": { "type": "string" },
+        "contact": { "type": "string" }
+      }
+    },
+    "schedule": {
+      "type": "array",
+      "description": "Необязательно. Повторяющиеся плановые события — вход для пилота №19 (временной тессеракт).",
+      "items": {
+        "type": "object",
+        "required": ["time", "task"],
+        "additionalProperties": false,
+        "properties": {
+          "time": { "type": "string", "description": "ЧЧ:ММ или день недели + ЧЧ:ММ." },
+          "task": { "type": "string" },
+          "recurrence": { "type": "string", "enum": ["once", "daily", "weekly"] }
+        }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "description": "Пороги светофора (документ 03 §3 / пилот №15 §4) — единицы времени зависят от домена: минуты для мгновенных нужд, дни для процесса заявки.",
+      "required": ["unit", "warn_after", "danger_after"],
+      "additionalProperties": false,
+      "properties": {
+        "unit": { "type": "string", "enum": ["minutes", "hours", "days"] },
+        "warn_after": { "type": "number" },
+        "danger_after": { "type": "number" }
+      }
+    }
+  }
+}

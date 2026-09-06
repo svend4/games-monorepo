@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "id": "bed-5",
+  "domain": "homeless_shelter",
+  "subject": {
+    "kind": "human",
+    "display_name": "Проживающий, койка 5",
+    "notes": "Тот же контракт, что и room-101/kennel-12 — третий словарь потребностей."
+  },
+  "private_space": { "kind": "bed", "code": "Койка 5" },
+  "needs_vocabulary": [
+    { "id": "shower",  "icon": "🚿", "label_ru": "Записаться на душ",        "urgency_default": "info" },
+    { "id": "docs",    "icon": "📄", "label_ru": "Нужна помощь с документами", "urgency_default": "warn" },
+    { "id": "meal",    "icon": "🍽️", "label_ru": "Талон на еду",            "urgency_default": "info" },
+    { "id": "curfew",  "icon": "🛏️", "label_ru": "Вопрос про комендантский час", "urgency_default": "info" },
+    { "id": "health",  "icon": "🩺", "label_ru": "Плохое самочувствие",     "urgency_default": "warn" },
+    { "id": "job",     "icon": "💼", "label_ru": "Помощь с поиском работы", "urgency_default": "info" },
+    { "id": "conflict","icon": "⚠️", "label_ru": "Конфликт / нужна помощь соцработника", "urgency_default": "danger" }
+  ],
+  "caretaker": {
+    "role": "Социальный работник смены",
+    "display_name": "Дежурный соцработник",
+    "contact": "внутренний номер 7"
+  },
+  "schedule": [
+    { "time": "22:00", "task": "Комендантский час", "recurrence": "daily" },
+    { "time": "09:00", "task": "Приём у соцработника (запись)", "recurrence": "weekly" }
+  ],
+  "escalation": { "unit": "hours", "warn_after": 4, "danger_after": 12 }
+}

@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "id": "room-101",
+  "domain": "elderly_care",
+  "subject": {
+    "kind": "human",
+    "display_name": "Резидент, комната 101",
+    "notes": "Пример из ../../demo/pult-nuzhd-demo.html — та же комната встречается в демо-панели."
+  },
+  "private_space": { "kind": "room", "code": "101" },
+  "needs_vocabulary": [
+    { "id": "help",   "icon": "🖐️", "label_ru": "Позвать персонал",     "urgency_default": "warn" },
+    { "id": "pain",   "icon": "🩹", "label_ru": "Боль",                 "urgency_default": "warn" },
+    { "id": "toilet", "icon": "🚻", "label_ru": "Туалет",               "urgency_default": "warn" },
+    { "id": "food",   "icon": "🍽️", "label_ru": "Еда",                  "urgency_default": "info" },
+    { "id": "drink",  "icon": "🥤", "label_ru": "Питьё",                "urgency_default": "info" },
+    { "id": "meds",   "icon": "💊", "label_ru": "Лекарства",            "urgency_default": "warn" },
+    { "id": "family", "icon": "📞", "label_ru": "Позвонить родным",     "urgency_default": "info" },
+    { "id": "sos",    "icon": "🆘", "label_ru": "Экстренно",            "urgency_default": "danger" }
+  ],
+  "caretaker": {
+    "role": "Сиделка / медсестра смены",
+    "display_name": "Дежурная смена, этаж 1",
+    "contact": "внутренний номер 12"
+  },
+  "schedule": [
+    { "time": "08:00", "task": "Утренние лекарства", "recurrence": "daily" },
+    { "time": "12:00", "task": "Обед",                "recurrence": "daily" },
+    { "time": "20:00", "task": "Вечерние лекарства",  "recurrence": "daily" }
+  ],
+  "escalation": { "unit": "minutes", "warn_after": 2, "danger_after": 5 }
+}

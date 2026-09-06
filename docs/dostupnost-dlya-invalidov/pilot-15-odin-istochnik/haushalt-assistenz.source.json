@@ -1,0 +1,61 @@
+{
+  "id": "haushalt-assistenz",
+  "title_ru": "Помощь по хозяйству",
+  "title_de": "Hauswirtschaftliche Assistenz",
+  "source_doc": "soz30/persoenliches-budget/7 Haushalt Assistenz/01-Grundlagen-und-Konzept.md",
+  "category": { "code": "household", "color": "#2a7f62", "icon": "🧹" },
+
+  "target_groups": [
+    { "icon": "🦽", "text_ru": "Люди с инвалидностью" },
+    { "icon": "🧓", "text_ru": "Pflegebedürftige — люди, которым нужен постоянный уход" },
+    { "icon": "🏠", "text_ru": "Живущие дома, а не в интернате" }
+  ],
+
+  "legal_basis": [
+    { "ref": "§§ 36, 45a SGB XI", "note_ru": "базовые услуги по уходу от кассы ухода" },
+    { "ref": "§§ 78, 113 SGB IX", "note_ru": "услуги участия (Teilhabe) в рамках Persönliches Budget" },
+    { "ref": "§ 38 SGB V", "note_ru": "помощь по хозяйству от больничной кассы" },
+    { "ref": "§ 61 SGB XII", "note_ru": "помощь от Sozialamt, если нет других оснований" }
+  ],
+
+  "cost_items": [
+    { "code": "LK 17 / HW-1", "name_de": "Einkaufen (Grundversorgung)", "duration": "45–60 мин", "price_min": 22, "price_max": 35, "unit": "€/выезд" },
+    { "code": "LK 18 / HW-2", "name_de": "Zubereitung einer warmen Mahlzeit", "duration": "30–45 мин", "price_min": 18, "price_max": 28, "unit": "€/выезд" },
+    { "code": "LK 19 / HW-3", "name_de": "Reinigung der Wohnung (Grundreinigung)", "duration": "60–90 мин", "price_min": 30, "price_max": 55, "unit": "€/выезд" },
+    { "code": "LK 20 / HW-4", "name_de": "Wäschepflege (Waschen, Trocknen, Bügeln)", "duration": "45–75 мин", "price_min": 22, "price_max": 40, "unit": "€/выезд" },
+    { "code": "LK 21 / HW-5", "name_de": "Behördengänge, Schriftverkehr", "duration": "30–60 мин", "price_min": 20, "price_max": 35, "unit": "€/выезд" }
+  ],
+  "overall_cost_range": { "min": 20, "max": 55, "unit": "€ за одно посещение" },
+
+  "steps": [
+    { "id": 1, "actor": "клиент", "icon": "📞", "action_ru": "Позвонить в кассу (Krankenkasse) или в Sozialamt" },
+    { "id": 2, "actor": "клиент", "icon": "📝", "action_ru": "Сообщить, что нужна помощь по хозяйству" },
+    { "id": 3, "actor": "касса / врач", "icon": "🧑‍⚕️", "action_ru": "Пройти простую проверку — какая помощь нужна" },
+    { "id": 4, "actor": "клиент", "icon": "🖊️", "action_ru": "Подписать договор с помощником или со службой" },
+    { "id": 5, "actor": "служба", "icon": "📅", "action_ru": "Начать получать помощь в назначенные дни" }
+  ],
+
+  "decision_points": [
+    {
+      "after_step": 3,
+      "condition_ru": "Заявка одобрена?",
+      "branches": [
+        { "label_ru": "Да", "to_step": 4 },
+        { "label_ru": "Нет", "to_label_ru": "Widerspruch (возражение) — см. german-legal-template-generator" }
+      ]
+    }
+  ],
+
+  "documents_required": [
+    { "name_ru": "Заявление (Antrag)" },
+    { "name_ru": "Врачебное заключение / решение о Pflegegrad" },
+    { "name_ru": "Stundennachweis — для Arbeitgebermodell" }
+  ],
+
+  "glossary": [
+    { "term": "SGB IX / SGB XI / SGB XII", "explanation_ru": "Названия немецких законов о помощи людям" },
+    { "term": "Pflegedienst", "explanation_ru": "Служба, которая присылает помощника" },
+    { "term": "Arbeitgebermodell", "explanation_ru": "Вы сами нанимаете помощника, как начальник" },
+    { "term": "Persönliches Budget", "explanation_ru": "Деньги, которые дают, чтобы вы сами выбрали помощь" }
+  ]
+}

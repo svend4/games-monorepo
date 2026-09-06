@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Временной тессеракт расписания — первый срез</title>
+<!--
+  Учебный прототип-концепция к идее №19 из
+  ../05-mozgovoy-shturm-arhitektura-i-vizualizaciya.md (§ "Вопрос 6").
+  НЕ готовое к продакшену ПО. Один этаж, 4 комнаты, один день, ОДИН
+  визуальный слой (свечение срочности) — как и обещано в документе 05:
+  "первый маленький кусок... не пытаться собрать все десять сразу".
+
+  Техника: 2D canvas + ручная изометрическая проекция (тот же приём, что
+  в games/crystal-collector/v2-isometric-2.5d — код не импортируется,
+  но подход намеренно тот же: screenX=(gx-gy)*w/2, screenY=(gx+gy)*h/2).
+
+  Ползунок времени и деление суток на фазы — прямая параллель к
+  games/nexus/shared/engine/DayNight.js (там параметр t от 0 до 1
+  целиком перекрашивает игровую сцену под время суток; здесь тот же
+  параметр управляет тем, какие события расписания сейчас активны).
+
+  "Коридор" под комнатами тускло повторяет цвет соседней комнаты —
+  черновая иллюстрация идеи EventBus/общей шины из документа 05
+  (Вопрос 4): тревога в комнате "просачивается" в общее пространство.
+-->
+<style>
+  :root {
+    --bg:#12181c; --panel:#1b2329; --text:#e7eef0; --muted:#8ba0a8; --line:#2a353b;
+    --calm:#3a6f6a; --warn:#c9860c; --danger:#c23b3b; --corridor:#33454c;
+  }
+  * { box-sizing:border-box; }
+  body {
+    font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text); margin:0; padding:0 0 40px;
+  }
+  .topbar { padding:14px 18px; border-bottom:2px solid var(--line); }
+  h1 { font-size:1.25rem; margin:0 0 4px; }
+  .note { color:var(--muted); font-style:italic; font-size:.85rem; margin:0; max-width:760px; }
+  main { max-width:900px; margin:0 auto; padding:18px; }
+
+  .stage-wrap { position:relative; background:var(--panel); border-radius:16px; padding:10px; }
+  canvas { display:block; width:100%; height:auto; border-radius:10px; }
+  .hit-btn {
+    position:absolute; border:none; background:transparent; cursor:pointer;
+    border-radius:8px;
+  }
+  .hit-btn:focus-visible { outline:3px solid #ffd24d; outline-offset:2px; }
+
+  .controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:16px; }
+  .controls input[type="range"] { flex:1; min-width:200px; }
+  .time-readout { font-variant-numeric:tabular-nums; font-weight:800; font-size:1.1rem; min-width:5.5em; }
+  .phase { min-width:7em; }
+  button.ctrl {
+    font-size:.95rem; padding:8px 14px; border-radius:8px; border:2px solid #4c8f9e;
+    background:var(--panel); color:#bfe6ee; cursor:pointer; font-weight:700;
+  }
+  button.ctrl[aria-pressed="true"] { background:#4c8f9e; color:#08181a; }
+
+  .legend { display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; font-size:.9rem; color:var(--muted); }
+  .legend span.dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+
+  #room-info {
+    margin-top:16px; padding:14px 16px; border-radius:12px; background:var(--panel);
+    border:1px solid var(--line); min-height:2.4em;
+  }
+  #room-info h2 { font-size:1rem; margin:0 0 8px; }
+  #room-info ul { margin:0; padding-left:18px; }
+  #room-info li.active { color:#ffd24d; font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🕰️ Временной тессеракт расписания — первый срез (1 этаж, 4 комнаты, 1 слой)</h1>
+  <p class="note">
+    Учебный прототип-концепция (документ <code>05-mozgovoy-shturm-arhitektura-i-vizualizaciya.md</code>,
+    идея №19). Не готовое к продакшену ПО. Единственный визуальный слой — срочность (цвет свечения).
+  </p>
+</div>
+
+<main>
+  <div class="stage-wrap">
+    <canvas id="stage" width="900" height="420" role="img"
+      aria-label="Изометрический план этажа с 4 комнатами и коридором"></canvas>
+    <!-- Кликабельные зоны поверх canvas добавляются через JS -->
+  </div>
+
+  <div class="controls">
+    <button class="ctrl" id="play-btn" aria-pressed="false">▶ Прокрутить день</button>
+    <span class="time-readout" id="time-readout">08:00</span>
+    <span class="phase" id="phase-readout">☀️ День</span>
+    <input type="range" id="time-slider" min="0" max="1439" step="5" value="480"
+      aria-label="Время суток, минуты от полуночи">
+  </div>
+
+  <div class="legend">
+    <div><span class="dot" style="background:var(--calm)"></span>спокойно</div>
+    <div><span class="dot" style="background:var(--warn)"></span>плановое дело</div>
+    <div><span class="dot" style="background:var(--danger)"></span>срочно / SOS</div>
+    <div><span class="dot" style="background:var(--corridor)"></span>коридор (общее) — тускло повторяет цвет соседней комнаты</div>
+  </div>
+
+  <div id="room-info">
+    <h2>Нажмите на комнату, чтобы увидеть расписание</h2>
+  </div>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Данные: 4 "единицы заботы" (см. ../pilot-16-edinitsa-zaboty) ---------- */
+
+  var ROOMS = [
+    {
+      id: "101", gx: 0, gy: 0,
+      events: [
+        { start: "08:00", end: "08:20", task: "Утренние лекарства", icon: "💊", urgency: "warn" },
+        { start: "12:00", end: "12:30", task: "Обед",               icon: "🍽️", urgency: "warn" },
+        { start: "20:00", end: "20:20", task: "Вечерние лекарства", icon: "💊", urgency: "warn" }
+      ]
+    },
+    {
+      id: "102", gx: 1, gy: 0,
+      events: [
+        { start: "09:00", end: "09:15", task: "Обход медсестры", icon: "🧑‍⚕️", urgency: "warn" },
+        { start: "12:00", end: "12:30", task: "Обед",            icon: "🍽️", urgency: "warn" },
+        { start: "16:00", end: "16:30", task: "Прогулка",        icon: "🚶", urgency: "info" }
+      ]
+    },
+    {
+      id: "103", gx: 2, gy: 0,
+      events: [
+        { start: "12:00", end: "12:30", task: "Обед", icon: "🍽️", urgency: "warn" },
+        { start: "14:30", end: "14:50", task: "Незапланированный вызов (SOS)", icon: "🆘", urgency: "danger" }
+      ]
+    },
+    {
+      id: "104", gx: 3, gy: 0,
+      events: [
+        { start: "08:00", end: "08:20", task: "Утренние лекарства", icon: "💊", urgency: "warn" },
+        { start: "12:00", end: "12:30", task: "Обед",               icon: "🍽️", urgency: "warn" },
+        { start: "15:00", end: "15:20", task: "Звонок родным",      icon: "📞", urgency: "info" },
+        { start: "20:00", end: "20:20", task: "Вечерние лекарства", icon: "💊", urgency: "warn" }
+      ]
+    }
+  ];
+
+  var URGENCY_COLOR = { info: "#3a6f6a", warn: "#c9860c", danger: "#c23b3b" };
+  var URGENCY_RANK = { info: 0, warn: 1, danger: 2 };
+
+  function toMinutes(hhmm) {
+    var p = hhmm.split(":");
+    return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+  }
+
+  /** Текущее событие с наивысшей срочностью для комнаты в момент minutes (0..1439). */
+  function currentEvent(room, minutes) {
+    var best = null;
+    room.events.forEach(function (ev) {
+      var s = toMinutes(ev.start), e = toMinutes(ev.end);
+      if (minutes >= s && minutes < e) {
+        if (!best || URGENCY_RANK[ev.urgency] > URGENCY_RANK[best.urgency]) best = ev;
+      }
+    });
+    return best; // null = сейчас спокойно
+  }
+
+  /* ---------- Изометрическая проекция ---------- */
+
+  var TILE_W = 150, TILE_H = 75, BOX_H = 46;
+  var ORIGIN_X = 450, ORIGIN_Y = 120;
+
+  function project(gx, gy) {
+    return {
+      x: ORIGIN_X + (gx - gy) * TILE_W / 2,
+      y: ORIGIN_Y + (gx + gy) * TILE_H / 2
+    };
+  }
+
+  function diamondPath(ctx, cx, cy, w, h) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - h / 2);
+    ctx.lineTo(cx + w / 2, cy);
+    ctx.lineTo(cx, cy + h / 2);
+    ctx.lineTo(cx - w / 2, cy);
+    ctx.closePath();
+  }
+
+  function shade(hex, amount) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = Math.max(0, Math.min(255, (n >> 16) + amount));
+    var g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amount));
+    var b = Math.max(0, Math.min(255, (n & 0xff) + amount));
+    return "rgb(" + r + "," + g + "," + b + ")";
+  }
+
+  /* ---------- Рендер ---------- */
+
+  var canvas = document.getElementById("stage");
+  var ctx = canvas.getContext("2d");
+  var stageWrap = document.querySelector(".stage-wrap");
+  var pulsePhase = 0;
+
+  function render(minutes) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1) Коридор — общее пространство под комнатами (gy = 1), тускло
+    //    повторяет цвет самой срочной соседней комнаты (черновой EventBus).
+    ROOMS.forEach(function (room) {
+      var ev = currentEvent(room, minutes);
+      var color = ev ? URGENCY_COLOR[ev.urgency] : "#26343a";
+      var p = project(room.gx, 1);
+      diamondPath(ctx, p.x, p.y, TILE_W, TILE_H);
+      ctx.fillStyle = ev ? shade(color, 40) + "" : "#26343a";
+      ctx.globalAlpha = ev ? 0.35 : 1;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "#1a2226";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // 2) Комнаты — изометрические "коробки" с крышей-ромбом и двумя стенами.
+    ROOMS.forEach(function (room) {
+      var ev = currentEvent(room, minutes);
+      var baseColor = ev ? URGENCY_COLOR[ev.urgency] : "#3a4a4e";
+      var p = project(room.gx, room.gy);
+      var topY = p.y - BOX_H;
+
+      // свечение (halo) — сильнее и пульсирует для danger
+      var glowAlpha = ev ? (ev.urgency === "danger" ? 0.35 + 0.25 * Math.sin(pulsePhase) : 0.28) : 0.08;
+      var grad = ctx.createRadialGradient(p.x, topY, 4, p.x, topY, TILE_W);
+      grad.addColorStop(0, hexToRgba(baseColor, glowAlpha));
+      grad.addColorStop(1, hexToRgba(baseColor, 0));
+      ctx.fillStyle = grad;
+      ctx.fillRect(p.x - TILE_W, topY - TILE_H, TILE_W * 2, TILE_H * 2 + BOX_H);
+
+      // левая стена
+      ctx.beginPath();
+      ctx.moveTo(p.x - TILE_W / 2, p.y);
+      ctx.lineTo(p.x, p.y + TILE_H / 2);
+      ctx.lineTo(p.x, p.y + TILE_H / 2 - BOX_H);
+      ctx.lineTo(p.x - TILE_W / 2, p.y - BOX_H);
+      ctx.closePath();
+      ctx.fillStyle = shade(baseColor, -40);
+      ctx.fill();
+
+      // правая стена
+      ctx.beginPath();
+      ctx.moveTo(p.x + TILE_W / 2, p.y);
+      ctx.lineTo(p.x, p.y + TILE_H / 2);
+      ctx.lineTo(p.x, p.y + TILE_H / 2 - BOX_H);
+      ctx.lineTo(p.x + TILE_W / 2, p.y - BOX_H);
+      ctx.closePath();
+      ctx.fillStyle = shade(baseColor, -20);
+      ctx.fill();
+
+      // крыша (верхняя грань)
+      diamondPath(ctx, p.x, topY, TILE_W, TILE_H);
+      ctx.fillStyle = baseColor;
+      ctx.fill();
+      ctx.strokeStyle = "#0e1416";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // подпись комнаты + иконка текущего события
+      ctx.fillStyle = "#0e1416";
+      ctx.font = "700 15px -apple-system, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(room.id, p.x, topY + 5);
+      if (ev) {
+        ctx.font = "18px -apple-system, Arial, sans-serif";
+        ctx.fillText(ev.icon, p.x, topY - 14);
+      }
+    });
+  }
+
+  function hexToRgba(hex, alpha) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
+    return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+  }
+
+  /* ---------- Кликабельные зоны поверх canvas (доступность: настоящие <button>) ---------- */
+
+  function layoutHitButtons() {
+    document.querySelectorAll(".hit-btn").forEach(function (b) { b.remove(); });
+    var rect = canvas.getBoundingClientRect();
+    var scale = rect.width / canvas.width;
+    ROOMS.forEach(function (room) {
+      var p = project(room.gx, room.gy);
+      var btn = document.createElement("button");
+      btn.className = "hit-btn";
+      btn.setAttribute("aria-label", "Комната " + room.id + " — показать расписание");
+      // Изометрические "коробки" соседних комнат перекрываются по ширине (так и
+      // задумано визуально), поэтому кликабельная зона уже, чем полная коробка —
+      // иначе кнопка соседней комнаты перехватывает клик (проверено тестом).
+      var HIT_W = 66, HIT_H = 130;
+      var w = HIT_W * scale, h = HIT_H * scale;
+      btn.style.left = (rect.left - stageWrap.getBoundingClientRect().left + (p.x - HIT_W / 2) * scale) + "px";
+      btn.style.top = (rect.top - stageWrap.getBoundingClientRect().top + (p.y - BOX_H - HIT_H / 2 + TILE_H / 2) * scale) + "px";
+      btn.style.width = w + "px";
+      btn.style.height = h + "px";
+      btn.addEventListener("click", function () { showRoomInfo(room); });
+      stageWrap.appendChild(btn);
+    });
+  }
+
+  function showRoomInfo(room) {
+    var minutes = parseInt(slider.value, 10);
+    var box = document.getElementById("room-info");
+    var html = "<h2>Комната " + room.id + " — расписание на сегодня</h2><ul>";
+    room.events.forEach(function (ev) {
+      var active = minutes >= toMinutes(ev.start) && minutes < toMinutes(ev.end);
+      html += '<li class="' + (active ? "active" : "") + '">' +
+        ev.start + "–" + ev.end + " " + ev.icon + " " + ev.task +
+        (active ? " — сейчас" : "") + "</li>";
+    });
+    html += "</ul>";
+    box.innerHTML = html;
+  }
+
+  /* ---------- Управление временем ---------- */
+
+  var slider = document.getElementById("time-slider");
+  var timeReadout = document.getElementById("time-readout");
+  var phaseReadout = document.getElementById("phase-readout");
+  var playBtn = document.getElementById("play-btn");
+  var playing = false;
+  var playRafId = null;
+  var playStartTs = 0;
+  var PLAY_DURATION_MS = 9000; // весь день "прокручивается" за ~9 секунд
+
+  function formatTime(minutes) {
+    var h = Math.floor(minutes / 60), m = minutes % 60;
+    return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
+  }
+
+  function phaseLabel(minutes) {
+    var t = minutes / 1440; // та же нормализация, что в DayNight.js: t от 0 до 1
+    if (t < 0.15 || t > 0.85) return "🌙 Ночь";
+    if (t < 0.30) return "🌅 Рассвет";
+    if (t < 0.70) return "☀️ День";
+    return "🌇 Закат";
+  }
+
+  function update(minutes) {
+    timeReadout.textContent = formatTime(minutes);
+    phaseReadout.textContent = phaseLabel(minutes);
+    render(minutes);
+  }
+
+  slider.addEventListener("input", function () {
+    update(parseInt(slider.value, 10));
+  });
+
+  function playStep(ts) {
+    if (!playing) return;
+    if (!playStartTs) playStartTs = ts;
+    var elapsed = ts - playStartTs;
+    var frac = (elapsed % PLAY_DURATION_MS) / PLAY_DURATION_MS;
+    var minutes = Math.floor(frac * 1440 / 5) * 5;
+    slider.value = String(minutes);
+    update(minutes);
+    pulsePhase += 0.25;
+    playRafId = requestAnimationFrame(playStep);
+  }
+
+  playBtn.addEventListener("click", function () {
+    playing = !playing;
+    playBtn.setAttribute("aria-pressed", String(playing));
+    playBtn.textContent = playing ? "⏸ Остановить" : "▶ Прокрутить день";
+    if (playing) {
+      playStartTs = 0;
+      playRafId = requestAnimationFrame(playStep);
+    } else if (playRafId) {
+      cancelAnimationFrame(playRafId);
+    }
+  });
+
+  /* Лёгкая непрерывная анимация пульсации для danger-комнат, даже без "▶ Прокрутить день" */
+  function idlePulse() {
+    if (!playing) {
+      pulsePhase += 0.12;
+      render(parseInt(slider.value, 10));
+    }
+    requestAnimationFrame(idlePulse);
+  }
+
+  /* ---------- Отладочный хук (используется автотестом headless-браузера) ---------- */
+  window.__tesseractDebug = {
+    getRoomUrgency: function (roomId, minutes) {
+      var room = ROOMS.filter(function (r) { return r.id === roomId; })[0];
+      if (!room) return null;
+      var ev = currentEvent(room, minutes);
+      return ev ? ev.urgency : "calm";
+    },
+    setMinutes: function (minutes) { slider.value = String(minutes); update(minutes); }
+  };
+
+  /* ---------- Инициализация ---------- */
+  window.addEventListener("resize", layoutHitButtons);
+  update(parseInt(slider.value, 10));
+  layoutHitButtons();
+  requestAnimationFrame(idlePulse);
+})();
+</script>
+
+</body>
+</html>

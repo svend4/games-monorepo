@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "id": "kennel-12",
+  "domain": "animal_shelter",
+  "subject": {
+    "kind": "animal",
+    "display_name": "Собака, вольер 12 (пример: 'Рекс')",
+    "notes": "Тот же контракт, что и room-101 — другой словарь потребностей."
+  },
+  "private_space": { "kind": "kennel", "code": "K-12" },
+  "needs_vocabulary": [
+    { "id": "feed",     "icon": "🍖", "label_ru": "Покормить",              "urgency_default": "warn" },
+    { "id": "water",    "icon": "💧", "label_ru": "Налить воды",            "urgency_default": "warn" },
+    { "id": "walk",     "icon": "🚶", "label_ru": "Вывести на выгул",       "urgency_default": "info" },
+    { "id": "vet",      "icon": "💉", "label_ru": "Нужен ветеринар",        "urgency_default": "danger" },
+    { "id": "clean",    "icon": "🧹", "label_ru": "Убрать вольер",          "urgency_default": "info" },
+    { "id": "distress", "icon": "😟", "label_ru": "Признаки стресса/боли",  "urgency_default": "warn" },
+    { "id": "adopt",    "icon": "🏠", "label_ru": "Статус усыновления изменился", "urgency_default": "info" }
+  ],
+  "caretaker": {
+    "role": "Работник приюта",
+    "display_name": "Смена, корпус B",
+    "contact": "внутренний номер 4"
+  },
+  "schedule": [
+    { "time": "07:30", "task": "Кормление", "recurrence": "daily" },
+    { "time": "16:00", "task": "Выгул",      "recurrence": "daily" }
+  ],
+  "escalation": { "unit": "minutes", "warn_after": 15, "danger_after": 60 }
+}
