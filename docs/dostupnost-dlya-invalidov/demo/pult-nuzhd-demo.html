@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Пульт жизненно важных потребностей — демо-макет</title>
+<!--
+  Учебный прототип-концепция к документу ../03-pult-upravleniya-uhod.md.
+  НЕ готовое к продакшену ПО. Один HTML-файл, без сборки и без сети —
+  открывается напрямую (file://) или через тот же XAMPP, что и остальные
+  страницы репозитория. Все данные — тестовые, хранятся только в этом
+  браузере (localStorage), реального персонала/резидентов не существует.
+
+  Пиктограммы здесь — эмодзи-заглушки для скорости прототипирования.
+  Для реального использования их нужно заменить на протестированные
+  AAC-символы (ARASAAC/Metacom) по единой символьной библиотеке —
+  см. docs/dostupnost-dlya-invalidov/04-novye-idei-i-innovacii.md, идея 5.
+  Эмодзи выбраны сознательно НЕ как финальное решение: они по-разному
+  рисуются в разных ОС и не проходили тест на понятность (ISO 9186,
+  документ 01, §6) — см. предупреждение в самом документе 01.
+-->
+<style>
+  :root {
+    --accent:#2a6f8f;
+    --bg:#f3f6f7;
+    --card-bg:#ffffff;
+    --text:#20302f;
+    --line:#dbe4e2;
+    --ok:#2f8f5b;
+    --warn:#c9860c;
+    --danger:#c23b3b;
+    --ring-info:#4c8f9e;
+    --btn-min:132px;
+  }
+  [data-contrast="high"] {
+    --bg:#000000;
+    --card-bg:#000000;
+    --text:#ffffff;
+    --line:#ffffff;
+    --accent:#8fd3ff;
+    --ok:#5ee38a;
+    --warn:#ffd24d;
+    --danger:#ff6b6b;
+    --ring-info:#8fd3ff;
+  }
+  * { box-sizing:border-box; }
+  html { font-size:100%; }
+  html[data-fs="2"] { font-size:115%; }
+  html[data-fs="3"] { font-size:130%; }
+  body {
+    font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text); margin:0; padding:0 0 40px;
+    line-height:1.5;
+  }
+  .topbar {
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    justify-content:space-between; padding:12px 16px; background:var(--card-bg);
+    border-bottom:2px solid var(--line); position:sticky; top:0; z-index:10;
+  }
+  .tabs button, .a11y-controls button, .a11y-controls select {
+    font-size:1rem; padding:8px 14px; border-radius:8px; border:2px solid var(--accent);
+    background:var(--card-bg); color:var(--accent); cursor:pointer; font-weight:600;
+  }
+  .tabs button[aria-selected="true"] { background:var(--accent); color:#fff; }
+  .a11y-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .a11y-controls label { font-size:.9rem; display:flex; gap:4px; align-items:center; }
+  .note {
+    max-width:900px; margin:14px auto 0; padding:0 16px; font-style:italic;
+    color:var(--accent); font-size:.9rem;
+  }
+  main { max-width:900px; margin:0 auto; padding:16px; }
+  h1 { font-size:1.4rem; margin:18px 0 4px; }
+  .room-picker { display:flex; gap:8px; align-items:center; margin:10px 0 18px; }
+  .room-picker select { font-size:1rem; padding:6px 10px; border-radius:8px; border:2px solid var(--line); }
+
+  /* --- Экран резидента --- */
+  .sos-btn {
+    display:block; width:100%; padding:20px; margin-bottom:16px; border-radius:16px;
+    border:4px solid var(--danger); background:var(--danger); color:#fff;
+    font-size:1.4rem; font-weight:800; cursor:pointer;
+    animation:sos-pulse 2.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { .sos-btn { animation:none; } }
+  @keyframes sos-pulse {
+    0%,100% { box-shadow:0 0 0 0 rgba(194,59,59,.55); }
+    50% { box-shadow:0 0 0 14px rgba(194,59,59,0); }
+  }
+  .grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(var(--btn-min),1fr));
+    gap:14px;
+  }
+  .need-btn {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; min-height:var(--btn-min); padding:14px 8px; border-radius:16px;
+    background:var(--card-bg); border:3px solid var(--ring-info); color:var(--text);
+    font-size:1rem; font-weight:700; cursor:pointer;
+  }
+  .need-btn .glyph { font-size:2.6rem; line-height:1; }
+  .need-btn:focus-visible, .sos-btn:focus-visible, .tabs button:focus-visible {
+    outline:4px solid var(--warn); outline-offset:2px;
+  }
+
+  /* --- Оверлей подтверждения / уточнения --- */
+  .overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.75); display:flex;
+    align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .overlay[hidden] { display:none; }
+  .overlay-card {
+    background:var(--card-bg); color:var(--text); border-radius:20px; padding:32px;
+    max-width:480px; width:100%; text-align:center;
+  }
+  .overlay-card .glyph-big { font-size:5rem; display:block; margin-bottom:10px; }
+  .face-row { display:flex; justify-content:center; gap:10px; margin:18px 0; flex-wrap:wrap; }
+  .face-row button {
+    font-size:2.4rem; padding:10px 14px; border-radius:14px; border:3px solid var(--line);
+    background:var(--card-bg); cursor:pointer;
+  }
+  .face-row button span { display:block; font-size:.8rem; font-weight:700; margin-top:4px; }
+  .overlay-card .close-btn {
+    margin-top:18px; padding:10px 20px; border-radius:10px; border:none;
+    background:var(--accent); color:#fff; font-weight:700; font-size:1rem; cursor:pointer;
+  }
+
+  /* --- Экран персонала --- */
+  .queue-item {
+    display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:12px;
+    border:2px solid var(--line); margin-bottom:10px; background:var(--card-bg);
+  }
+  .queue-item.elapsed-ok { border-left:8px solid var(--ok); }
+  .queue-item.elapsed-warn { border-left:8px solid var(--warn); }
+  .queue-item.elapsed-danger { border-left:8px solid var(--danger); }
+  .queue-item .glyph { font-size:2.2rem; }
+  .queue-item .meta { flex:1; }
+  .queue-item .room { font-weight:800; }
+  .queue-item .timer { font-variant-numeric:tabular-nums; font-weight:700; }
+  .queue-item .tag-sos {
+    background:var(--danger); color:#fff; font-weight:800; font-size:.75rem;
+    padding:2px 8px; border-radius:6px; margin-left:8px;
+  }
+  .queue-item .actions button {
+    font-size:.95rem; padding:8px 12px; border-radius:8px; border:2px solid var(--accent);
+    background:var(--card-bg); color:var(--accent); font-weight:700; cursor:pointer; margin-left:6px;
+  }
+  .empty-state { text-align:center; color:var(--ok); font-weight:700; padding:24px; }
+  details.history { margin-top:22px; }
+  details.history summary { cursor:pointer; font-weight:700; }
+  .history-item { font-size:.9rem; padding:6px 0; border-bottom:1px solid var(--line); }
+  .danger-zone { margin-top:26px; }
+  .danger-zone button {
+    font-size:.85rem; padding:6px 10px; border-radius:8px; border:2px solid var(--danger);
+    background:var(--card-bg); color:var(--danger); cursor:pointer;
+  }
+
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="tabs" role="tablist" aria-label="Переключение вида">
+    <button id="tab-resident" role="tab" aria-selected="true">🖐️ Вид резидента</button>
+    <button id="tab-staff" role="tab" aria-selected="false">🧑‍⚕️ Вид персонала</button>
+  </div>
+  <div class="a11y-controls">
+    <button id="fs-minus" aria-label="Уменьшить размер текста">A−</button>
+    <button id="fs-plus" aria-label="Увеличить размер текста">A+</button>
+    <label><input type="checkbox" id="contrast-toggle"> Высокий контраст</label>
+  </div>
+</div>
+
+<p class="note">
+  Учебный прототип-концепция (к документу <code>03-pult-upravleniya-uhod.md</code>).
+  Не готовое к продакшену ПО. Все данные — тестовые, хранятся только в этом браузере.
+</p>
+
+<main>
+
+  <!-- ЭКРАН РЕЗИДЕНТА -->
+  <section id="view-resident">
+    <h1>Что вам нужно?</h1>
+    <div class="room-picker">
+      <label for="room-select">Комната (для демо — обычно этот выбор не виден резиденту):</label>
+      <select id="room-select">
+        <option value="101">101</option>
+        <option value="102">102</option>
+        <option value="103">103</option>
+      </select>
+    </div>
+
+    <button class="sos-btn" data-need="sos" data-glyph="🆘" data-label="Экстренно" data-urgency="danger">
+      🆘 Экстренно — позвать сейчас
+    </button>
+
+    <div class="grid" id="need-grid"><!-- кнопки рендерятся через JS --></div>
+  </section>
+
+  <!-- ЭКРАН ПЕРСОНАЛА -->
+  <section id="view-staff" hidden>
+    <h1>Очередь заявок</h1>
+    <div id="queue-list"></div>
+    <div id="queue-empty" class="empty-state" hidden>Заявок нет — всё спокойно ✅</div>
+
+    <details class="history">
+      <summary>История выполненных (последние записи)</summary>
+      <div id="history-list"></div>
+    </details>
+
+    <div class="danger-zone">
+      <button id="reset-demo">Сбросить демо-данные</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- Оверлей подтверждения простой заявки -->
+<div class="overlay" id="overlay-confirm" hidden role="alertdialog" aria-modal="true">
+  <div class="overlay-card">
+    <span class="glyph-big" id="confirm-glyph">✅</span>
+    <p id="confirm-text">Передано персоналу</p>
+    <button class="close-btn" id="confirm-close">Закрыть</button>
+  </div>
+</div>
+
+<!-- Оверлей уточнения (боль / настроение / жарко-холодно) -->
+<div class="overlay" id="overlay-detail" hidden role="dialog" aria-modal="true">
+  <div class="overlay-card">
+    <span class="glyph-big" id="detail-title-glyph">🩹</span>
+    <p id="detail-title">Насколько сильно?</p>
+    <div class="face-row" id="detail-options"></div>
+    <button class="close-btn" id="detail-cancel">Отмена</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "pult-nuzhd-demo-v1";
+
+  /** Список потребностей резидента (кроме SOS — он рисуется отдельной кнопкой). */
+  var NEEDS = [
+    { id:"help",   glyph:"🖐️", label:"Позвать персонал", urgency:"warn" },
+    { id:"pain",   glyph:"🩹", label:"Боль",              urgency:"warn", detail:"pain" },
+    { id:"toilet", glyph:"🚻", label:"Туалет",            urgency:"warn" },
+    { id:"food",   glyph:"🍽️", label:"Еда",               urgency:"info" },
+    { id:"drink",  glyph:"🥤", label:"Питьё",             urgency:"info" },
+    { id:"temp",   glyph:"🌡️", label:"Жарко / холодно",   urgency:"info", detail:"temp" },
+    { id:"meds",   glyph:"💊", label:"Лекарства",         urgency:"warn" },
+    { id:"mood",   glyph:"🙂", label:"Настроение",        urgency:"info", detail:"mood" },
+    { id:"family", glyph:"📞", label:"Позвонить родным",  urgency:"info" },
+    { id:"walk",   glyph:"🚶", label:"Хочу выйти",        urgency:"info" },
+    { id:"noise",  glyph:"🔇", label:"Шум/свет мешает",   urgency:"info" }
+  ];
+
+  var DETAIL_SETS = {
+    pain: { title:"Насколько сильно болит?", glyph:"🩹", options:[
+      { glyph:"😀", label:"0 — не болит" },
+      { glyph:"🙂", label:"1 — слегка" },
+      { glyph:"😐", label:"2 — заметно" },
+      { glyph:"🙁", label:"3 — сильно" },
+      { glyph:"😢", label:"4 — очень сильно" }
+    ]},
+    mood: { title:"Как ваше настроение?", glyph:"🙂", options:[
+      { glyph:"🙂", label:"Хорошо" },
+      { glyph:"😐", label:"Так себе" },
+      { glyph:"🙁", label:"Плохо" }
+    ]},
+    temp: { title:"Жарко или холодно?", glyph:"🌡️", options:[
+      { glyph:"🥵", label:"Жарко" },
+      { glyph:"🥶", label:"Холодно" }
+    ]}
+  };
+
+  var state = loadState();
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* localStorage недоступен (приватный режим и т.п.) — работаем в памяти */ }
+    return { queue: [], history: [], settings: { fs: 1, contrast: false } };
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch (e) { /* тихо игнорируем — демо продолжает работать в памяти вкладки */ }
+  }
+
+  function speak(text) {
+    try {
+      if (!("speechSynthesis" in window)) return;
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = "ru-RU";
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* озвучка не критична — молча пропускаем */ }
+  }
+
+  /* ---------- Рендер экрана резидента ---------- */
+
+  var grid = document.getElementById("need-grid");
+  NEEDS.forEach(function (need) {
+    var btn = document.createElement("button");
+    btn.className = "need-btn";
+    btn.style.setProperty("--ring-info",
+      need.urgency === "warn" ? "var(--warn)" : "var(--ring-info)");
+    btn.setAttribute("aria-label", need.label);
+    btn.innerHTML = '<span class="glyph" aria-hidden="true">' + need.glyph + '</span><span>' + need.label + '</span>';
+    btn.addEventListener("click", function () { handleNeedClick(need); });
+    grid.appendChild(btn);
+  });
+
+  document.querySelector(".sos-btn").addEventListener("click", function () {
+    submitRequest({ id:"sos", glyph:"🆘", label:"Экстренно", urgency:"danger" }, null);
+  });
+
+  function handleNeedClick(need) {
+    if (need.detail) {
+      openDetail(need);
+    } else {
+      submitRequest(need, null);
+    }
+  }
+
+  var overlayDetail = document.getElementById("overlay-detail");
+  var detailTitle = document.getElementById("detail-title");
+  var detailGlyph = document.getElementById("detail-title-glyph");
+  var detailOptions = document.getElementById("detail-options");
+  var pendingNeed = null;
+
+  function openDetail(need) {
+    pendingNeed = need;
+    var set = DETAIL_SETS[need.detail];
+    detailTitle.textContent = set.title;
+    detailGlyph.textContent = set.glyph;
+    detailOptions.innerHTML = "";
+    set.options.forEach(function (opt) {
+      var b = document.createElement("button");
+      b.innerHTML = opt.glyph + "<span>" + opt.label + "</span>";
+      b.addEventListener("click", function () {
+        overlayDetail.hidden = true;
+        submitRequest(need, opt.label);
+      });
+      detailOptions.appendChild(b);
+    });
+    overlayDetail.hidden = false;
+  }
+
+  document.getElementById("detail-cancel").addEventListener("click", function () {
+    overlayDetail.hidden = true;
+    pendingNeed = null;
+  });
+
+  var overlayConfirm = document.getElementById("overlay-confirm");
+  var confirmGlyph = document.getElementById("confirm-glyph");
+  var confirmText = document.getElementById("confirm-text");
+  var confirmTimer = null;
+
+  function submitRequest(need, detailLabel) {
+    var room = document.getElementById("room-select").value;
+    var fullLabel = need.label + (detailLabel ? " (" + detailLabel + ")" : "");
+    state.queue.push({
+      key: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      room: room,
+      glyph: need.glyph,
+      label: fullLabel,
+      urgency: need.urgency,
+      ts: Date.now(),
+      status: "new"
+    });
+    saveState();
+    renderStaffView();
+
+    confirmGlyph.textContent = need.glyph;
+    confirmText.textContent = "Передано персоналу: " + fullLabel + " (комната " + room + ")";
+    overlayConfirm.hidden = false;
+    speak(fullLabel + ". Персонал уже идёт.");
+    clearTimeout(confirmTimer);
+    confirmTimer = setTimeout(function () { overlayConfirm.hidden = true; }, 2600);
+  }
+
+  document.getElementById("confirm-close").addEventListener("click", function () {
+    clearTimeout(confirmTimer);
+    overlayConfirm.hidden = true;
+  });
+
+  /* ---------- Рендер экрана персонала ---------- */
+
+  var queueList = document.getElementById("queue-list");
+  var queueEmpty = document.getElementById("queue-empty");
+  var historyList = document.getElementById("history-list");
+
+  function elapsedClass(ms) {
+    var min = ms / 60000;
+    if (min < 2) return "elapsed-ok";
+    if (min < 5) return "elapsed-warn";
+    return "elapsed-danger";
+  }
+
+  function formatElapsed(ms) {
+    var totalSec = Math.max(0, Math.floor(ms / 1000));
+    var m = Math.floor(totalSec / 60);
+    var s = totalSec % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  function renderStaffView() {
+    var items = state.queue.slice().sort(function (a, b) { return a.ts - b.ts; });
+    queueList.innerHTML = "";
+    queueEmpty.hidden = items.length > 0;
+
+    items.forEach(function (item) {
+      var now = Date.now();
+      var row = document.createElement("div");
+      row.className = "queue-item " + elapsedClass(now - item.ts);
+      var sosTag = item.urgency === "danger" ? '<span class="tag-sos">СРОЧНО</span>' : "";
+      row.innerHTML =
+        '<span class="glyph" aria-hidden="true">' + item.glyph + '</span>' +
+        '<div class="meta">' +
+          '<span class="room">Комната ' + item.room + '</span>' + sosTag + '<br>' +
+          item.label + ' · <span class="timer">' + formatElapsed(now - item.ts) + '</span>' +
+        '</div>' +
+        '<div class="actions"></div>';
+
+      var actions = row.querySelector(".actions");
+      if (item.status === "new") {
+        var acceptBtn = document.createElement("button");
+        acceptBtn.textContent = "Принято";
+        acceptBtn.addEventListener("click", function () {
+          item.status = "accepted";
+          item.acceptedTs = Date.now();
+          saveState();
+          renderStaffView();
+        });
+        actions.appendChild(acceptBtn);
+      } else {
+        var doneBtn = document.createElement("button");
+        doneBtn.textContent = "Выполнено";
+        doneBtn.addEventListener("click", function () {
+          state.queue = state.queue.filter(function (q) { return q.key !== item.key; });
+          state.history.unshift({
+            room: item.room, glyph: item.glyph, label: item.label,
+            ts: item.ts, doneTs: Date.now()
+          });
+          state.history = state.history.slice(0, 20);
+          saveState();
+          renderStaffView();
+        });
+        actions.appendChild(doneBtn);
+        var acceptedNote = document.createElement("span");
+        acceptedNote.style.fontSize = ".8rem";
+        acceptedNote.style.marginRight = "6px";
+        acceptedNote.textContent = "принято";
+        actions.insertBefore(acceptedNote, doneBtn);
+      }
+      queueList.appendChild(row);
+    });
+
+    historyList.innerHTML = "";
+    if (state.history.length === 0) {
+      historyList.innerHTML = '<p class="history-item">Пока пусто.</p>';
+    } else {
+      state.history.forEach(function (h) {
+        var d = document.createElement("div");
+        d.className = "history-item";
+        d.textContent = h.glyph + " Комната " + h.room + " — " + h.label +
+          " (выполнено за " + formatElapsed(h.doneTs - h.ts) + ")";
+        historyList.appendChild(d);
+      });
+    }
+  }
+
+  document.getElementById("reset-demo").addEventListener("click", function () {
+    if (!confirm("Стереть все демо-заявки и историю?")) return;
+    state.queue = [];
+    state.history = [];
+    saveState();
+    renderStaffView();
+  });
+
+  /* Автообновление таймеров ожидания раз в секунду */
+  setInterval(function () {
+    if (!document.getElementById("view-staff").hidden) renderStaffView();
+  }, 1000);
+
+  /* ---------- Переключение вкладок ---------- */
+
+  var tabResident = document.getElementById("tab-resident");
+  var tabStaff = document.getElementById("tab-staff");
+  var viewResident = document.getElementById("view-resident");
+  var viewStaff = document.getElementById("view-staff");
+
+  function showResident() {
+    viewResident.hidden = false; viewStaff.hidden = true;
+    tabResident.setAttribute("aria-selected", "true");
+    tabStaff.setAttribute("aria-selected", "false");
+  }
+  function showStaff() {
+    viewResident.hidden = true; viewStaff.hidden = false;
+    tabResident.setAttribute("aria-selected", "false");
+    tabStaff.setAttribute("aria-selected", "true");
+    renderStaffView();
+  }
+  tabResident.addEventListener("click", showResident);
+  tabStaff.addEventListener("click", showStaff);
+
+  /* ---------- Настройки доступности (размер шрифта / контраст) ---------- */
+
+  function applyA11ySettings() {
+    document.documentElement.setAttribute("data-fs", String(state.settings.fs));
+    document.documentElement.setAttribute("data-contrast", state.settings.contrast ? "high" : "normal");
+    document.getElementById("contrast-toggle").checked = !!state.settings.contrast;
+  }
+
+  document.getElementById("fs-plus").addEventListener("click", function () {
+    state.settings.fs = Math.min(3, state.settings.fs + 1);
+    saveState(); applyA11ySettings();
+  });
+  document.getElementById("fs-minus").addEventListener("click", function () {
+    state.settings.fs = Math.max(1, state.settings.fs - 1);
+    saveState(); applyA11ySettings();
+  });
+  document.getElementById("contrast-toggle").addEventListener("change", function (e) {
+    state.settings.contrast = e.target.checked;
+    saveState(); applyA11ySettings();
+  });
+
+  /* ---------- Инициализация ---------- */
+  if (!state.settings) state.settings = { fs: 1, contrast: false };
+  applyA11ySettings();
+  renderStaffView();
+  showResident();
+})();
+</script>
+
+</body>
+</html>
